@@ -1,0 +1,241 @@
+/**
+ * ShowcaseCard Styles
+ * Ported exactly from static/css/landing.css
+ */
+
+.card {
+  position: absolute;
+  width: 500px;
+  height: 420px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: default;
+  border: 3px solid rgba(233, 165, 68, 0.3);
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* Stack positioning - front card (top of stack) */
+.card[data-position='0'] {
+  transform: translateX(0) translateY(0) translateZ(0) scale(1);
+  opacity: 1;
+  z-index: 3;
+  filter: brightness(1);
+  pointer-events: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-color: rgba(233, 165, 68, 0.5);
+  cursor: pointer;
+}
+
+/* Hover effect on front card */
+.card[data-position='0']:hover {
+  transform: translateX(0) translateY(-5px) translateZ(0) scale(1.02);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+  border-color: rgba(233, 165, 68, 0.7);
+}
+
+/* Stack positioning - second card (behind and offset) */
+.card[data-position='1'] {
+  transform: translateX(-20px) translateY(28px) translateZ(-80px) scale(0.96) rotateZ(-1deg);
+  opacity: 0.85;
+  z-index: 2;
+  filter: brightness(0.92);
+  pointer-events: none;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+}
+
+.card[data-position='1'] .content {
+  visibility: hidden; /* Hide content to prevent text bleed-through */
+}
+
+/* Stack positioning - third card (furthest back and more offset) */
+.card[data-position='2'] {
+  transform: translateX(-40px) translateY(56px) translateZ(-160px) scale(0.92) rotateZ(-2deg);
+  opacity: 0.7;
+  z-index: 1;
+  filter: brightness(0.84);
+  pointer-events: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.card[data-position='2'] .content {
+  visibility: hidden; /* Hide content to prevent text bleed-through */
+}
+
+/* Card moving to back (exiting) */
+.card[data-position='-1'] {
+  transform: translateY(-50px) translateZ(-200px) scale(0.85) rotateX(10deg);
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.avatarWrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatarWrapper svg {
+  width: 28px;
+  height: 28px;
+}
+
+.agentName {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.agentStatus {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  font-style: italic;
+  transition: color 0.3s ease;
+}
+
+.agentStatus::before {
+  content: '● ';
+  color: #10b981;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Content */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Message wrappers */
+.userMessageWrapper {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  position: relative;
+}
+
+.agentResponseWrapper {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  position: relative;
+}
+
+/* Message bubbles */
+.userMessage {
+  background: #f3f4f6;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: #1f2937;
+  font-weight: 500;
+  max-width: 85%;
+  line-height: 1.5;
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  display: inline-block;
+  vertical-align: top;
+}
+
+.agentResponse {
+  background: linear-gradient(135deg, #e9a544 0%, #e8bf4f 100%);
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: #ffffff;
+  line-height: 1.6;
+  max-width: 90%;
+  box-shadow: 0 4px 12px rgba(233, 165, 68, 0.3);
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  display: inline-block;
+  vertical-align: top;
+}
+
+/* Chart container */
+.agentResponseChart {
+  background: #ffffff;
+  padding: 32px 28px;
+  border-radius: 12px;
+  border: 2px solid #e9a544;
+  align-self: stretch;
+  box-shadow: 0 4px 12px rgba(233, 165, 68, 0.2);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.chartFadeIn {
+  animation: fadeInChart 0.5s ease-out forwards;
+}
+
+@keyframes fadeInChart {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Typing cursor */
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: currentColor;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+  vertical-align: text-bottom;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}

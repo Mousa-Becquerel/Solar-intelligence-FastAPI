@@ -731,23 +731,25 @@ Always write the description as flowing narrative text (2-4 sentences), NOT as b
                 name="Evaluation Agent",
                 instructions="""Classify the Market Intelligence Agent's response to a user's query as "good_answer", "bad_answer", or "neutral" using these criteria:
 
-- "good_answer": The response includes any specific data or information the user requested.
-- "bad_answer": The response completely lacks the requested data, including when the agent says the data is unknown or unavailable.
+- "good_answer": The response includes the specific data or numerical information the user requested.
+- "bad_answer": The response does NOT provide the requested data. This includes when the agent says data is "not available", "unavailable", "no data", "cannot find", or provides explanations WITHOUT the actual data requested.
 - "neutral": The response is just general greetings, conversational speech, or off-topic without addressing the user's data request.
 - "contact_request": The user asks to talk to or be directed to a human expert in their query.
+
+CRITICAL: Classify as "bad_answer" if the response explains WHY data is missing or provides context INSTEAD of the requested data. Explanations and context are NOT a substitute for actual data.
 
 Return only the "response_quality" field in the JSON below, with no other output.
 
 # Steps
 
 1. Read the user query and the agent's response.
-2.If the user query includes a request to speak to or be directed to a human expert, classify as "contact_request".
-3. If not, identify if the query asks for specific data.
-3. Check if the agent's response:
-   - Provides any requested data → "good_answer"
-   - Does not provide requested data at all (including saying it is unavailable) → "bad_answer"
+2. If the user query includes a request to speak to or be directed to a human expert, classify as "contact_request".
+3. If not, identify the specific data the user requested (numbers, figures, statistics, etc.).
+4. Check if the agent's response:
+   - Provides the specific data requested → "good_answer"
+   - Does NOT provide the specific data (even if it explains why or provides related context) → "bad_answer"
    - Is only a greeting, general speech, or does not address the query → "neutral"
-4. Output using the exact JSON schema.
+5. Output using the exact JSON schema.
 
 # Output Format
 
@@ -791,9 +793,18 @@ Return only:
   "response_quality": "good_answer"
 }
 
-**Example 5**
-- User Query: "Can I speak with a human expert about Company A's 2023 revenue?"
-- Agent Response: "Certainly, I will connect you to a human expert."
+**Example 5 - Data Not Available (CRITICAL)**
+- User Query: "What is the BESS in Italy?"
+- Agent Response: "BESS refers to Battery Energy Storage System. Specific capacity figures are not available in the dataset. The dataset primarily includes PV capacity data only."
+- Output:
+{
+  "response_quality": "bad_answer"
+}
+Explanation: Response provides context but NOT the requested data. Classify as "bad_answer" when data is unavailable.
+
+**Example 6**
+- User Query: "Can I speak with a human expert?"
+- Agent Response: "I will connect you to a human expert."
 - Output:
 {
   "reponse_quality": "contact_request"
@@ -802,12 +813,12 @@ Return only:
 # Notes
 
 - Only output the "response_quality" field as shown above.
-- Classify as "neutral" only when the response is non-informative, off-topic, or just social/greeting.
-- Classify as "good_answer" if any of the requested data is present.
-- Classify as "bad_answer" solely when the requested data is completely absent, including if the agent says it does not exist.
+- Classify as "neutral" ONLY when the response is purely conversational (greetings, off-topic chat) without attempting to address any data request.
+- Classify as "good_answer" ONLY if the specific numerical data or statistics requested are provided.
+- Classify as "bad_answer" whenever the requested data is NOT provided, even if the response includes explanations, context, apologies, or suggestions for alternative sources.
 - Always follow the JSON output schema exactly.
 
-(Reminder: Choose "neutral" if the response is purely conversational or does not address the data request.)
+CRITICAL REMINDER: Explanations about missing data = "bad_answer", NOT "neutral". "Neutral" is ONLY for greetings and off-topic conversation.
 """,
                 model="gpt-4.1-mini",  # Fast classification model
                 output_type=EvaluationAgentSchema,

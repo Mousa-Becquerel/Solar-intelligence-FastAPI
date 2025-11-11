@@ -1,18 +1,26 @@
 /**
- * API Module - Centralized API communication
- * Handles all fetch requests with consistent error handling and CSRF token management
+ * API Module - FastAPI Compatible Version
+ * Handles all fetch requests with JWT authentication and FastAPI endpoint mapping
  */
+
+import { FASTAPI_CONFIG } from '../../fastapi-config.js';
+import { fastapiAuth } from '../../fastapi-auth.js';
 
 export class API {
     constructor() {
-        this.baseUrl = '';
+        this.config = FASTAPI_CONFIG;
+        this.auth = fastapiAuth;
         this.csrfToken = this.getCSRFToken();
+
+        console.log(`🔧 API initialized with ${this.config.isUsingFastAPI ? 'FastAPI' : 'Flask'} backend`);
     }
 
     /**
-     * Get CSRF token from meta tag or hidden input
+     * Get CSRF token (Flask only)
      */
     getCSRFToken() {
+        if (this.config.isUsingFastAPI) return '';
+
         const metaToken = document.querySelector('meta[name="csrf-token"]');
         if (metaToken) return metaToken.getAttribute('content');
 
@@ -23,45 +31,79 @@ export class API {
     }
 
     /**
+     * Build full URL for endpoint
+     */
+    buildUrl(path) {
+        if (this.config.isUsingFastAPI) {
+            return this.config.getEndpointUrl(path);
+        }
+        return path; // Flask uses relative URLs
+    }
+
+    /**
      * Generic fetch wrapper with error handling
      */
     async request(url, options = {}) {
-        const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-                ...(this.csrfToken && { 'X-CSRFToken': this.csrfToken })
-            },
-            credentials: 'same-origin'
+        const fullUrl = this.buildUrl(url);
+
+        const defaultHeaders = {
+            'Content-Type': 'application/json'
         };
 
+        // Add authentication based on backend
+        if (this.config.isUsingFastAPI) {
+            // FastAPI: Use JWT Bearer token
+            Object.assign(defaultHeaders, this.auth.getAuthHeader());
+        } else {
+            // Flask: Use CSRF token
+            if (this.csrfToken) {
+                defaultHeaders['X-CSRFToken'] = this.csrfToken;
+            }
+        }
+
         const finalOptions = {
-            ...defaultOptions,
+            credentials: 'same-origin',
             ...options,
             headers: {
-                ...defaultOptions.headers,
+                ...defaultHeaders,
                 ...options.headers
             }
         };
 
         try {
-            const response = await fetch(url, finalOptions);
+            const response = await fetch(fullUrl, finalOptions);
+
+            // Handle 401 Unauthorized
+            if (response.status === 401 && this.config.isUsingFastAPI) {
+                this.auth.handle401();
+                throw new Error('Unauthorized - please login again');
+            }
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
 
                 // Special handling for query limit (429 status)
-                if (response.status === 429 && errorData.upgrade_required) {
-                    const limitError = new Error(errorData.error || 'Query limit reached');
-                    limitError.queryLimitData = errorData; // Attach full data for frontend
+                if (response.status === 429) {
+                    const limitError = new Error(errorData.error || errorData.detail || 'Query limit reached');
+                    limitError.queryLimitData = errorData;
                     throw limitError;
                 }
 
-                throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+                // FastAPI uses 'detail' field for error messages
+                // Handle case where detail is an object (validation errors)
+                let errorMsg;
+                if (typeof errorData.detail === 'object' && errorData.detail !== null) {
+                    errorMsg = JSON.stringify(errorData.detail);
+                } else {
+                    errorMsg = errorData.error || errorData.detail || errorData.message || `HTTP ${response.status}`;
+                }
+                console.error('API Error Details:', errorData);
+                throw new Error(errorMsg);
             }
 
             return response;
         } catch (error) {
-            console.error(`API Error [${url}]:`, error);
+            console.error(`API Error [${fullUrl}]:`, error);
             throw error;
         }
     }
@@ -86,6 +128,17 @@ export class API {
     }
 
     /**
+     * PUT request (FastAPI uses PUT instead of PATCH for updates)
+     */
+    async put(url, data = {}) {
+        const response = await this.request(url, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    }
+
+    /**
      * DELETE request
      */
     async delete(url) {
@@ -94,7 +147,7 @@ export class API {
     }
 
     /**
-     * PATCH request
+     * PATCH request (Flask compatibility)
      */
     async patch(url, data = {}) {
         const response = await this.request(url, {
@@ -104,34 +157,108 @@ export class API {
         return response.json();
     }
 
+    // === Authentication Endpoints ===
+
+    /**
+     * Login user
+     * Flask: returns session cookie
+     * FastAPI: returns { access_token, token_type, user }
+     */
+    async login(username, password) {
+        const endpoint = this.config.isUsingFastAPI ? 'auth/login' : 'login';
+
+        if (this.config.isUsingFastAPI) {
+            // FastAPI expects form data, not JSON
+            const formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            const response = await this.request(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            // Handle FastAPI JWT token
+            if (data.access_token) {
+                this.auth.handleLoginResponse(data);
+            }
+
+            return data;
+        } else {
+            // Flask uses JSON
+            const response = await this.post(endpoint, { username, password });
+            return response;
+        }
+    }
+
+    /**
+     * Register new user
+     */
+    async register(userData) {
+        const endpoint = this.config.isUsingFastAPI ? 'auth/register' : 'register';
+        const response = await this.post(endpoint, userData);
+
+        // Handle FastAPI JWT token (auto-login after registration)
+        if (this.config.isUsingFastAPI && response.access_token) {
+            this.auth.handleLoginResponse(response);
+        }
+
+        return response;
+    }
+
+    /**
+     * Logout current user
+     */
+    async logout() {
+        if (this.config.isUsingFastAPI) {
+            // FastAPI: Just clear local token
+            this.auth.clearAuth();
+            return { success: true };
+        } else {
+            // Flask: Call logout endpoint
+            return this.post('/auth/logout');
+        }
+    }
+
     // === Conversation Endpoints ===
 
     /**
      * Get all conversations for current user
      */
     async getConversations() {
-        return this.get('/conversations');
+        return this.get('conversations/');
     }
 
     /**
      * Get specific conversation with messages
      */
     async getConversation(conversationId) {
-        return this.get(`/conversations/${conversationId}`);
+        const endpoint = this.config.isUsingFastAPI
+            ? `conversations/${conversationId}`
+            : `conversations/${conversationId}`;
+        return this.get(endpoint);
     }
 
     /**
      * Delete a conversation
      */
     async deleteConversation(conversationId) {
-        return this.delete(`/conversations/${conversationId}`);
+        return this.delete(`conversations/${conversationId}`);
     }
 
     /**
      * Create new conversation
      */
-    async createConversation() {
-        return this.post('/conversations/fresh');
+    async createConversation(agentType = 'market') {
+        const endpoint = this.config.isUsingFastAPI
+            ? `conversations/fresh/create-or-get?agent_type=${agentType}`
+            : 'conversations/fresh';
+        return this.get(endpoint); // FastAPI uses GET for fresh conversation
     }
 
     // === Chat Endpoints ===
@@ -141,13 +268,21 @@ export class API {
      * Returns fetch Response object for SSE streaming
      */
     async sendChatMessage(conversationId, message, agentType) {
-        const response = await this.request('/chat', {
+        const endpoint = this.config.isUsingFastAPI
+            ? 'chat/send'
+            : 'chat';
+
+        const payload = {
+            message: message,
+            conversation_id: conversationId,
+            agent_type: agentType
+        };
+
+        console.log('Sending chat message:', payload);
+
+        const response = await this.request(endpoint, {
             method: 'POST',
-            body: JSON.stringify({
-                message: message,
-                conversation_id: conversationId,
-                agent_type: agentType
-            })
+            body: JSON.stringify(payload)
         });
 
         return response;
@@ -157,7 +292,11 @@ export class API {
      * Send approval response
      */
     async sendApprovalResponse(approved, conversationId, context) {
-        return this.post('/api/approval_response', {
+        const endpoint = this.config.isUsingFastAPI
+            ? 'chat/approval-response'  // Need to add this endpoint in FastAPI
+            : 'api/approval_response';
+
+        return this.post(endpoint, {
             approved,
             conversation_id: conversationId,
             context
@@ -170,14 +309,10 @@ export class API {
      * Get current user info
      */
     async getCurrentUser() {
-        return this.get('/auth/current-user');
-    }
-
-    /**
-     * Logout current user
-     */
-    async logout() {
-        return this.post('/auth/logout');
+        const endpoint = this.config.isUsingFastAPI
+            ? 'auth/me'
+            : 'auth/current-user';
+        return this.get(endpoint);
     }
 
     // === Export Endpoints ===
@@ -232,3 +367,10 @@ export class API {
 
 // Create singleton instance
 export const api = new API();
+
+// Log API configuration
+console.log('✅ API Module loaded:', {
+    backend: api.config.isUsingFastAPI ? 'FastAPI' : 'Flask',
+    baseUrl: api.config.baseUrl,
+    authenticated: api.auth.isAuthenticated()
+});

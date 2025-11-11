@@ -1,143 +1,66 @@
-# Environment variables
-.env
-.env.local
-.env.development
-.env.production
-
-# API Keys and secrets
-config.py
-secrets.json
-
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
+*.pyo
+*.pyd
 .Python
-build/
-develop-eggs/
+.venv/
+venv/
+env/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Environment / Secrets
+.env
+.env.*
+
+# Node
+node_modules/
+
+# Build / Dist
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+build/
 
-# Flask
-instance/
+# Flask/Instance data
+instance/*.db
+instance/*.sqlite
 flask_session/
-*.db
-*.sqlite
-*.sqlite3
+memory_dumps/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
+# Large binaries and exports
+exports/**
+!exports/.gitkeep
+static/plots/**
+!static/plots/.gitkeep
+
+# Datasets (keep metadata, ignore heavy data)
+datasets/**/*.parquet
+datasets/**/*.backup
 
 # Logs
 *.log
-logs/
-agent_workflow.log
-pandasai.log
 
-# Memory dumps (debugging)
-memory_dumps/
+# Poetry
+poetry.lock
+functional_env/
 
-# Temporary files
-temp_styles.css
-temp/
-tmp/
+# Local runtime
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Gradle / Android (if accidentally included)
+.gradle/
 
-# macOS
-.DS_Store
+# Windows system directories
+AppData/
+Local Settings/
 
-# Windows
-Thumbs.db
-
-# Windows reserved name artifact that breaks Git on Windows
+# Windows reserved names
 nul
-ehthumbs.db
-Desktop.ini
+nul.*
 
-# Data files - Include schema files but exclude large data files
-!datasets/**/*.parquet
-datasets/**/*.csv
-# Allow schema files to be committed
-!datasets/**/schema.yaml
-!datasets/**/clean_*.py
-
-# Large files
-*.zip
-*.tar.gz
-*.rar
-
-# Node.js (if using npm for frontend)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Temporary and debug files
-debug_*.py
-backup_*.py
-temp_*.py
-*.tmp
-*.bak
-
-# Documentation and migration scripts (prevent clutter)
-*_SUMMARY.md
-*_FIX*.md
-*_IMPLEMENTATION.md
-*_GUIDE.md
-*_PLAN.md
-*_COMPLETE.md
-*_SETUP.md
-*_INSTRUCTIONS.md
-*_INTEGRATION.md
-*_UPGRADE.md
-*_UPDATED.md
-migrate_*.py
-fix_*.py
-cleanup_*.py
-*.sql
-!scripts/deployment/*.sql
-
-# Jupyter notebooks (temporary)
-*.ipynb
-
-# Log files
-*.log
-pandasai.log
-
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db 

@@ -165,7 +165,8 @@ You can:
 - Never offer charts and exporting of data
 - Never mention the name of the files; you can always mention that the reference is Becquerel database only
 - Never mention anything like: "You've uploaded the full dataset for all key companies," or anything about the dataset files
-- Never search the knowledge base for greetings and general conversation
+- **Use conversation history** to provide context-aware responses - remember previous questions and build on them
+- For follow-up questions, refer back to previous context to provide relevant answers
 - Remain factual, structured, and concise—do not speculate or introduce external interpretations"""
 
     def __init__(self, config: Optional[ManufacturerFinancialAgentConfig] = None):
@@ -199,17 +200,17 @@ You can:
             })
 
             # Create manufacturer financial expert agent with code interpreter
+            # Match AWS production settings exactly
             self.manufacturer_financial_expert = Agent(
                 name="PV Manufacturer Financial Analyst",
                 instructions=self.MANUFACTURER_FINANCIAL_PROMPT,
-                model=self.config.model,
+                model="gpt-4.1",  # Match AWS production
                 tools=[code_interpreter],
                 model_settings=ModelSettings(
-                    store=True,
-                    reasoning=Reasoning(
-                        effort="low",
-                        summary="auto"
-                    )
+                    temperature=1,
+                    top_p=1,
+                    max_tokens=2048,
+                    store=True  # This enables conversation memory in OpenAI's cloud
                 )
             )
             logger.info(f"✅ Created manufacturer financial expert with {len(self.config.file_ids)} data files")
@@ -305,10 +306,12 @@ You can:
                         session_id=session_id
                     )
                     logger.info(f"Created SQLite session for conversation {conversation_id}")
+                else:
+                    logger.debug(f"Reusing existing SQLite session for conversation {conversation_id}")
 
                 session = self.conversation_sessions[conversation_id]
 
-            # Run with streaming
+            # Run with streaming - match working agents (Digitalization, News)
             result = Runner.run_streamed(self.manufacturer_financial_expert, query, session=session)
 
             # Stream text deltas as they arrive

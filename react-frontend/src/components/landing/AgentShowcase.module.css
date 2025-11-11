@@ -1,0 +1,75 @@
+/**
+ * AgentShowcase Styles
+ * Ported from static/css/landing.css
+ */
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 1500px;
+  perspective-origin: center center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 40px;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(233, 165, 68, 0.3);
+}
+
+.avatar svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Click Hint */
+.clickHint {
+  position: absolute;
+  bottom: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.hintText {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.hintIcon {
+  opacity: 0.6;
+  animation: swipeHint 2s ease-in-out infinite;
+}
+
+@keyframes swipeHint {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(5px);
+    opacity: 0.8;
+  }
+}
+
+/* Mobile: hide carousel on small screens */
+@media (max-width: 1024px) {
+  .container {
+    display: none;
+  }
+}

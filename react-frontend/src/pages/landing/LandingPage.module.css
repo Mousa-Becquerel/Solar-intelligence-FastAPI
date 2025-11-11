@@ -1,0 +1,23 @@
+/**
+ * LandingPage Styles
+ * Main landing page with gradient background animation
+ */
+
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #000a55 0%, #1e1b4b 50%, #312e81 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

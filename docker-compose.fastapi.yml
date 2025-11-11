@@ -1,0 +1,165 @@
+# Docker Compose for FastAPI + Flask (Parallel Development)
+# This runs BOTH apps side-by-side with isolated databases
+
+version: '3.8'
+
+services:
+  # Existing Flask app (unchanged)
+  flask-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - FLASK_ENV=development
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - LOGFIRE_TOKEN=${LOGFIRE_TOKEN}
+      - DATABASE_URL=postgresql://solar_admin:datahub1@postgres-flask:5432/solar_intelligence_flask
+      - WEAVIATE_URL=${WEAVIATE_URL}
+      - WEAVIATE_API_KEY=${WEAVIATE_API_KEY}
+    volumes:
+      - ./datasets:/app/datasets:ro
+      - ./static:/app/static
+      - ./exports:/app/exports
+      - ./app:/app/app
+      - ./templates:/app/templates
+    restart: unless-stopped
+    depends_on:
+      - postgres-flask
+    networks:
+      - app-network
+
+  # NEW: FastAPI app (isolated)
+  fastapi-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - FLASK_ENV=development
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - LOGFIRE_TOKEN=${LOGFIRE_TOKEN}
+      # ISOLATED database - different from Flask
+      - FASTAPI_DATABASE_URL=postgresql+asyncpg://solar_admin:datahub1@postgres-fastapi:5432/solar_intelligence_fastapi
+      - WEAVIATE_URL=${WEAVIATE_URL}
+      - WEAVIATE_API_KEY=${WEAVIATE_API_KEY}
+      # Database Connection Pool Settings (production optimized)
+      - DB_POOL_SIZE=20
+      - DB_MAX_OVERFLOW=40
+      - DB_POOL_TIMEOUT=30
+      - DB_POOL_RECYCLE=3600
+      - DB_POOL_PRE_PING=True
+      - DB_ECHO_POOL=False
+      - DB_CONNECT_TIMEOUT=10
+      - DB_COMMAND_TIMEOUT=60
+    volumes:
+      - ./fastapi_app:/app/fastapi_app
+      - ./datasets:/app/datasets:ro
+      - fastapi_data:/app/data
+      # Mount agent files (needed for chat processing)
+      - ./market_intelligence_agent.py:/app/market_intelligence_agent.py:ro
+      - ./module_prices_agent.py:/app/module_prices_agent.py:ro
+      - ./news_agent.py:/app/news_agent.py:ro
+      - ./leo_om_agent.py:/app/leo_om_agent.py:ro
+      - ./digitalization_trend_agent.py:/app/digitalization_trend_agent.py:ro
+      - ./nzia_policy_agent.py:/app/nzia_policy_agent.py:ro
+      - ./nzia_market_impact_agent.py:/app/nzia_market_impact_agent.py:ro
+      - ./manufacturer_financial_agent.py:/app/manufacturer_financial_agent.py:ro
+      - ./pydantic_weaviate_agent.py:/app/pydantic_weaviate_agent.py:ro
+    restart: unless-stopped
+    depends_on:
+      postgres-fastapi:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL for Flask (existing)
+  postgres-flask:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: solar_intelligence_flask
+      POSTGRES_USER: solar_admin
+      POSTGRES_PASSWORD: datahub1
+    volumes:
+      - postgres_flask_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U solar_admin -d solar_intelligence_flask"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL for FastAPI (isolated)
+  postgres-fastapi:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: solar_intelligence_fastapi
+      POSTGRES_USER: solar_admin
+      POSTGRES_PASSWORD: datahub1
+      # PostgreSQL Performance Tuning
+      POSTGRES_MAX_CONNECTIONS: 100  # Should be >= pool_size + max_overflow (20 + 40 = 60) with buffer
+      POSTGRES_SHARED_BUFFERS: 256MB  # 25% of available RAM (for 1GB RAM)
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 768MB  # 75% of available RAM
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 16MB
+      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
+      POSTGRES_RANDOM_PAGE_COST: 1.1  # For SSD storage
+      POSTGRES_EFFECTIVE_IO_CONCURRENCY: 200  # For SSD storage
+      POSTGRES_WORK_MEM: 2MB  # Per-operation memory (100 connections * 2MB = 200MB max)
+      POSTGRES_MIN_WAL_SIZE: 1GB
+      POSTGRES_MAX_WAL_SIZE: 4GB
+    volumes:
+      - postgres_fastapi_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U solar_admin -d solar_intelligence_fastapi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=2MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_worker_processes=4
+      -c max_parallel_workers_per_gather=2
+      -c max_parallel_workers=4
+      -c max_parallel_maintenance_workers=2
+
+volumes:
+  postgres_flask_data:
+    driver: local
+  postgres_fastapi_data:
+    driver: local
+  fastapi_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

@@ -1685,3 +1685,356 @@ nav {
         margin-top: 0.4rem;
     }
 }
+
+
+/* ============================================
+   STYLES FROM INLINE <style> BLOCK
+   Moved from landing.html for modularity
+   ============================================ */
+
+body {
+            font-family: 'Inter', sans-serif;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(4, 11, 89, 0.4) 0%, transparent 70%),
+                linear-gradient(135deg, #0a1850 0%, #1e1b4b 30%, #312e81 60%, #3730a3 100%);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+            background-attachment: scroll;
+        }
+        
+        .modern-logo {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            letter-spacing: 0.025em;
+            font-feature-settings: 'kern' 1, 'liga' 1;
+        }
+
+        .modern-logo .accent {
+            font-weight: 400;
+            transition: all 0.3s ease;
+        }
+
+        .logo-with-subtitle {
+            display: flex;
+            flex-direction: column;
+            gap: 0.05rem;
+        }
+
+        .logo-image {
+            height: 70px;
+            width: auto;
+            max-width: 400px;
+            object-fit: contain;
+            margin-right: auto;
+            filter: brightness(0) invert(1);
+            opacity: 0.95;
+        }
+
+        .tagline-main {
+            font-size: 1rem;
+            font-weight: 400;
+            color: #ffffff;
+            line-height: 1.2;
+            border-left: 1px solid rgba(251, 191, 36, 0.4);
+            padding-left: 1.5rem;
+        }
+
+        .tagline-sub {
+            font-size: 0.75rem;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.7);
+            font-style: italic;
+            line-height: 1.2;
+            padding-left: 4.2rem;
+            margin-top: -1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .logo-image {
+                height: 50px;
+            }
+
+            .tagline-main {
+                display: none;
+            }
+
+            .tagline-sub {
+                font-size: 0.65rem;
+                padding-left: 3rem;
+            }
+        }
+        
+        .gradient-bg {
+            background:
+                radial-gradient(circle at 20% 30%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(4, 11, 89, 0.4) 0%, transparent 70%),
+                linear-gradient(135deg, #0a1850 0%, #1e1b4b 30%, #312e81 60%, #3730a3 100%);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+            background-attachment: fixed;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .agent-card {
+            background: rgba(255, 255, 253, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(233, 165, 68, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .agent-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 30px rgba(233, 165, 68, 0.3);
+            border-color: rgba(233, 165, 68, 0.4);
+        }
+        
+        .hero-text {
+            background: linear-gradient(90deg, #FFFFFD 0%, #E8BF4F 50%, #E9A544 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-accent {
+            position: relative;
+            display: block;
+            padding-bottom: 12px;
+        }
+        
+        .hero-accent::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 3px;
+            background: linear-gradient(90deg, #E9A544 0%, #E8BF4F 50%, #E9A544 100%);
+            border-radius: 2px;
+            box-shadow: 0 2px 8px rgba(233, 165, 68, 0.3);
+        }
+        
+        .accent-color {
+            color: #E9A544;
+        }
+        
+        .accent-secondary {
+            color: #E8BF4F;
+        }
+        
+        .btn-primary {
+            background: #E9A544;
+            border: 2px solid #E9A544;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-primary:hover {
+            background: transparent;
+            border-color: #E9A544;
+            color: #E9A544;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(233, 165, 68, 0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover {
+            color: #E9A544;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #E9A544;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 60%;
+        }
+        
+        .stats-number {
+            background: linear-gradient(90deg, #E9A544 0%, #E8BF4F 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Ensure seamless navigation */
+        nav {
+            margin: 0;
+            padding: 0;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
+        
+        /* Remove any potential separation */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Enhanced Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            /* Logo spacing */
+            .tagline-sub {
+                margin-top: 0.5rem;
+            }
+
+            /* Navigation */
+            nav .max-w-full {
+                padding: 0 1rem;
+            }
+
+            .hidden.md\\:flex {
+                display: none !important;
+            }
+
+            /* Navigation buttons - prevent text wrapping */
+            nav a {
+                white-space: nowrap;
+            }
+
+            /* Hero section */
+            section#home {
+                padding-bottom: 2rem;
+            }
+
+            /* Action buttons in nav */
+            .flex.items-center.space-x-4 {
+                gap: 0.5rem;
+            }
+
+            .flex.items-center.space-x-4 a {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.75rem;
+                white-space: nowrap;
+            }
+
+            /* CTA Buttons - make them consistent and narrower */
+            .btn-primary,
+            .btn-secondary {
+                padding: 0.875rem 2rem !important;
+                font-size: 0.95rem !important;
+                text-align: center;
+                width: auto !important;
+                max-width: 200px;
+                margin: 0 auto;
+            }
+
+            /* CTA container */
+            .flex.flex-col.sm\\:flex-row {
+                align-items: center;
+            }
+
+            /* Agent cards */
+            .agent-card {
+                margin: 0.75rem;
+            }
+
+            /* Section padding */
+            section {
+                padding: 3rem 0 !important;
+            }
+
+            /* Comparison table */
+            table {
+                font-size: 0.85rem;
+            }
+
+            table th,
+            table td {
+                padding: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Extra small devices */
+            .logo-image {
+                height: 40px;
+            }
+
+            .tagline-sub {
+                font-size: 0.6rem;
+                padding-left: 2.5rem;
+                margin-top: 0.4rem;
+            }
+
+            /* Navigation buttons */
+            .flex.items-center.space-x-4 a {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.6rem;
+                white-space: nowrap;
+            }
+
+            /* CTA Buttons */
+            .btn-primary,
+            .btn-secondary {
+                padding: 0.75rem 1.5rem !important;
+                font-size: 0.85rem !important;
+                max-width: 180px;
+            }
+
+            /* Hero text */
+            h1 {
+                font-size: 1.75rem !important;
+            }
+
+            h2 {
+                font-size: 1.5rem !important;
+            }
+
+            p {
+                font-size: 0.9rem;
+            }
+        }

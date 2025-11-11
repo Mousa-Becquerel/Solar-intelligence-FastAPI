@@ -15,6 +15,7 @@ from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 import logging
 
 # Initialize other extensions without app binding
@@ -25,6 +26,7 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=[]  # No default limits - routes define their own
 )
+cors = CORS()
 
 # Logging
 memory_logger = logging.getLogger('memory_monitor')
@@ -51,6 +53,16 @@ def init_extensions(app):
     login_manager.login_view = 'auth.login'  # Will update when we create auth blueprint
     login_manager.login_message = None  # Disable automatic flash messages to prevent duplicates
     login_manager.login_message_category = 'info'
+
+    # CORS - Allow React frontend
+    cors.init_app(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
+        }
+    })
 
     # CSRF Protection
     csrf.init_app(app)

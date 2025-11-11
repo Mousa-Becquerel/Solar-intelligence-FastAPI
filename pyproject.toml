@@ -18,6 +18,7 @@ flask-sqlalchemy = "*"
 flask-migrate = "*"
 flask-wtf = "*"
 flask-login = "*"
+flask-cors = "*"
 flask-limiter = ">=3.6.0"
 python-dotenv = "*"
 weaviate-client = {extras = ["agents"], version = "*"}

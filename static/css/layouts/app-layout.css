@@ -171,11 +171,14 @@
         transform: translateX(100%);
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         opacity: 1; /* Always opaque when it slides in */
+        /* Hide completely when closed - prevent any visibility */
+        visibility: hidden;
     }
 
     .main-layout[data-artifact-open="true"] .artifact-panel {
         transform: translateX(0);
         pointer-events: auto;
+        visibility: visible; /* Make visible when explicitly opened */
     }
 
     /* Add overlay backdrop */

@@ -4,7 +4,13 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:github.com)",
       "Bash(mkdir:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(docker logs:*)"
     ],
     "deny": [],
     "ask": []

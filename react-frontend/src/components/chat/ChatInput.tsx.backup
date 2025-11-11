@@ -1,0 +1,200 @@
+/**
+ * Chat Input
+ *
+ * Auto-resizing textarea with send button
+ * Matches Flask design with MD3 styling
+ */
+
+import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+
+interface ChatInputProps {
+  onSend: (message: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}
+
+export default function ChatInput({
+  onSend,
+  disabled = false,
+  placeholder = 'Ask about solar market intelligence...',
+}: ChatInputProps) {
+  const [message, setMessage] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 200);
+      textareaRef.current.style.height = `${newHeight}px`;
+    }
+  }, [message]);
+
+  const handleSubmit = () => {
+    const trimmed = message.trim();
+    if (trimmed && !disabled) {
+      onSend(trimmed);
+      setMessage('');
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Submit on Enter (without Shift)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  return (
+    <div
+      style={{
+        padding: '16px 24px 24px 24px',
+        borderTop: 'none',
+        background: '#ffffff',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '900px',
+          margin: '0 auto',
+          background: '#F5F5F5',
+          borderRadius: '16px',
+          padding: '0.8rem',
+          display: 'flex',
+          gap: '0.5rem',
+          alignItems: 'center',
+        }}
+      >
+        {/* Input container */}
+        <div
+          style={{
+            position: 'relative',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={disabled}
+            placeholder={placeholder}
+            rows={1}
+            style={{
+              width: '100%',
+              minHeight: '48px',
+              maxHeight: '200px',
+              padding: '0.875rem 1.125rem',
+              fontSize: '0.9375rem',
+              fontWeight: '300',
+              letterSpacing: '-0.01em',
+              lineHeight: '1.5',
+              border: 'none',
+              borderRadius: '12px',
+              resize: 'none',
+              outline: 'none',
+              fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+              background: disabled ? '#f3f4f6' : '#ffffff',
+              color: '#1e293b',
+              transition: 'background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: 'none',
+            }}
+            onFocus={(e) => {
+              e.target.style.background = disabled ? '#f3f4f6' : '#fafafa';
+            }}
+            onBlur={(e) => {
+              e.target.style.background = disabled ? '#f3f4f6' : '#ffffff';
+            }}
+          />
+        </div>
+
+        {/* Send button */}
+        <button
+          onClick={handleSubmit}
+          disabled={disabled || !message.trim()}
+          className="send-btn"
+          style={{
+            width: '48px',
+            height: '48px',
+            background: disabled || !message.trim() ? '#9FA8DA' : '#5C6BC0',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '12px',
+            cursor: disabled || !message.trim() ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            flexShrink: 0,
+            transition: 'all 0.2s ease',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+          aria-label="Send message"
+        >
+          {disabled ? (
+            <span
+              style={{
+                display: 'inline-block',
+                width: '18px',
+                height: '18px',
+                border: '2px solid #ffffff',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite',
+              }}
+            />
+          ) : (
+            '↑'
+          )}
+
+          <style>{`
+            @keyframes spin {
+              to {
+                transform: rotate(360deg);
+              }
+            }
+
+            .send-btn::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background: #ffffff;
+              opacity: 0;
+              transition: opacity 0.2s ease;
+              pointer-events: none;
+            }
+
+            .send-btn:not(:disabled):hover::before {
+              opacity: 0.08;
+            }
+
+            .send-btn:not(:disabled):active::before {
+              opacity: 0.12;
+            }
+
+            .send-btn:not(:disabled):hover {
+              transform: scale(1.05);
+            }
+
+            .send-btn:focus-visible {
+              outline: 2px solid #5C6BC0;
+              outline-offset: 2px;
+            }
+          `}</style>
+        </button>
+      </div>
+    </div>
+  );
+}

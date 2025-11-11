@@ -1,0 +1,356 @@
+/**
+ * Legal Pages Styles
+ * Shared styles for Terms of Service and Privacy Policy pages
+ * Ported from templates/terms_of_service.html and templates/privacy_policy.html
+ */
+
+:root {
+  --becq-blue: #1e3a8a;
+  --becq-gold: #f59e0b;
+  --becq-light-blue: #3b82f6;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+}
+
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Hero Section */
+.heroSection {
+  background: linear-gradient(135deg, var(--becq-blue) 0%, var(--becq-light-blue) 100%);
+  color: white;
+  padding: 4rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroSection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  opacity: 0.3;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+}
+
+.navHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3rem;
+}
+
+.logoSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.backLink {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  text-decoration: none;
+  color: white;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.backLink:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.heroTitle {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.heroTitle h1 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, var(--becq-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.heroTitle p {
+  font-size: 1.25rem;
+  opacity: 0.9;
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+/* Main Content */
+.mainContent {
+  padding: 4rem 0;
+}
+
+.contentCard {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1.5rem;
+  padding: 3rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Terms/Privacy Sections */
+.termsSection,
+.privacySection {
+  margin-bottom: 3rem;
+}
+
+.termsSection h2,
+.privacySection h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--becq-blue);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid var(--becq-gold);
+  display: inline-block;
+}
+
+.termsSection h3,
+.privacySection h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  margin-top: 2rem;
+}
+
+.termsSection p,
+.privacySection p {
+  margin-bottom: 1.5rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.termsSection ul,
+.privacySection ul {
+  margin-bottom: 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.termsSection li,
+.privacySection li {
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* Info Boxes */
+.highlightBox {
+  background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 20%);
+  border: 1px solid var(--becq-gold);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.warningBox {
+  background: linear-gradient(135deg, #fef2f2 0%, #fca5a5 20%);
+  border: 1px solid #ef4444;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.infoBox {
+  background: linear-gradient(135deg, #eff6ff 0%, #93c5fd 20%);
+  border: 1px solid var(--becq-light-blue);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.contactCard {
+  background: linear-gradient(135deg, var(--becq-blue) 0%, var(--becq-light-blue) 100%);
+  color: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.contactCard a {
+  color: var(--becq-gold);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.contactCard a:hover {
+  text-decoration: underline;
+}
+
+/* Rights Grid (for Privacy Policy) */
+.rightsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.rightCard {
+  background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 20%);
+  border: 1px solid var(--becq-gold);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.rightCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(251, 191, 36, 0.15);
+}
+
+.rightCard h4 {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rightCard p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Action Buttons (for Privacy Policy) */
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 2rem 0;
+}
+
+.btn {
+  padding: 0.875rem 2rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, var(--becq-gold) 0%, #f97316 100%);
+  color: white;
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(251, 191, 36, 0.3);
+}
+
+.btnSecondary {
+  background: #f3f4f6;
+  color: var(--text-primary);
+}
+
+.btnSecondary:hover {
+  background: #e5e7eb;
+}
+
+/* Footer */
+.footer {
+  background: rgba(255, 255, 255, 0.95);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 3rem 0;
+  margin-top: 4rem;
+  backdrop-filter: blur(20px);
+}
+
+.footerContent {
+  text-align: center;
+}
+
+.footerLinks {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.footerLinks a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.footerLinks a:hover {
+  color: var(--becq-blue);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.copyright {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+
+  .heroTitle h1 {
+    font-size: 2.5rem;
+  }
+
+  .contentCard {
+    padding: 2rem;
+  }
+
+  .navHeader {
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: center;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+}

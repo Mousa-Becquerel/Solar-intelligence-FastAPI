@@ -22,6 +22,9 @@ COPY pyproject.toml poetry.lock* ./
 # Configure Poetry to not create virtual environment (since we're in a container)
 RUN poetry config virtualenvs.create false
 
+# Regenerate lock file to include new dependencies
+RUN poetry lock
+
 # Install dependencies using Poetry (only production dependencies)
 RUN poetry install --only main --no-interaction --no-ansi
 

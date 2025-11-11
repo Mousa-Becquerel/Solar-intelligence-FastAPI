@@ -1,0 +1,61 @@
+[tool.poetry]
+name = "solar-intelligence-fastapi"
+version = "2.0.0-alpha"
+description = "Solar Intelligence Platform - FastAPI Backend"
+authors = ["Mousa Becquerel <m.sondoqah@becquerelinstitute.eu>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+
+# FastAPI Core
+fastapi = "^0.109.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+python-multipart = "^0.0.6"
+
+# Async Database
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.25"}
+asyncpg = "^0.29.0"  # PostgreSQL async driver
+aiosqlite = "^0.19.0"  # SQLite async (for testing)
+
+# Pydantic v2
+pydantic = "^2.5.3"
+pydantic-settings = "^2.1.0"
+
+# Authentication
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+
+# Async HTTP
+httpx = "^0.26.0"
+websockets = "^12.0"
+
+# Environment
+python-dotenv = "^1.0.0"
+
+# Monitoring
+logfire = {extras = ["fastapi"], version = "*"}
+
+# OpenAI Agents (shared with Flask app)
+openai-agents = {extras = ["redis", "sqlalchemy"], version = "^0.3.3"}
+
+# Existing dependencies from main app
+pandasai = ">=3.0.0b2"
+pandasai-litellm = "*"
+weaviate-client = {extras = ["agents"], version = "*"}
+requests = "*"
+beautifulsoup4 = "*"
+psutil = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-asyncio = "^0.21.1"
+pytest-cov = "^4.1.0"
+black = "^23.12.1"
+ruff = "^0.1.9"
+mypy = "^1.8.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
