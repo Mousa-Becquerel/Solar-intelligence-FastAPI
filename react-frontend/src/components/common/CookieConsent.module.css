@@ -1,0 +1,323 @@
+/**
+ * Cookie Consent Banner Styles - Material Design 3
+ * Compact corner notification with brand colors
+ * Follows MD3: soft, spacious, tonal surfaces with gentle elevation
+ */
+
+.overlay {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 9999;
+  animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.banner {
+  width: 400px;
+  /* MD3: Subtle tonal surface, not stark dark background */
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 16px; /* MD3: Generous rounded corners */
+  padding: 1.5rem;
+  /* MD3: Gentle elevation with subtle shadows (md-4) */
+  box-shadow:
+    0px 2px 3px 0px rgba(0, 0, 0, 0.30),
+    0px 6px 10px 4px rgba(0, 0, 0, 0.15);
+  /* MD3: Subtle tonal border using brand blue */
+  border: 1px solid rgba(10, 24, 80, 0.08);
+}
+
+.content {
+  margin-bottom: 1.25rem;
+}
+
+.title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  /* Brand navy blue for text hierarchy */
+  color: #0a1850;
+  margin: 0 0 0.625rem 0;
+  letter-spacing: -0.01em; /* MD3: Humanist typography */
+}
+
+.description {
+  font-size: 0.875rem;
+  /* MD3: Tonal contrast for secondary text */
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
+  font-weight: 300; /* MD3: Lighter weight for body text */
+}
+
+.link {
+  /* Brand gold for accent */
+  color: #fbbf24;
+  text-decoration: none;
+  font-weight: 500;
+  /* MD3: Subtle underline, not stark */
+  border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.link:hover {
+  color: #f59e42;
+  border-bottom-color: rgba(245, 158, 66, 0.5);
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem; /* MD3: Spacious gap */
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.btnPrimary {
+  /* MD3: Filled button with brand gold */
+  background: #fbbf24;
+  color: #0a1850;
+  border: none;
+  padding: 0.625rem 1.5rem;
+  border-radius: 12px; /* MD3: Generous rounded corners */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.875rem;
+  /* MD3: Subtle shadow, not harsh */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  /* MD3: State layer for interaction */
+  position: relative;
+  overflow: hidden;
+}
+
+.btnPrimary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.btnPrimary:hover::before {
+  opacity: 0.08; /* MD3: State layer opacity */
+}
+
+.btnPrimary:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.btnPrimary:active {
+  transform: scale(0.98);
+}
+
+.btnSecondary {
+  /* MD3: Tonal button variant */
+  background: rgba(10, 24, 80, 0.08);
+  color: #0a1850;
+  border: 1px solid rgba(10, 24, 80, 0.12);
+  padding: 0.625rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.875rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.btnSecondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.btnSecondary:hover::before {
+  opacity: 0.08;
+}
+
+.btnSecondary:hover {
+  background: rgba(10, 24, 80, 0.12);
+  border-color: rgba(10, 24, 80, 0.16);
+}
+
+.btnSecondary:active {
+  transform: scale(0.98);
+}
+
+/* Customize view styles */
+.preferences {
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* MD3: Spacious gap */
+}
+
+.preferenceItem {
+  /* MD3: Subtle tonal surface */
+  background: rgba(10, 24, 80, 0.04);
+  border: 1px solid rgba(10, 24, 80, 0.08);
+  border-radius: 12px;
+  padding: 1rem; /* MD3: Generous padding */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.preferenceItem:hover {
+  border-color: rgba(10, 24, 80, 0.12);
+  background: rgba(10, 24, 80, 0.06);
+}
+
+.preferenceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.375rem;
+}
+
+.preferenceLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: #0a1850;
+  flex: 1;
+}
+
+.checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: pointer;
+  /* Brand gold for accent */
+  accent-color: #fbbf24;
+}
+
+.checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.preferenceName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.required {
+  /* MD3: Tonal badge with brand gold */
+  background: rgba(251, 191, 36, 0.15);
+  color: #f59e42;
+  padding: 0.25rem 0.625rem;
+  border-radius: 8px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.preferenceDesc {
+  font-size: 0.8125rem;
+  color: #64748b; /* MD3: Secondary text color */
+  margin: 0;
+  padding-left: 1.875rem;
+  line-height: 1.5;
+  font-weight: 300; /* MD3: Lighter weight for body text */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .overlay {
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+  }
+
+  .banner {
+    width: auto;
+    padding: 1.25rem;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .description {
+    font-size: 0.8125rem;
+  }
+
+  .actions {
+    gap: 0.625rem;
+  }
+
+  .btnPrimary,
+  .btnSecondary {
+    padding: 0.5625rem 1.125rem;
+    font-size: 0.8125rem;
+  }
+
+  .preferenceDesc {
+    padding-left: 1.875rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .overlay {
+    bottom: 0.75rem;
+    left: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .banner {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .btnPrimary,
+  .btnSecondary {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    justify-content: center;
+  }
+
+  .preferenceLabel {
+    flex-wrap: wrap;
+  }
+
+  .required {
+    margin-left: 1.875rem;
+  }
+
+  .preferenceDesc {
+    padding-left: 0;
+    margin-top: 0.375rem;
+  }
+}

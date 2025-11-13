@@ -26,12 +26,6 @@ AGENT_CONFIGURATIONS = [
         "is_enabled": True
     },
     {
-        "agent_type": "price",
-        "required_plan": "free",
-        "description": "Module Prices Agent - Tracks and analyzes PV module pricing",
-        "is_enabled": True
-    },
-    {
         "agent_type": "news",
         "required_plan": "free",
         "description": "News Agent - Latest solar industry news and updates",
@@ -51,26 +45,14 @@ AGENT_CONFIGURATIONS = [
     },
     {
         "agent_type": "nzia_market_impact",
-        "required_plan": "premium",  # ONLY THIS AGENT IS PREMIUM
+        "required_plan": "premium",
         "description": "NZIA Market Impact Agent - EU market impact analysis (Premium)",
         "is_enabled": True
     },
     {
         "agent_type": "manufacturer_financial",
-        "required_plan": "free",  # Finn is NOT premium
-        "description": "Manufacturer Financial Agent - Financial analysis of PV manufacturers",
-        "is_enabled": True
-    },
-    {
-        "agent_type": "leo_om",
         "required_plan": "free",
-        "description": "Operations & Maintenance Agent - O&M best practices",
-        "is_enabled": True
-    },
-    {
-        "agent_type": "weaviate",
-        "required_plan": "premium",  # Database query is also premium
-        "description": "Database Query Agent - Advanced data retrieval (Premium)",
+        "description": "Manufacturer Financial Agent - Financial analysis of PV manufacturers",
         "is_enabled": True
     }
 ]
@@ -124,8 +106,8 @@ async def seed_agent_access():
             logger.info(f"   - Created: {created_count} agents")
             logger.info(f"   - Updated: {updated_count} agents")
             logger.info(f"   - Total: {len(AGENT_CONFIGURATIONS)} agents configured")
-            logger.info(f"   - Premium agents: nzia_market_impact, weaviate")
-            logger.info(f"   - Free agents: all others (including manufacturer_financial/Finn)")
+            logger.info(f"   - Premium agents: nzia_market_impact")
+            logger.info(f"   - Free agents: market, news, digitalization, nzia_policy, manufacturer_financial")
 
         except Exception as e:
             await db.rollback()

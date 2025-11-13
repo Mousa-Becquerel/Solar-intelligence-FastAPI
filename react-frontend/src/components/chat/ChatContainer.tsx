@@ -81,6 +81,17 @@ export default function ChatContainer() {
   const loadMessages = async (convId: number) => {
     try {
       setLoading(true);
+
+      // Fetch conversation details to get agent_type
+      const conversation = await apiClient.getConversation(convId);
+
+      // Restore the agent selection from the conversation
+      if (conversation.agent_type) {
+        setSelectedAgent(conversation.agent_type as AgentType);
+        console.log(`🔄 [ChatContainer] Restored agent selection: ${conversation.agent_type}`);
+      }
+
+      // Then load messages
       const data = await apiClient.getMessages(convId);
       setMessages(data);
     } catch (error) {
@@ -224,7 +235,7 @@ export default function ChatContainer() {
             agent: selectedAgent,
             error: errorData,
           });
-          throw new Error(errorData.detail || `You don't have access to the ${selectedAgent} agent. Please hire it from the Agents page first.`);
+          throw new Error(errorData.detail || `You need to hire the ${selectedAgent} agent first. Please go to the Agents page to hire this agent before chatting.`);
         }
         console.error(`Chat request failed with status ${response.status}`);
         throw new Error('Streaming failed');
@@ -335,7 +346,11 @@ export default function ChatContainer() {
       setStreamingMessageId(null);
     } catch (error) {
       console.error('Streaming error:', error);
-      toast.error('Failed to get response');
+
+      // Show specific error message to user
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get response';
+      toast.error(errorMessage);
+
       setStreamingMessage('');
       setStreamingMessageId(null);
     } finally {

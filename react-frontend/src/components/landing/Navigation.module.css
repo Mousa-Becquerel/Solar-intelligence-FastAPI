@@ -1,6 +1,6 @@
 /**
- * Navigation Styles
- * Ported from static/css/landing.css
+ * Navigation Styles - Material Design 3 Flat Design
+ * Follows MD3 principles: soft, spacious, tonal surfaces, no shadows
  */
 
 .nav {
@@ -110,7 +110,7 @@
 }
 
 .navLink:hover {
-  color: #e9a544;
+  color: #fbbf24; /* becq-gold */
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -122,7 +122,7 @@
   bottom: 0.25rem;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #e9a544;
+  background-color: #fbbf24; /* becq-gold */
   transition: width 0.3s ease;
 }
 
@@ -146,25 +146,51 @@
 }
 
 .signIn:hover {
-  color: #f97316;
+  color: #fbbf24; /* becq-gold */
 }
 
 .btnPrimary {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-  color: white;
+  /* MD3: Filled button with brand gold */
+  background: #fbbf24; /* becq-gold */
+  color: #0a1850; /* becq-blue */
   padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
+  border-radius: 12px; /* MD3: Medium corner radius */
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
   border: none;
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  position: relative;
+  overflow: hidden;
+  /* MD3: Flat design - no shadows */
+}
+
+/* MD3: State layer for button */
+.btnPrimary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btnPrimary:hover::before {
+  opacity: 0.08; /* MD3: State layer on hover */
 }
 
 .btnPrimary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(233, 165, 68, 0.3);
+  /* MD3: Subtle press effect, no lift */
+  transform: scale(0.98);
+}
+
+.btnPrimary:active {
+  transform: scale(0.96);
 }
 
 /* Mobile Responsive */

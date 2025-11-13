@@ -56,7 +56,8 @@ export default function AgentsPage() {
 
   const handleToggleHire = async (agentType: AgentType) => {
     const isHired = hiredAgents.includes(agentType);
-    const agentName = AGENT_METADATA[agentType].name;
+    const agentMetadata = AGENT_METADATA[agentType];
+    const agentName = agentMetadata.name;
 
     try {
       if (isHired) {
@@ -65,6 +66,12 @@ export default function AgentsPage() {
         setHiredAgents((prev) => prev.filter((a) => a !== agentType));
         showToast(`${agentName} has been removed from your team`, 'success');
       } else {
+        // Check if trying to hire a premium agent with a free plan
+        if (agentMetadata.premium && userPlan === 'free') {
+          showToast('This agent requires a Premium or Enterprise plan. Please upgrade to hire this agent.', 'error');
+          return;
+        }
+
         // Hire agent
         await hireAgent(agentType);
         setHiredAgents((prev) => [...prev, agentType]);

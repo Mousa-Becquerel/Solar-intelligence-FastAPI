@@ -16,7 +16,8 @@ import asyncio
 from pydantic import BaseModel
 
 # Import from openai-agents library
-from agents import Agent, Runner, FileSearchTool, SQLiteSession, ModelSettings, RunConfig, trace, TResponseInputItem
+from agents import Agent, Runner, FileSearchTool, ModelSettings, RunConfig, trace, TResponseInputItem
+from fastapi_app.utils.session_factory import create_agent_session
 
 # Logfire imports
 import logfire
@@ -126,14 +127,12 @@ class DigitalizationAgent:
         """
         self.config = config or DigitalizationAgentConfig()
         self.digitalization_expert = None
-        self.conversation_sessions: Dict[str, Any] = {}  # conversation_id -> session
-
-        logger.info("Using SQLite for session storage (simple and reliable)")
+        # Removed conversation_sessions dict - using stateless PostgreSQL sessions now
 
         # Initialize agent
         self._initialize_agent()
 
-        logger.info(f"✅ Digitalization Agent initialized (Memory: SQLite)")
+        logger.info(f"✅ Digitalization Agent initialized (Memory: Stateless PostgreSQL)")
 
     def _initialize_agent(self):
         """Create the digitalization expert agent"""
@@ -174,17 +173,11 @@ class DigitalizationAgent:
             Dictionary with output_text containing the response
         """
         with trace("New workflow"):
-            # Get or create session for this conversation
+            # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                if conversation_id not in self.conversation_sessions:
-                    session_id = f"digitalization_{conversation_id}"
-                    self.conversation_sessions[conversation_id] = SQLiteSession(
-                        session_id=session_id
-                    )
-                    logger.info(f"Created SQLite session for conversation {conversation_id}")
-
-                session = self.conversation_sessions[conversation_id]
+                session = create_agent_session(conversation_id)
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Prepare conversation history
             workflow = workflow_input.model_dump()
@@ -240,17 +233,11 @@ class DigitalizationAgent:
         try:
             logger.info(f"Processing query (streaming): {query}")
 
-            # Get or create session for this conversation
+            # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                if conversation_id not in self.conversation_sessions:
-                    session_id = f"digitalization_{conversation_id}"
-                    self.conversation_sessions[conversation_id] = SQLiteSession(
-                        session_id=session_id
-                    )
-                    logger.info(f"Created SQLite session for conversation {conversation_id}")
-
-                session = self.conversation_sessions[conversation_id]
+                session = create_agent_session(conversation_id)
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Run with streaming
             result = Runner.run_streamed(self.digitalization_expert, query, session=session)
@@ -331,21 +318,21 @@ class DigitalizationAgent:
                 }
 
     def clear_conversation_memory(self, conversation_id: str = None):
-        """Clear conversation memory by removing session"""
-        if conversation_id:
-            if conversation_id in self.conversation_sessions:
-                del self.conversation_sessions[conversation_id]
-                logger.info(f"Cleared conversation session for {conversation_id}")
-        else:
-            # Clear all sessions
-            self.conversation_sessions.clear()
-            logger.info("Cleared all conversation sessions")
+        """
+        Clear conversation memory (note: with stateless sessions, memory is stored in PostgreSQL)
+        This method is kept for API compatibility but has no effect with stateless sessions.
+        To clear session data, you would need to delete from the database directly.
+        """
+        logger.info(f"clear_conversation_memory called for {conversation_id or 'all'} - no action needed with stateless sessions")
 
     def get_conversation_memory_info(self) -> Dict[str, Any]:
-        """Get information about conversation memory usage"""
+        """
+        Get information about conversation memory usage
+        Note: With stateless sessions, memory is stored in PostgreSQL, not in-memory
+        """
         return {
-            "total_conversations": len(self.conversation_sessions),
-            "conversation_ids": list(self.conversation_sessions.keys()),
+            "memory_type": "stateless_postgresql",
+            "note": "Session data stored in PostgreSQL database",
         }
 
     def cleanup(self):

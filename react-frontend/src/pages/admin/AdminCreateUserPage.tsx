@@ -1,13 +1,20 @@
 /**
  * Admin Create User Page
  * Create new users with role selection
+ *
+ * Now uses React Hook Form + Zod for robust validation
  */
 
-import { useState, FormEvent, useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { apiClient } from '../../api/client';
 import type { CreateUserRequest } from '../../types/admin';
+import { createUserSchema, type CreateUserFormData } from '../../schemas/admin.schema';
+import { PASSWORD_HELP_TEXT } from '../../utils/passwordValidation';
+import PasswordStrengthIndicator from '../../components/forms/PasswordStrengthIndicator';
 import styles from './Admin.module.css';
 
 interface RoleOption {
@@ -45,62 +52,51 @@ const roleOptions: RoleOption[] = [
 ];
 
 export default function AdminCreateUserPage() {
-  const [formData, setFormData] = useState({
-    username: '',
-    full_name: '',
-    password: '',
-    confirm_password: '',
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    watch,
+    setValue,
+    setFocus,
+  } = useForm<CreateUserFormData>({
+    resolver: zodResolver(createUserSchema),
+    mode: 'onBlur', // Real-time validation on blur
+    defaultValues: {
+      username: '',
+      full_name: '',
+      password: '',
+      confirm_password: '',
+      role: 'demo',
+    },
   });
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'analyst' | 'researcher' | 'demo'>('demo');
-  const [isLoading, setIsLoading] = useState(false);
-  const usernameInputRef = useRef<HTMLInputElement>(null);
+
+  const password = watch('password');
+  const selectedRole = watch('role');
 
   useEffect(() => {
     // Auto-focus username field
-    usernameInputRef.current?.focus();
-  }, []);
+    setFocus('username');
+  }, [setFocus]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
-    // Validate passwords match
-    if (formData.password !== formData.confirm_password) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    // Validate password length
-    if (formData.password.length < 3) {
-      toast.error('Password must be at least 3 characters long');
-      return;
-    }
-
-    setIsLoading(true);
-
+  const onSubmit = async (data: CreateUserFormData) => {
     try {
       const userData: CreateUserRequest = {
-        username: formData.username,
-        full_name: formData.full_name,
-        password: formData.password,
-        role: selectedRole,
+        username: data.username,
+        full_name: data.full_name,
+        password: data.password,
+        role: data.role,
       };
 
       await apiClient.createUser(userData);
       toast.success('User created successfully!');
 
       // Reset form
-      setFormData({
-        username: '',
-        full_name: '',
-        password: '',
-        confirm_password: '',
-      });
-      setSelectedRole('demo');
-      usernameInputRef.current?.focus();
+      reset();
+      setFocus('username');
     } catch (error: any) {
       toast.error(error.message || 'Failed to create user');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -127,21 +123,23 @@ export default function AdminCreateUserPage() {
       </div>
 
       <div className={styles.formContainer}>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className={styles.formGroup}>
             <label htmlFor="username" className={styles.formLabel}>
               Username
             </label>
             <input
-              ref={usernameInputRef}
               type="text"
               id="username"
               className={styles.formInput}
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              required
+              {...register('username')}
             />
-            <div className={styles.formHelp}>Username must be unique and will be used for login</div>
+            {errors.username && (
+              <div className={styles.formError}>{errors.username.message}</div>
+            )}
+            {!errors.username && (
+              <div className={styles.formHelp}>Username must be unique and will be used for login</div>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -152,11 +150,14 @@ export default function AdminCreateUserPage() {
               type="text"
               id="full_name"
               className={styles.formInput}
-              value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              required
+              {...register('full_name')}
             />
-            <div className={styles.formHelp}>Display name shown in the interface</div>
+            {errors.full_name && (
+              <div className={styles.formError}>{errors.full_name.message}</div>
+            )}
+            {!errors.full_name && (
+              <div className={styles.formHelp}>Display name shown in the interface</div>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -167,11 +168,15 @@ export default function AdminCreateUserPage() {
               type="password"
               id="password"
               className={styles.formInput}
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
+              {...register('password')}
             />
-            <div className={styles.formHelp}>Minimum 3 characters required</div>
+            {errors.password && (
+              <div className={styles.formError}>{errors.password.message}</div>
+            )}
+            {!errors.password && (
+              <div className={styles.formHelp}>{PASSWORD_HELP_TEXT}</div>
+            )}
+            <PasswordStrengthIndicator password={password || ''} showRequirements={true} />
           </div>
 
           <div className={styles.formGroup}>
@@ -182,11 +187,14 @@ export default function AdminCreateUserPage() {
               type="password"
               id="confirm_password"
               className={styles.formInput}
-              value={formData.confirm_password}
-              onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
-              required
+              {...register('confirm_password')}
             />
-            <div className={styles.formHelp}>Re-enter the password to confirm</div>
+            {errors.confirm_password && (
+              <div className={styles.formError}>{errors.confirm_password.message}</div>
+            )}
+            {!errors.confirm_password && (
+              <div className={styles.formHelp}>Re-enter the password to confirm</div>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -196,7 +204,7 @@ export default function AdminCreateUserPage() {
                 <div
                   key={role.value}
                   className={`${styles.roleCard} ${selectedRole === role.value ? styles.selected : ''}`}
-                  onClick={() => setSelectedRole(role.value)}
+                  onClick={() => setValue('role', role.value)}
                   style={{ cursor: 'pointer' }}
                 >
                   <div className={styles.roleName}>
@@ -207,12 +215,15 @@ export default function AdminCreateUserPage() {
                 </div>
               ))}
             </div>
+            {errors.role && (
+              <div className={styles.formError}>{errors.role.message}</div>
+            )}
           </div>
 
           <button
             type="submit"
             className={`${styles.btn} ${styles.btnPrimary}`}
-            disabled={isLoading}
+            disabled={isSubmitting}
             style={{ width: '100%', justifyContent: 'center' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -221,7 +232,7 @@ export default function AdminCreateUserPage() {
               <line x1="20" y1="8" x2="20" y2="14"></line>
               <line x1="23" y1="11" x2="17" y2="11"></line>
             </svg>
-            {isLoading ? 'Creating User...' : 'Create User'}
+            {isSubmitting ? 'Creating User...' : 'Create User'}
           </button>
         </form>
       </div>

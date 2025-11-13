@@ -17,23 +17,12 @@ logger = logging.getLogger(__name__)
 # Global Agent Instances (Lazy Loading)
 # ============================================
 
-_price_agent = None
 _news_agent = None
-_leo_om_agent = None
 _digitalization_agent = None
 _market_intelligence_agent = None
 _nzia_policy_agent = None
 _manufacturer_financial_agent = None
 _nzia_market_impact_agent = None
-
-
-def get_price_agent_instance():
-    """Get or create price agent instance"""
-    global _price_agent
-    if _price_agent is None:
-        from module_prices_agent import ModulePricesAgent
-        _price_agent = ModulePricesAgent()
-    return _price_agent
 
 
 def get_news_agent_instance():
@@ -43,15 +32,6 @@ def get_news_agent_instance():
         from news_agent import NewsAgent
         _news_agent = NewsAgent()
     return _news_agent
-
-
-def get_leo_om_agent_instance():
-    """Get or create Leo O&M agent instance"""
-    global _leo_om_agent
-    if _leo_om_agent is None:
-        from leo_om_agent import LeoOMAgent
-        _leo_om_agent = LeoOMAgent()
-    return _leo_om_agent
 
 
 def get_digitalization_agent_instance():
@@ -122,166 +102,6 @@ def clean_nan_values(obj):
 
 class ChatProcessingService:
     """Service for processing chat messages with AI agents"""
-
-    # ============================================
-    # Non-Streaming Agents
-    # ============================================
-
-    @staticmethod
-    async def process_price_agent(
-        db: AsyncSession,
-        user_message: str,
-        conv_id: int
-    ) -> Dict[str, Any]:
-        """
-        Process message with price agent (non-streaming)
-
-        Returns:
-            dict with 'response' key containing response_data list
-        """
-        price_agent = get_price_agent_instance()
-
-        # Get analysis from agent
-        result = await price_agent.analyze(user_message, conversation_id=str(conv_id))
-
-        if result["success"]:
-            analysis_output = result.get("analysis")
-            logger.info("Price Agent success")
-        else:
-            analysis_output = f"Error analyzing price query: {result.get('error', 'Unknown error')}"
-            logger.error(f"Price Agent error: {analysis_output}")
-
-        # Parse output type
-        response_data = []
-
-        if analysis_output and hasattr(analysis_output, 'success'):
-            output = analysis_output
-
-            # Handle PlotResult
-            if hasattr(output, 'plot_type') and hasattr(output, 'data') and isinstance(output.data, list):
-                if output.success:
-                    plot_data_dict = {
-                        'plot_type': output.plot_type,
-                        'title': output.title,
-                        'x_axis_label': output.x_axis_label,
-                        'y_axis_label': output.y_axis_label,
-                        'unit': output.unit,
-                        'data': output.data,
-                        'series_info': output.series_info
-                    }
-                    response_data = [{
-                        'type': 'interactive_chart',
-                        'value': output.title,
-                        'plot_data': plot_data_dict,
-                        'comment': None
-                    }]
-                else:
-                    response_data = [{
-                        'type': 'string',
-                        'value': f"Error generating interactive chart: {output.error_message}",
-                        'comment': None
-                    }]
-
-            # Handle string output
-            elif isinstance(output, str):
-                response_data = [{
-                    'type': 'string',
-                    'value': output,
-                    'comment': None
-                }]
-
-            # Fallback
-            else:
-                response_data = [{
-                    'type': 'string',
-                    'value': str(output),
-                    'comment': None
-                }]
-
-        # Handle error case
-        else:
-            response_data = [{
-                'type': 'string',
-                'value': analysis_output,
-                'comment': None
-            }]
-
-        # Store bot response
-        try:
-            for resp in response_data:
-                cleaned_resp = clean_nan_values(resp)
-
-                # Convert 'interactive_chart' to 'plot' format for database storage
-                db_resp = cleaned_resp.copy()
-                if db_resp.get('type') == 'interactive_chart' and 'plot_data' in db_resp:
-                    db_resp = {
-                        'type': 'plot',
-                        'value': db_resp['plot_data']
-                    }
-
-                bot_msg = Message(
-                    conversation_id=conv_id,
-                    sender='bot',
-                    content=json.dumps(db_resp)
-                )
-                db.add(bot_msg)
-
-            await db.commit()
-            logger.info(f"Price agent messages saved to DB")
-        except Exception as e:
-            logger.error(f"Database error storing bot messages: {e}")
-            await db.rollback()
-
-        return {'response': response_data}
-
-    @staticmethod
-    async def process_leo_om_agent(
-        db: AsyncSession,
-        user_message: str,
-        conv_id: int
-    ) -> Dict[str, Any]:
-        """
-        Process message with Leo O&M agent (non-streaming)
-
-        Returns:
-            dict with 'response' key containing response_data list
-        """
-        leo_om_agent = get_leo_om_agent_instance()
-
-        # Get analysis from agent
-        result = await leo_om_agent.analyze(user_message, conversation_id=str(conv_id))
-
-        if result["success"]:
-            analysis_output = result["analysis"]
-            logger.info("Leo O&M Agent success")
-        else:
-            analysis_output = f"Error analyzing O&M query: {result['error']}"
-            logger.error(f"Leo O&M Agent error: {analysis_output}")
-
-        # Simple string response
-        response_data = [{
-            'type': 'string',
-            'value': analysis_output,
-            'comment': None
-        }]
-
-        # Store bot response
-        try:
-            for resp in response_data:
-                bot_msg = Message(
-                    conversation_id=conv_id,
-                    sender='bot',
-                    content=json.dumps(resp)
-                )
-                db.add(bot_msg)
-
-            await db.commit()
-            logger.info(f"Leo O&M agent message saved to DB")
-        except Exception as e:
-            logger.error(f"Database error storing bot messages: {e}")
-            await db.rollback()
-
-        return {'response': response_data}
 
     # ============================================
     # Streaming Agents

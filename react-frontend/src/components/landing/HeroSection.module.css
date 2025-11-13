@@ -1,6 +1,6 @@
 /**
- * HeroSection Styles
- * Ported from static/css/landing.css
+ * HeroSection Styles - Material Design 3 Flat Design
+ * Follows MD3 principles: soft, spacious, tonal surfaces, no shadows
  */
 
 .section {
@@ -56,6 +56,7 @@
   font-weight: 700;
   margin-bottom: 1.5rem;
   line-height: 1.2;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -78,7 +79,7 @@
 
 .headlineAccent {
   margin-bottom: 0.5rem;
-  color: #e9a544;
+  color: #fbbf24; /* becq-gold */
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -101,18 +102,19 @@
 }
 
 .headlineAccentInline {
-  color: #e9a544;
+  color: #fbbf24; /* becq-gold */
   font-weight: 700;
 }
 
 /* Subtitle */
 .subtitle {
   font-size: 1.125rem;
-  color: #d1d5db;
+  color: rgba(255, 255, 255, 0.8); /* Light white on dark background */
   margin-bottom: 2rem;
-  font-weight: 300;
+  font-weight: 300; /* MD3: Light weight for body text */
   line-height: 1.75;
   max-width: 36rem;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -135,47 +137,97 @@
 }
 
 .btnPrimary {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-  color: white;
+  /* MD3: Filled button with brand gold */
+  background: #fbbf24; /* becq-gold */
+  color: #0a1850; /* becq-blue */
   padding: 0.875rem 2.5rem;
-  border-radius: 0.75rem;
+  border-radius: 12px; /* MD3: Medium corner radius */
   font-weight: 600;
   font-size: 1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
+  /* MD3: Flat design - no shadows */
   text-transform: uppercase;
   letter-spacing: 0.5px;
   text-decoration: none;
   display: inline-block;
   text-align: center;
+  border: none;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* MD3: State layer for button */
+.btnPrimary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btnPrimary:hover::before {
+  opacity: 0.08; /* MD3: State layer on hover */
 }
 
 .btnPrimary:hover {
-  transform: scale(1.05);
-  box-shadow: 0 10px 25px rgba(233, 165, 68, 0.3);
+  /* MD3: Subtle press effect, no scale or shadows */
+  transform: scale(0.98);
+}
+
+.btnPrimary:active {
+  transform: scale(0.96);
 }
 
 .btnSecondary {
+  /* MD3: Outlined button */
   background: transparent;
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: white;
   padding: 0.875rem 2.5rem;
-  border-radius: 0.75rem;
+  border-radius: 12px; /* MD3: Medium corner radius */
   font-weight: 500;
   font-size: 1rem;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
   text-transform: uppercase;
   letter-spacing: 0.5px;
   text-decoration: none;
   display: inline-block;
   text-align: center;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* MD3: State layer for outlined button */
+.btnSecondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btnSecondary:hover::before {
+  opacity: 0.08; /* MD3: State layer on hover */
 }
 
 .btnSecondary:hover {
-  background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.5);
-  transform: scale(1.05);
+  /* MD3: Subtle press effect, no scale */
+  transform: scale(0.98);
+}
+
+.btnSecondary:active {
+  transform: scale(0.96);
 }
 
 /* Showcase Wrapper */
@@ -194,13 +246,8 @@
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .btnSecondary {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
     border: 2px solid rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(20px);
-  }
-
-  .btnSecondary:hover {
-    background: rgba(255, 255, 255, 0.25);
   }
 
   .btnPrimary,

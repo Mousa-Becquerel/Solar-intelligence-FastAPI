@@ -4,6 +4,7 @@
  * Ported from templates/forgot_password.html and templates/reset_password.html
  */
 
+/* MD3: Simple, clean gradient container */
 .container {
   min-height: 100vh;
   display: flex;
@@ -11,23 +12,21 @@
   justify-content: center;
   padding: 40px 20px;
   position: relative;
-  background: radial-gradient(circle at 20% 30%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(4, 11, 89, 0.4) 0%, transparent 70%),
-    linear-gradient(135deg, #0a1850 0%, #1e1b4b 30%, #312e81 60%, #3730a3 100%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-  background-attachment: scroll;
+  /* MD3: Simple, clean gradient - no radial overlays */
+  background: linear-gradient(135deg, #0a1850 0%, #1e1b4b 50%, #312e81 100%);
+  background-attachment: fixed;
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 24px;
+  /* MD3: Solid surface with slight transparency for depth */
+  background: rgba(30, 27, 75, 0.85); /* #1e1b4b with 85% opacity */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px; /* MD3: Large corner radius */
   padding: 48px;
   max-width: 480px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  /* MD3: Flat design - no backdrop-filter blur, slightly stronger shadow for legibility */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
   position: relative;
   z-index: 10;
 }
@@ -61,7 +60,7 @@
 }
 
 .accentColor {
-  color: #e9a544;
+  color: #fbbf24; /* becq-gold */
 }
 
 .formGroup {
@@ -80,19 +79,19 @@
   width: 100%;
   padding: 14px 16px;
   font-size: 15px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px; /* MD3: Medium corner radius */
   color: #ffffff;
-  transition: all 0.3s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
   font-family: inherit;
 }
 
 .formInput:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.12);
-  border-color: #e9a544;
-  box-shadow: 0 0 0 3px rgba(233, 165, 68, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #fbbf24; /* becq-gold */
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1); /* becq-gold tonal */
 }
 
 .formInput::placeholder {
@@ -105,34 +104,53 @@
   margin-top: 6px;
 }
 
+/* MD3: Filled button with brand gold */
 .submitBtn {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, #e9a544 0%, #d89030 100%);
-  color: #1e3a8a;
+  background: #fbbf24; /* becq-gold solid */
+  color: #0a1850; /* becq-blue */
   font-size: 16px;
   font-weight: 600;
   border: none;
-  border-radius: 12px;
+  border-radius: 12px; /* MD3: Medium corner radius */
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
   font-family: inherit;
-  box-shadow: 0 4px 12px rgba(233, 165, 68, 0.3);
+  /* MD3: Flat design - no shadows */
+  position: relative;
+  overflow: hidden;
 }
 
-.submitBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(233, 165, 68, 0.4);
+/* MD3: State layer for button */
+.submitBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.submitBtn:active {
-  transform: translateY(0);
+.submitBtn:hover:not(:disabled)::before {
+  opacity: 0.08; /* MD3: State layer on hover */
+}
+
+.submitBtn:hover:not(:disabled) {
+  /* MD3: Subtle press effect, no lift */
+  transform: scale(0.98);
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .submitBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
 }
 
 .backLink {
@@ -146,7 +164,7 @@
 }
 
 .backLink:hover {
-  color: #e9a544;
+  color: #fbbf24; /* becq-gold */
 }
 
 /* Alert messages */

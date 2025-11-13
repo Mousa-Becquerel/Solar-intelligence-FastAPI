@@ -1,11 +1,12 @@
 /**
- * FAQSection Styles
- * Ported from static/css/landing.css
+ * FAQSection Styles - Material Design 3 Flat Design
+ * Follows MD3 principles: soft, spacious, tonal surfaces, no shadows
  */
 
 .section {
   padding: 6rem 0;
-  background-color: #f3f3f8;
+  /* MD3: Light gray background for contrast with dark sections */
+  background-color: #f5f5f5;
 }
 
 .container {
@@ -40,11 +41,11 @@
 
 .title {
   font-size: 1.875rem;
-  font-weight: 300;
+  font-weight: 400; /* MD3: Regular weight for headlines */
   margin-bottom: 1rem;
-  color: #1e1b4b;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', sans-serif;
-  letter-spacing: -0.02em;
+  color: #0a1850; /* becq-blue */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em; /* MD3: Humanist typography */
 }
 
 @media (min-width: 768px) {
@@ -54,16 +55,16 @@
 }
 
 .titleAccent {
-  color: #e9a544;
-  font-weight: 500;
+  color: #fbbf24; /* becq-gold */
+  font-weight: 600; /* MD3: Semibold for emphasis */
 }
 
 .subtitle {
   font-size: 1rem;
-  color: #312e81;
-  font-weight: 400;
+  color: #64748b; /* md-text-secondary */
+  font-weight: 300; /* MD3: Light weight for body text */
   line-height: 1.6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Text', sans-serif;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* FAQ Column */
@@ -74,28 +75,48 @@
 .faqContainer {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .faqItem,
 .faqItemActive {
-  background: white;
-  border-radius: 16px;
+  /* MD3: Clean white surface */
+  background: #ffffff;
+  border-radius: 16px; /* MD3: Large corner radius */
   overflow: hidden;
-  border: 1px solid rgba(30, 27, 75, 0.08);
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(10, 24, 80, 0.08); /* MD3: Subtle tonal border */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
+  /* MD3: Flat design - no shadows */
+  position: relative;
+}
+
+/* MD3: State layer for FAQ items */
+.faqItem::before,
+.faqItemActive::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.04) 0%, rgba(10, 24, 80, 0.04) 100%);
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.faqItem:hover::before,
+.faqItemActive:hover::before {
+  opacity: 1; /* MD3: State layer on hover */
 }
 
 .faqItem:hover,
 .faqItemActive:hover {
-  border-color: rgba(233, 165, 68, 0.2);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: rgba(251, 191, 36, 0.2);
 }
 
 .faqItemActive {
-  border-color: rgba(233, 165, 68, 0.3);
-  box-shadow: 0 4px 20px rgba(233, 165, 68, 0.15);
+  border-color: rgba(251, 191, 36, 0.3);
 }
 
 .faqQuestion {
@@ -103,34 +124,36 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 1.25rem 1.5rem;
   background: transparent;
   border: none;
   text-align: left;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', sans-serif;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  position: relative;
+  z-index: 1;
 }
 
 .faqQuestion:hover {
-  background: rgba(233, 165, 68, 0.03);
+  background: rgba(251, 191, 36, 0.04); /* MD3: Tonal hover */
 }
 
 .faqQuestion span {
   font-size: 1rem;
-  font-weight: 600;
-  color: #1e1b4b;
-  letter-spacing: -0.01em;
+  font-weight: 600; /* MD3: Semibold for titles */
+  color: #0a1850; /* becq-blue */
+  letter-spacing: -0.01em; /* MD3: Tight letter spacing */
   line-height: 1.5;
-  padding-right: 16px;
+  padding-right: 1rem;
 }
 
 .faqIcon {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
-  color: #e9a544;
-  transition: transform 0.3s ease;
+  color: #fbbf24; /* becq-gold */
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
 }
 
 .faqItemActive .faqIcon {
@@ -141,21 +164,23 @@
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
-  padding: 0 24px;
+  padding: 0 1.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .faqItemActive .faqAnswer {
   max-height: 500px;
-  padding: 0 24px 24px 24px;
+  padding: 0 1.5rem 1.5rem 1.5rem;
 }
 
 .faqAnswer p {
-  font-size: 0.925rem;
+  font-size: 0.9375rem;
   line-height: 1.7;
-  color: #312e81;
+  color: #64748b; /* md-text-secondary */
   margin: 0;
-  font-weight: 400;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Text', sans-serif;
+  font-weight: 300; /* MD3: Light weight for body text */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* Responsive */

@@ -1,29 +1,50 @@
 /**
  * Router Configuration
  *
- * React Router v6 setup with protected routes
+ * React Router v6 setup with selective lazy loading for optimal performance
+ * Frequently accessed pages use direct imports for seamless navigation
  */
 
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { LoadingFallback } from './components/common';
 
-// Pages (will create these)
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ProfilePage from './pages/ProfilePage';
-import MainLayout from './components/layout/MainLayout';
-import ChatPage from './pages/ChatPage';
-import AgentsPage from './pages/AgentsPage';
+// Direct imports for frequently accessed pages (no loading flash)
 import { LandingPage } from './pages/landing/LandingPage';
 import { TermsOfServicePage } from './pages/legal/TermsOfServicePage';
 import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import WaitlistPage from './pages/WaitlistPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminPendingUsersPage from './pages/admin/AdminPendingUsersPage';
-import AdminCreateUserPage from './pages/admin/AdminCreateUserPage';
-import RequestDeletionPage from './pages/RequestDeletionPage';
+import { CookiePolicyPage } from './pages/legal/CookiePolicyPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+
+// Helper to wrap lazy components with Suspense
+const lazyLoad = (Component: React.LazyExoticComponent<any>) => (
+  <Suspense fallback={<LoadingFallback />}>
+    <Component />
+  </Suspense>
+);
+
+// Lazy load less frequently accessed components for code splitting
+const ProtectedRoute = lazy(() => import('./components/auth/ProtectedRoute').then(m => ({ default: m.ProtectedRoute })));
+const MainLayout = lazy(() => import('./components/layout/MainLayout'));
+
+// Auth pages (lazy loaded)
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
+
+// Main app pages (lazy loaded)
+const ChatPage = lazy(() => import('./pages/ChatPage'));
+const AgentsPage = lazy(() => import('./pages/AgentsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+
+// Other pages (lazy loaded)
+const WaitlistPage = lazy(() => import('./pages/WaitlistPage'));
+const RequestDeletionPage = lazy(() => import('./pages/RequestDeletionPage'));
+
+// Admin pages (lazy loaded)
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminPendingUsersPage = lazy(() => import('./pages/admin/AdminPendingUsersPage'));
+const AdminCreateUserPage = lazy(() => import('./pages/admin/AdminCreateUserPage'));
 
 export const router = createBrowserRouter([
   {
@@ -36,39 +57,49 @@ export const router = createBrowserRouter([
   },
   {
     path: '/forgot-password',
-    element: <ForgotPasswordPage />,
+    element: lazyLoad(ForgotPasswordPage),
   },
   {
     path: '/reset-password',
-    element: <ResetPasswordPage />,
+    element: lazyLoad(ResetPasswordPage),
   },
   {
     path: '/agents',
     element: (
-      <ProtectedRoute>
-        <AgentsPage />
-      </ProtectedRoute>
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute>
+          <AgentsPage />
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/profile',
     element: (
-      <ProtectedRoute>
-        <ProfilePage />
-      </ProtectedRoute>
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/chat',
     element: (
-      <ProtectedRoute>
-        <MainLayout />
-      </ProtectedRoute>
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute>
+          <MainLayout />
+        </ProtectedRoute>
+      </Suspense>
     ),
     children: [
       {
         index: true,
-        element: <ChatPage />,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ChatPage />
+          </Suspense>
+        ),
       },
     ],
   },
@@ -85,39 +116,51 @@ export const router = createBrowserRouter([
     element: <PrivacyPolicyPage />,
   },
   {
+    path: '/cookie-policy',
+    element: <CookiePolicyPage />,
+  },
+  {
     path: '/waitlist',
-    element: <WaitlistPage />,
+    element: lazyLoad(WaitlistPage),
   },
   {
     path: '/admin/users',
     element: (
-      <ProtectedRoute requireAdmin>
-        <AdminUsersPage />
-      </ProtectedRoute>
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute requireAdmin>
+          <AdminUsersPage />
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/admin/users/pending',
     element: (
-      <ProtectedRoute requireAdmin>
-        <AdminPendingUsersPage />
-      </ProtectedRoute>
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute requireAdmin>
+          <AdminPendingUsersPage />
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/admin/users/create',
     element: (
-      <ProtectedRoute requireAdmin>
-        <AdminCreateUserPage />
-      </ProtectedRoute>
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute requireAdmin>
+          <AdminCreateUserPage />
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/request-deletion',
     element: (
-      <ProtectedRoute>
-        <RequestDeletionPage />
-      </ProtectedRoute>
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute>
+          <RequestDeletionPage />
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {

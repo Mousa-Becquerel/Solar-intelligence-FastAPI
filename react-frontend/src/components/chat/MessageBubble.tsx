@@ -81,7 +81,7 @@ export default function MessageBubble({ message, queryLimitProps }: MessageBubbl
         <div
           className={isUser ? 'user-message-bubble' : 'bot-message-bubble'}
           style={{
-            background: isUser ? '#FFB74D' : '#ffffff',
+            background: isUser ? '#fbbf24' : '#ffffff', /* becq-gold for user messages */
             color: '#1e293b',
             borderRadius: '18px',
             borderBottomRightRadius: isUser ? '6px' : '18px',
@@ -175,7 +175,7 @@ export default function MessageBubble({ message, queryLimitProps }: MessageBubbl
                       <code
                         style={{
                           background: '#f3f4f6',
-                          color: '#2563eb',
+                          color: '#0a1850', /* becq-blue */
                           padding: '0.2em 0.4em',
                           borderRadius: '4px',
                           fontSize: '0.9em',
@@ -273,7 +273,7 @@ export default function MessageBubble({ message, queryLimitProps }: MessageBubbl
                   tr: ({ children, isHeader }: any) => (
                     <tr
                       style={{
-                        background: isHeader ? '#FFB74D' : undefined,
+                        background: isHeader ? '#fbbf24' : undefined, /* becq-gold */
                       }}
                     >
                       {children}
@@ -282,7 +282,7 @@ export default function MessageBubble({ message, queryLimitProps }: MessageBubbl
                   th: ({ children }) => (
                     <th
                       style={{
-                        background: '#FFB74D',
+                        background: '#fbbf24', /* becq-gold */
                         color: '#1e293b',
                         fontWeight: '500',
                         padding: '0.8em',
@@ -311,7 +311,7 @@ export default function MessageBubble({ message, queryLimitProps }: MessageBubbl
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        color: '#2563eb',
+                        color: '#0a1850', /* becq-blue */
                         textDecoration: 'underline',
                       }}
                     >
@@ -436,10 +436,10 @@ export default function MessageBubble({ message, queryLimitProps }: MessageBubbl
           margin-bottom: 0;
         }
 
-        /* Custom bullet points with gold color - matching Flask */
+        /* Custom bullet points with brand gold color */
         .message-list .custom-bullet::before {
           content: "•";
-          color: #FFB74D;
+          color: #fbbf24; /* becq-gold */
           font-weight: bold;
           position: absolute;
           left: 0;

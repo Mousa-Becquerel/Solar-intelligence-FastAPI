@@ -1,37 +1,10 @@
-# Docker Compose for FastAPI + Flask (Parallel Development)
-# This runs BOTH apps side-by-side with isolated databases
+# Docker Compose for FastAPI only (Production Configuration)
+# React Frontend -> FastAPI Backend -> PostgreSQL
 
 version: '3.8'
 
 services:
-  # Existing Flask app (unchanged)
-  flask-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - FLASK_ENV=development
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
-      - LOGFIRE_TOKEN=${LOGFIRE_TOKEN}
-      - DATABASE_URL=postgresql://solar_admin:datahub1@postgres-flask:5432/solar_intelligence_flask
-      - WEAVIATE_URL=${WEAVIATE_URL}
-      - WEAVIATE_API_KEY=${WEAVIATE_API_KEY}
-    volumes:
-      - ./datasets:/app/datasets:ro
-      - ./static:/app/static
-      - ./exports:/app/exports
-      - ./app:/app/app
-      - ./templates:/app/templates
-    restart: unless-stopped
-    depends_on:
-      - postgres-flask
-    networks:
-      - app-network
-
-  # NEW: FastAPI app (isolated)
+  # FastAPI app
   fastapi-app:
     build:
       context: .
@@ -44,7 +17,7 @@ services:
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
       - LOGFIRE_TOKEN=${LOGFIRE_TOKEN}
       # ISOLATED database - different from Flask
-      - FASTAPI_DATABASE_URL=postgresql+asyncpg://solar_admin:datahub1@postgres-fastapi:5432/solar_intelligence_fastapi
+      - FASTAPI_DATABASE_URL=postgresql+asyncpg://solar_admin:datahub1@postgres-db:5432/solar_intelligence_fastapi
       - WEAVIATE_URL=${WEAVIATE_URL}
       - WEAVIATE_API_KEY=${WEAVIATE_API_KEY}
       # Database Connection Pool Settings (production optimized)
@@ -62,17 +35,14 @@ services:
       - fastapi_data:/app/data
       # Mount agent files (needed for chat processing)
       - ./market_intelligence_agent.py:/app/market_intelligence_agent.py:ro
-      - ./module_prices_agent.py:/app/module_prices_agent.py:ro
       - ./news_agent.py:/app/news_agent.py:ro
-      - ./leo_om_agent.py:/app/leo_om_agent.py:ro
       - ./digitalization_trend_agent.py:/app/digitalization_trend_agent.py:ro
       - ./nzia_policy_agent.py:/app/nzia_policy_agent.py:ro
       - ./nzia_market_impact_agent.py:/app/nzia_market_impact_agent.py:ro
       - ./manufacturer_financial_agent.py:/app/manufacturer_financial_agent.py:ro
-      - ./pydantic_weaviate_agent.py:/app/pydantic_weaviate_agent.py:ro
     restart: unless-stopped
     depends_on:
-      postgres-fastapi:
+      postgres-db:
         condition: service_healthy
     networks:
       - app-network
@@ -83,27 +53,8 @@ services:
       retries: 3
       start_period: 40s
 
-  # PostgreSQL for Flask (existing)
-  postgres-flask:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: solar_intelligence_flask
-      POSTGRES_USER: solar_admin
-      POSTGRES_PASSWORD: datahub1
-    volumes:
-      - postgres_flask_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U solar_admin -d solar_intelligence_flask"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # PostgreSQL for FastAPI (isolated)
-  postgres-fastapi:
+  # PostgreSQL database
+  postgres-db:
     image: postgres:15-alpine
     environment:
       POSTGRES_DB: solar_intelligence_fastapi
@@ -123,9 +74,9 @@ services:
       POSTGRES_MIN_WAL_SIZE: 1GB
       POSTGRES_MAX_WAL_SIZE: 4GB
     volumes:
-      - postgres_fastapi_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"  # Different port to avoid conflicts
+      - "5432:5432"
     networks:
       - app-network
     healthcheck:
@@ -153,9 +104,7 @@ services:
       -c max_parallel_maintenance_workers=2
 
 volumes:
-  postgres_flask_data:
-    driver: local
-  postgres_fastapi_data:
+  postgres_data:
     driver: local
   fastapi_data:
     driver: local

@@ -100,14 +100,6 @@ export function AgentsSection() {
 
               <p className={styles.description}>{agent.description}</p>
 
-              <div className={styles.tags}>
-                {agent.tags.map((tag) => (
-                  <span key={tag} className={styles.tag}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
               <a href="/login" className={styles.exploreBtn}>
                 <span>Explore</span>
                 <svg className={styles.btnIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">

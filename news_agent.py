@@ -16,7 +16,8 @@ import asyncio
 from pydantic import BaseModel
 
 # Import from openai-agents library
-from agents import Agent, Runner, FileSearchTool, WebSearchTool, SQLiteSession, ModelSettings
+from agents import Agent, Runner, FileSearchTool, WebSearchTool, ModelSettings
+from fastapi_app.utils.session_factory import create_agent_session
 
 # Logfire imports
 import logfire
@@ -171,9 +172,9 @@ Analyze the conversation history carefully to determine the intent.
         self.intent_agent = None
         self.news_agent = None
         self.scraping_agent = None
-        self.conversation_sessions: Dict[str, Any] = {}  # conversation_id -> session
+        # Removed conversation_sessions dict - using stateless PostgreSQL sessions now
 
-        logger.info("Using SQLite for session storage (simple and reliable)")
+        logger.info("Using stateless PostgreSQL sessions for scalability")
 
         # Initialize agents
         self._initialize_agents()
@@ -268,17 +269,11 @@ Analyze the conversation history carefully to determine the intent.
         try:
             logger.info(f"Processing news query (streaming): {query}")
 
-            # Get or create session for this conversation
+            # Create stateless session for this conversation (no caching)
             session = None
             if conversation_id:
-                if conversation_id not in self.conversation_sessions:
-                    session_id = f"news_{conversation_id}"
-                    self.conversation_sessions[conversation_id] = SQLiteSession(
-                        session_id=session_id
-                    )
-                    logger.info(f"Created SQLite session for conversation {conversation_id}")
-
-                session = self.conversation_sessions[conversation_id]
+                session = create_agent_session(conversation_id)
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Step 1: Classify the intent (non-streaming)
             # IMPORTANT: Don't pass session to intent classifier to avoid duplicate messages in history
@@ -337,19 +332,11 @@ Analyze the conversation history carefully to determine the intent.
             try:
                 logger.info(f"Processing news query: {query}")
 
-                # Get or create session for this conversation
+                # Create stateless session for this conversation (no caching)
                 session = None
                 if conversation_id:
-                    if conversation_id not in self.conversation_sessions:
-                        session_id = f"news_{conversation_id}"
-
-                        # Use SQLite for session storage (simple and reliable)
-                        self.conversation_sessions[conversation_id] = SQLiteSession(
-                            session_id=session_id
-                        )
-                        logger.info(f"Created SQLite session for conversation {conversation_id}")
-
-                    session = self.conversation_sessions[conversation_id]
+                    session = create_agent_session(conversation_id)
+                    logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
                 # Step 1: Classify the intent
                 # IMPORTANT: Don't pass session to intent classifier to avoid duplicate messages in history
@@ -413,21 +400,21 @@ Analyze the conversation history carefully to determine the intent.
                 }
 
     def clear_conversation_memory(self, conversation_id: str = None):
-        """Clear conversation memory by removing session"""
-        if conversation_id:
-            if conversation_id in self.conversation_sessions:
-                del self.conversation_sessions[conversation_id]
-                logger.info(f"Cleared conversation session for {conversation_id}")
-        else:
-            # Clear all sessions
-            self.conversation_sessions.clear()
-            logger.info("Cleared all conversation sessions")
+        """
+        Clear conversation memory (stateless sessions - no action needed)
+        Sessions are created per-request in PostgreSQL, no in-memory cache to clear
+        """
+        logger.info(f"Stateless sessions: No memory to clear for conversation {conversation_id or 'all'}")
 
     def get_conversation_memory_info(self) -> Dict[str, Any]:
-        """Get information about conversation memory usage"""
+        """
+        Get information about conversation memory usage (stateless sessions)
+        Returns placeholder since sessions are not cached in memory
+        """
         return {
-            "total_conversations": len(self.conversation_sessions),
-            "conversation_ids": list(self.conversation_sessions.keys()),
+            "session_type": "stateless_postgresql",
+            "caching": False,
+            "info": "Sessions created per-request, not cached in memory"
         }
 
     def cleanup(self):

@@ -20,20 +20,20 @@ export function FeatureHighlightSection() {
                   className={styles.hexagonPath}
                   d="M 200 30 L 350 115 L 350 285 L 200 370 L 50 285 L 50 115 Z"
                   fill="none"
-                  stroke="#E9A544"
+                  stroke="#fbbf24"
                   strokeWidth="3"
                   opacity="0.6"
                 />
 
                 {/* Inner hexagon lines */}
-                <line x1="200" y1="30" x2="200" y2="370" stroke="#E9A544" strokeWidth="2" opacity="0.3" />
-                <line x1="50" y1="115" x2="350" y2="285" stroke="#E9A544" strokeWidth="2" opacity="0.3" />
-                <line x1="50" y1="285" x2="350" y2="115" stroke="#E9A544" strokeWidth="2" opacity="0.3" />
+                <line x1="200" y1="30" x2="200" y2="370" stroke="#fbbf24" strokeWidth="2" opacity="0.3" />
+                <line x1="50" y1="115" x2="350" y2="285" stroke="#fbbf24" strokeWidth="2" opacity="0.3" />
+                <line x1="50" y1="285" x2="350" y2="115" stroke="#fbbf24" strokeWidth="2" opacity="0.3" />
 
-                {/* Animated circles */}
-                <circle className={`${styles.floatingCircle} ${styles.circle1}`} cx="280" cy="120" r="30" fill="#E9A544" opacity="0.8" />
-                <circle className={`${styles.floatingCircle} ${styles.circle2}`} cx="120" cy="280" r="35" fill="#3B82F6" opacity="0.7" />
-                <circle className={`${styles.floatingCircle} ${styles.circle3}`} cx="200" cy="200" r="25" fill="#10B981" opacity="0.6" />
+                {/* Animated circles with brand colors */}
+                <circle className={`${styles.floatingCircle} ${styles.circle1}`} cx="280" cy="120" r="30" fill="#fbbf24" opacity="0.8" />
+                <circle className={`${styles.floatingCircle} ${styles.circle2}`} cx="120" cy="280" r="35" fill="#0a1850" opacity="0.7" />
+                <circle className={`${styles.floatingCircle} ${styles.circle3}`} cx="200" cy="200" r="25" fill="#f59e42" opacity="0.6" />
               </svg>
             </div>
           </div>

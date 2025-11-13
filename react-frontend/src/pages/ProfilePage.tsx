@@ -11,8 +11,13 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { apiClient } from '../api';
+import { changePasswordSchema, type ChangePasswordFormData } from '../schemas/auth.schema';
+import { PASSWORD_HELP_TEXT } from '../utils/passwordValidation';
+import PasswordStrengthIndicator from '../components/forms/PasswordStrengthIndicator';
 
 interface ProfileData {
   user: {
@@ -56,10 +61,24 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedFullName, setEditedFullName] = useState('');
 
-  // Change password form
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  // Change password form with React Hook Form + Zod
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors, isSubmitting: isPasswordSubmitting },
+    reset: resetPasswordForm,
+    watch,
+  } = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+    mode: 'onBlur', // Real-time validation on blur
+    defaultValues: {
+      current_password: '',
+      new_password: '',
+      confirm_password: '',
+    },
+  });
+
+  const newPassword = watch('new_password');
 
   useEffect(() => {
     loadProfile();
@@ -103,32 +122,18 @@ export default function ProfilePage() {
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-
+  const handleChangePassword = async (data: ChangePasswordFormData) => {
     try {
       await apiClient.request('profile/change-password', {
         method: 'POST',
         body: JSON.stringify({
-          current_password: currentPassword,
-          new_password: newPassword,
-          confirm_password: confirmPassword,
+          current_password: data.current_password,
+          new_password: data.new_password,
+          confirm_password: data.confirm_password,
         }),
       });
       toast.success('Password changed successfully');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      resetPasswordForm();
     } catch (error: any) {
       console.error('Failed to change password:', error);
       const message = error?.response?.data?.detail || 'Failed to change password';
@@ -277,46 +282,63 @@ export default function ProfilePage() {
             <div className="glass-card">
               <h2 className="section-title">Change Password</h2>
 
-              <form onSubmit={handleChangePassword} style={{ display: 'grid', gap: '20px' }}>
+              <form onSubmit={handlePasswordSubmit(handleChangePassword)} style={{ display: 'grid', gap: '20px' }}>
                 <div>
                   <label htmlFor="current-password" className="label">Current Password</label>
                   <input
                     type="password"
                     id="current-password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
                     className="input-field"
                     autoComplete="current-password"
+                    {...registerPassword('current_password')}
                   />
+                  {passwordErrors.current_password && (
+                    <p style={{ marginTop: '6px', fontSize: '0.8125rem', color: '#dc2626' }}>
+                      {passwordErrors.current_password.message}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="new-password" className="label">New Password</label>
                   <input
                     type="password"
                     id="new-password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
                     className="input-field"
                     autoComplete="new-password"
+                    {...registerPassword('new_password')}
                   />
-                  <p style={{ marginTop: '6px', fontSize: '0.75rem', color: '#9ca3af' }}>Minimum 8 characters</p>
+                  {passwordErrors.new_password && (
+                    <p style={{ marginTop: '6px', fontSize: '0.8125rem', color: '#dc2626' }}>
+                      {passwordErrors.new_password.message}
+                    </p>
+                  )}
+                  {!passwordErrors.new_password && (
+                    <p style={{ marginTop: '6px', fontSize: '0.75rem', color: '#9ca3af' }}>{PASSWORD_HELP_TEXT}</p>
+                  )}
+                  <PasswordStrengthIndicator password={newPassword || ''} showRequirements={true} />
                 </div>
                 <div>
                   <label htmlFor="confirm-password" className="label">Confirm New Password</label>
                   <input
                     type="password"
                     id="confirm-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
                     className="input-field"
                     autoComplete="new-password"
+                    {...registerPassword('confirm_password')}
                   />
+                  {passwordErrors.confirm_password && (
+                    <p style={{ marginTop: '6px', fontSize: '0.8125rem', color: '#dc2626' }}>
+                      {passwordErrors.confirm_password.message}
+                    </p>
+                  )}
                 </div>
-                <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '8px' }}>
-                  Update Password
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ width: '100%', marginTop: '8px' }}
+                  disabled={isPasswordSubmitting}
+                >
+                  {isPasswordSubmitting ? 'Updating Password...' : 'Update Password'}
                 </button>
               </form>
             </div>

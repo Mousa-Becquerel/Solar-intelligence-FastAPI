@@ -1,21 +1,27 @@
 /**
- * Legal Pages Styles
- * Shared styles for Terms of Service and Privacy Policy pages
- * Ported from templates/terms_of_service.html and templates/privacy_policy.html
+ * Legal Pages Styles - Material Design 3 Flat Design
+ * Shared styles for Terms of Service, Privacy Policy, and Cookie Policy pages
+ * Follows MD3 principles: soft, spacious, tonal surfaces, no shadows
  */
 
 :root {
-  --becq-blue: #1e3a8a;
-  --becq-gold: #f59e0b;
-  --becq-light-blue: #3b82f6;
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
+  /* Brand Colors - from material_design_description.txt */
+  --becq-blue: #060B5A; /* Dark Blue */
+  --becq-federal-blue: #010654; /* Federal Blue */
+  --becq-gold: #E89C43; /* Butterscotch */
+  --becq-gold-light: #E4C154; /* Saffron */
+
+  /* MD3 Text Colors */
+  --text-primary: #0a1850;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
 }
 
 .page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  /* MD3: Soft neutral background */
+  background: #f8fafc;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .container {
@@ -24,9 +30,10 @@
   padding: 0 2rem;
 }
 
-/* Hero Section */
+/* Hero Section - MD3 Flat Design */
 .heroSection {
-  background: linear-gradient(135deg, var(--becq-blue) 0%, var(--becq-light-blue) 100%);
+  /* MD3: Dark blue gradient background */
+  background: linear-gradient(180deg, #060B5A 0%, #010654 100%);
   color: white;
   padding: 4rem 0;
   position: relative;
@@ -40,8 +47,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  opacity: 0.3;
+  /* MD3: Subtle grid pattern overlay */
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  opacity: 0.4;
 }
 
 .heroContent {
@@ -68,21 +76,29 @@
   justify-content: center;
 }
 
+.logo img {
+  height: 60px;
+  width: auto;
+  filter: brightness(0) invert(1); /* Make logo white on dark background */
+}
+
 .backLink {
-  background: rgba(255, 255, 255, 0.15);
+  /* MD3: Tonal surface button */
+  background: rgba(255, 255, 255, 0.12);
   padding: 0.75rem 1.5rem;
-  border-radius: 2rem;
+  border-radius: 12px; /* MD3: Medium corner radius */
   text-decoration: none;
   color: white;
   font-weight: 500;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .backLink:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
+  /* MD3: State layer on hover */
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .heroTitle {
@@ -92,20 +108,20 @@
 }
 
 .heroTitle h1 {
-  font-size: 3.5rem;
-  font-weight: 700;
+  font-size: 3rem;
+  font-weight: 600; /* MD3: Semibold for display text */
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #ffffff 0%, var(--becq-gold) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em; /* MD3: Humanist typography */
 }
 
 .heroTitle p {
-  font-size: 1.25rem;
-  opacity: 0.9;
-  font-weight: 300;
-  line-height: 1.7;
+  font-size: 1.125rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 300; /* MD3: Light weight for body text */
+  line-height: 1.6;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* Main Content */
@@ -114,15 +130,15 @@
 }
 
 .contentCard {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 1.5rem;
+  /* MD3: Elevated surface with minimal shadow */
+  background: #ffffff;
+  border-radius: 16px; /* MD3: Medium-large corner radius */
   padding: 3rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* MD3: Subtle elevation */
+  border: 1px solid rgba(10, 24, 80, 0.08); /* MD3: Tonal border */
 }
 
-/* Terms/Privacy Sections */
+/* Terms/Privacy Sections - MD3 Typography */
 .termsSection,
 .privacySection {
   margin-bottom: 3rem;
@@ -131,28 +147,33 @@
 .termsSection h2,
 .privacySection h2 {
   font-size: 1.75rem;
-  font-weight: 600;
+  font-weight: 600; /* MD3: Semibold for headlines */
   color: var(--becq-blue);
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 3px solid var(--becq-gold);
+  border-bottom: 2px solid var(--becq-gold); /* MD3: Thinner accent line */
   display: inline-block;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.01em; /* MD3: Tight letter spacing */
 }
 
 .termsSection h3,
 .privacySection h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.125rem;
+  font-weight: 600; /* MD3: Semibold for subheadings */
   color: var(--text-primary);
   margin-bottom: 1rem;
   margin-top: 2rem;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .termsSection p,
 .privacySection p {
   margin-bottom: 1.5rem;
   color: var(--text-secondary);
-  line-height: 1.8;
+  line-height: 1.6;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 300; /* MD3: Light weight for body text */
 }
 
 .termsSection ul,
@@ -165,38 +186,44 @@
 .privacySection li {
   margin-bottom: 0.75rem;
   color: var(--text-secondary);
-  line-height: 1.7;
+  line-height: 1.6;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 300; /* MD3: Light weight */
 }
 
-/* Info Boxes */
+/* Info Boxes - MD3 Tonal Surfaces */
 .highlightBox {
-  background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 20%);
-  border: 1px solid var(--becq-gold);
-  border-radius: 1rem;
+  /* MD3: Gold tonal container */
+  background: rgba(232, 156, 67, 0.12); /* becq-gold tonal */
+  border: 1px solid rgba(232, 156, 67, 0.25);
+  border-radius: 16px; /* MD3: Medium-large corner radius */
   padding: 1.5rem;
   margin: 2rem 0;
 }
 
 .warningBox {
-  background: linear-gradient(135deg, #fef2f2 0%, #fca5a5 20%);
-  border: 1px solid #ef4444;
-  border-radius: 1rem;
+  /* MD3: Error tonal container */
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 16px; /* MD3: Medium-large corner radius */
   padding: 1.5rem;
   margin: 2rem 0;
 }
 
 .infoBox {
-  background: linear-gradient(135deg, #eff6ff 0%, #93c5fd 20%);
-  border: 1px solid var(--becq-light-blue);
-  border-radius: 1rem;
+  /* MD3: Blue tonal container */
+  background: rgba(6, 11, 90, 0.06); /* becq-blue tonal */
+  border: 1px solid rgba(6, 11, 90, 0.15);
+  border-radius: 16px; /* MD3: Medium-large corner radius */
   padding: 1.5rem;
   margin: 2rem 0;
 }
 
 .contactCard {
-  background: linear-gradient(135deg, var(--becq-blue) 0%, var(--becq-light-blue) 100%);
+  /* MD3: Primary surface with gradient */
+  background: linear-gradient(135deg, var(--becq-blue) 0%, var(--becq-federal-blue) 100%);
   color: white;
-  border-radius: 1rem;
+  border-radius: 16px; /* MD3: Medium-large corner radius */
   padding: 2rem;
   margin: 2rem 0;
 }
@@ -211,7 +238,7 @@
   text-decoration: underline;
 }
 
-/* Rights Grid (for Privacy Policy) */
+/* Rights Grid (for Privacy Policy) - MD3 Cards */
 .rightsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -220,34 +247,40 @@
 }
 
 .rightCard {
-  background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 20%);
-  border: 1px solid var(--becq-gold);
-  border-radius: 1rem;
+  /* MD3: Tonal container */
+  background: rgba(232, 156, 67, 0.12); /* becq-gold tonal */
+  border: 1px solid rgba(232, 156, 67, 0.25);
+  border-radius: 16px; /* MD3: Medium-large corner radius */
   padding: 1.5rem;
-  transition: all 0.3s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
 }
 
 .rightCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(251, 191, 36, 0.15);
+  /* MD3: Subtle border emphasis on hover */
+  border-color: rgba(232, 156, 67, 0.4);
+  background: rgba(232, 156, 67, 0.16);
 }
 
 .rightCard h4 {
-  font-weight: 600;
+  font-weight: 600; /* MD3: Semibold */
   color: var(--text-primary);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .rightCard p {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   margin: 0;
+  line-height: 1.6;
+  font-weight: 300; /* MD3: Light weight */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Action Buttons (for Privacy Policy) */
+/* Action Buttons (for Privacy Policy) - MD3 Filled Buttons */
 .actionButtons {
   display: flex;
   gap: 1rem;
@@ -258,45 +291,70 @@
 
 .btn {
   padding: 0.875rem 2rem;
-  border-radius: 0.75rem;
+  border-radius: 12px; /* MD3: Medium corner radius */
   font-weight: 600;
   text-decoration: none;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
   border: none;
   cursor: pointer;
   font-size: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* MD3: State layer for buttons */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btnPrimary {
-  background: linear-gradient(135deg, var(--becq-gold) 0%, #f97316 100%);
-  color: white;
+  /* MD3: Filled button with brand gold */
+  background: var(--becq-gold);
+  color: var(--becq-blue);
+}
+
+.btnPrimary:hover::before {
+  opacity: 0.08; /* MD3: State layer on hover */
 }
 
 .btnPrimary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(251, 191, 36, 0.3);
+  /* MD3: Subtle press effect */
+  transform: scale(0.98);
 }
 
 .btnSecondary {
-  background: #f3f4f6;
-  color: var(--text-primary);
+  /* MD3: Tonal button */
+  background: rgba(6, 11, 90, 0.08); /* becq-blue tonal */
+  color: var(--becq-blue);
+}
+
+.btnSecondary:hover::before {
+  opacity: 0.08; /* MD3: State layer on hover */
 }
 
 .btnSecondary:hover {
-  background: #e5e7eb;
+  background: rgba(6, 11, 90, 0.12);
 }
 
-/* Footer */
+/* Footer - MD3 Flat Design */
 .footer {
-  background: rgba(255, 255, 255, 0.95);
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-top: 1px solid rgba(10, 24, 80, 0.08); /* MD3: Subtle tonal border */
   padding: 3rem 0;
   margin-top: 4rem;
-  backdrop-filter: blur(20px);
 }
 
 .footerContent {
@@ -316,32 +374,45 @@
   text-decoration: none;
   font-weight: 500;
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  transition: all 0.3s ease;
+  border-radius: 8px; /* MD3: Small corner radius */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .footerLinks a:hover {
+  /* MD3: State layer on hover */
   color: var(--becq-blue);
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(6, 11, 90, 0.08); /* becq-blue tonal */
 }
 
 .copyright {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 300; /* MD3: Light weight */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Responsive */
+/* Responsive - MD3 Breakpoints */
 @media (max-width: 768px) {
   .container {
     padding: 0 1rem;
   }
 
+  .heroSection {
+    padding: 3rem 0;
+  }
+
   .heroTitle h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
+  }
+
+  .heroTitle p {
+    font-size: 1rem;
   }
 
   .contentCard {
-    padding: 2rem;
+    padding: 1.5rem;
+    border-radius: 12px; /* MD3: Medium corner radius for mobile */
   }
 
   .navHeader {
@@ -352,5 +423,10 @@
 
   .actionButtons {
     flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
   }
 }

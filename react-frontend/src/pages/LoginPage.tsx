@@ -7,14 +7,10 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { useAuthStore } from '../stores';
-
-interface LoginFormData {
-  username: string;
-  password: string;
-  remember: boolean;
-}
+import { loginSchema, type LoginFormData } from '../schemas/auth.schema';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -25,7 +21,10 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>();
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onBlur', // Real-time validation on blur
+  });
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -57,11 +56,9 @@ export default function LoginPage() {
               alt="Solar Intelligence"
               className="logo"
               style={{
-                height: '80px',
+                height: '60px',
                 width: 'auto',
-                margin: '0 auto 20px',
-                filter: 'brightness(0) invert(1)',
-                opacity: 0.95,
+                margin: '0 auto 16px',
                 display: 'block'
               }}
             />
@@ -86,13 +83,7 @@ export default function LoginPage() {
               autoFocus
               className="form-input"
               placeholder="you@example.com"
-              {...register('username', {
-                required: 'Email is required',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Invalid email address',
-                },
-              })}
+              {...register('username')}
             />
             {errors.username && (
               <p className="form-error">{errors.username.message}</p>
@@ -111,13 +102,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 className="form-input"
                 placeholder="Enter your password"
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: {
-                    value: 6,
-                    message: 'Password must be at least 6 characters',
-                  },
-                })}
+                {...register('password')}
               />
               <button
                 type="button"
@@ -187,7 +172,7 @@ export default function LoginPage() {
       </div>
 
       <style>{`
-        /* Login Container - Full viewport with gradient */
+        /* Login Container - MD3 Background with Brand Colors */
         .login-container {
           min-height: 100vh;
           display: flex;
@@ -196,25 +181,25 @@ export default function LoginPage() {
           padding: 40px 20px;
           position: relative;
           overflow-y: auto;
-          background:
-            radial-gradient(circle at 20% 30%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
-            radial-gradient(circle at 50% 50%, rgba(4, 11, 89, 0.4) 0%, transparent 70%),
-            linear-gradient(135deg, #0a1850 0%, #1e1b4b 30%, #312e81 60%, #3730a3 100%);
-          background-size: 100% 100%;
-          background-attachment: scroll;
+          /* MD3: Clean gradient with brand Federal Blue and Dark Blue */
+          background: linear-gradient(135deg, #010654 0%, #060B5A 100%);
+          background-attachment: fixed;
         }
 
-        /* Login Card - Glassmorphic */
+        /* Login Card - MD3 Surface with Elevation Level 2 */
         .login-card {
-          background: rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 24px;
-          padding: 48px;
-          max-width: 480px;
+          /* MD3: Surface color with proper elevation */
+          background: #FFFFFF; /* MD3 surface color */
+          border: none;
+          border-radius: 28px; /* MD3: Extra-large corner radius for cards */
+          padding: 32px; /* Reduced from 48px */
+          max-width: 420px; /* Reduced from 480px */
           width: 100%;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          /* MD3: Elevation level 2 shadow for raised surface */
+          box-shadow:
+            0px 2px 4px -1px rgba(0, 0, 0, 0.2),
+            0px 4px 5px 0px rgba(0, 0, 0, 0.14),
+            0px 1px 10px 0px rgba(0, 0, 0, 0.12);
           position: relative;
           z-index: 10;
         }
@@ -222,7 +207,7 @@ export default function LoginPage() {
         /* Logo Section */
         .logo-section {
           text-align: center;
-          margin-bottom: 40px;
+          margin-bottom: 24px; /* Reduced from 40px */
         }
 
         .logo-placeholder {
@@ -232,59 +217,60 @@ export default function LoginPage() {
         }
 
         .login-title {
-          font-size: 1.875rem;
-          font-weight: 300;
-          color: #ffffff;
-          margin-bottom: 8px;
+          font-size: 1.5rem; /* Reduced from 1.875rem */
+          font-weight: 400; /* MD3: Regular weight for headlines */
+          color: #010654; /* MD3: on-surface (Federal Blue) */
+          margin-bottom: 6px; /* Reduced from 8px */
           letter-spacing: -0.02em;
           font-family: 'Inter', 'Open Sans', Arial, sans-serif;
         }
 
         .login-subtitle {
-          font-size: 0.95rem;
-          color: rgba(255, 255, 255, 0.7);
+          font-size: 0.875rem; /* Reduced from 0.95rem */
+          color: rgba(1, 6, 84, 0.7); /* MD3: on-surface with opacity */
           font-weight: 400;
         }
 
         .accent-color {
-          color: #E9A544;
+          color: #E89C43; /* Brand: Butterscotch */
         }
 
         /* Form Styles */
         .form-group {
-          margin-bottom: 24px;
+          margin-bottom: 16px; /* Reduced from 24px */
         }
 
         .form-label {
           display: block;
           font-size: 0.875rem;
-          font-weight: 500;
-          color: rgba(255, 255, 255, 0.9);
+          font-weight: 500; /* MD3: Medium weight for labels */
+          color: #010654; /* MD3: on-surface (Federal Blue) */
           margin-bottom: 8px;
           font-family: 'Inter', 'Open Sans', Arial, sans-serif;
         }
 
         .form-input {
           width: 100%;
-          padding: 14px 16px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 12px;
-          color: #ffffff;
-          font-size: 0.9375rem;
+          padding: 12px 14px; /* Reduced from 14px 16px */
+          background: #FFFFFF; /* MD3: Surface */
+          border: 1px solid rgba(1, 6, 84, 0.38); /* MD3: Outline */
+          border-radius: 4px; /* MD3: Small corner radius for text fields */
+          color: #010654; /* MD3: on-surface */
+          font-size: 0.875rem; /* Reduced from 0.9375rem */
           font-family: 'Inter', 'Open Sans', Arial, sans-serif;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
         }
 
         .form-input::placeholder {
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(1, 6, 84, 0.6); /* MD3: on-surface variant */
         }
 
         .form-input:focus {
           outline: none;
-          background: rgba(255, 255, 255, 0.08);
-          border-color: #E9A544;
-          box-shadow: 0 0 0 3px rgba(233, 165, 68, 0.1);
+          border-color: #010654; /* MD3: Primary (Federal Blue) */
+          border-width: 2px;
+          padding: 11px 13px; /* Adjusted for border width */
+          box-shadow: none; /* MD3: No shadow on text fields */
         }
 
         .form-error {
@@ -318,69 +304,98 @@ export default function LoginPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 24px;
+          margin-bottom: 16px; /* Reduced from 24px */
         }
 
         .checkbox-label {
           display: flex;
           align-items: center;
           gap: 8px;
-          color: rgba(255, 255, 255, 0.8);
+          color: #010654; /* MD3: on-surface */
           font-size: 0.875rem;
           cursor: pointer;
         }
 
         .checkbox-input {
-          width: 16px;
-          height: 16px;
+          width: 18px;
+          height: 18px;
           cursor: pointer;
+          accent-color: #010654; /* MD3: Primary */
         }
 
         .link-text {
-          color: #E9A544;
+          color: #E89C43; /* Brand: Butterscotch */
           font-size: 0.875rem;
           text-decoration: none;
-          transition: color 0.2s;
+          transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
         }
 
         .link-text:hover {
-          color: #fbbf24;
+          color: #D68A34; /* Darker Butterscotch for hover */
+          text-decoration: underline;
         }
 
+        /* MD3: Filled button with primary color */
         .submit-button {
           width: 100%;
-          padding: 14px;
-          background: linear-gradient(135deg, #E9A544 0%, #fbbf24 100%);
+          padding: 10px 24px;
+          min-height: 40px; /* MD3: Minimum touch target */
+          background: #010654; /* MD3: Primary (Federal Blue) */
           border: none;
-          border-radius: 12px;
-          color: #0a1850;
-          font-size: 0.9375rem;
-          font-weight: 600;
+          border-radius: 20px; /* MD3: Full corner radius for filled buttons */
+          color: #FFFFFF; /* MD3: on-primary */
+          font-size: 0.875rem;
+          font-weight: 500; /* MD3: Medium weight for buttons */
           font-family: 'Inter', 'Open Sans', Arial, sans-serif;
+          letter-spacing: 0.1px; /* MD3: Slight letter spacing for buttons */
           cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 12px rgba(233, 165, 68, 0.3);
+          transition: all 0.2s cubic-bezier(0.2, 0, 0, 1); /* MD3: Emphasized easing for interactions */
+          box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15); /* MD3: Elevation level 1 */
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* MD3: State layer for button */
+        .submit-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: #FFFFFF; /* MD3: on-primary for state layer */
+          opacity: 0;
+          transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .submit-button:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 16px rgba(233, 165, 68, 0.4);
+          box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15); /* MD3: Elevation level 2 on hover */
+        }
+
+        .submit-button:hover:not(:disabled)::before {
+          opacity: 0.08; /* MD3: State layer on hover */
         }
 
         .submit-button:active:not(:disabled) {
-          transform: translateY(0);
+          box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15); /* MD3: Back to elevation 1 on press */
+        }
+
+        .submit-button:active:not(:disabled)::before {
+          opacity: 0.12; /* MD3: State layer on press */
         }
 
         .submit-button:disabled {
-          opacity: 0.6;
+          background: rgba(1, 6, 84, 0.12); /* MD3: Disabled surface */
+          color: rgba(1, 6, 84, 0.38); /* MD3: Disabled on-surface */
+          box-shadow: none;
           cursor: not-allowed;
         }
 
         .loading-spinner-small {
           width: 16px;
           height: 16px;
-          border: 2px solid rgba(10, 24, 80, 0.3);
-          border-top-color: #0a1850;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: #FFFFFF;
           border-radius: 50%;
           animation: spin 0.6s linear infinite;
         }
@@ -390,17 +405,17 @@ export default function LoginPage() {
         }
 
         .form-footer {
-          margin-top: 32px;
+          margin-top: 20px; /* Reduced from 32px */
           text-align: center;
         }
 
         .footer-text {
-          color: rgba(255, 255, 255, 0.7);
+          color: rgba(1, 6, 84, 0.7); /* MD3: on-surface with opacity */
           font-size: 0.875rem;
         }
 
         .form-footer-links {
-          margin-top: 24px;
+          margin-top: 16px; /* Reduced from 24px */
           text-align: center;
           display: flex;
           align-items: center;
@@ -409,14 +424,15 @@ export default function LoginPage() {
         }
 
         .footer-link {
-          color: rgba(255, 255, 255, 0.5);
+          color: rgba(1, 6, 84, 0.6); /* MD3: on-surface variant */
           font-size: 0.8125rem;
           text-decoration: none;
           transition: color 0.2s;
         }
 
         .footer-link:hover {
-          color: rgba(255, 255, 255, 0.8);
+          color: #010654; /* MD3: on-surface */
+          text-decoration: underline;
         }
 
         /* Responsive */

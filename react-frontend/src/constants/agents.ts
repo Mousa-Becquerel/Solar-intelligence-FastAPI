@@ -6,20 +6,16 @@
 
 export type AgentType =
   | 'market'
-  | 'price'
   | 'news'
   | 'digitalization'
-  | 'leo_om'
   | 'nzia_policy'
   | 'manufacturer_financial'
   | 'nzia_market_impact';
 
 export const AGENT_TITLES: Record<AgentType, string> = {
   market: 'PV Capacity Analysis',
-  price: 'Price Analysis',
   news: 'News & Insights',
   digitalization: 'Digitalization Expert',
-  leo_om: 'O&M Expert',
   nzia_policy: 'NZIA Policy Expert',
   manufacturer_financial: 'Manufacturer Financial Analyst',
   nzia_market_impact: 'NZIA Market Impact Expert',
@@ -28,10 +24,8 @@ export const AGENT_TITLES: Record<AgentType, string> = {
 // Agent dropdown display names (shown in chat header)
 export const AGENT_DROPDOWN_NAMES: Record<AgentType, string> = {
   market: 'Alex - PV Capacity',
-  price: 'Price Analysis',
   news: 'Emma - News Analyst',
   digitalization: 'Nova - Digitalization Expert',
-  leo_om: 'Leo - O&M Expert',
   nzia_policy: 'Aniza - NZIA Policy Expert',
   manufacturer_financial: 'Finn - Manufacturer Financial Analyst',
   nzia_market_impact: 'Nina - NZIA Market Impact Expert',
@@ -74,38 +68,6 @@ export const AGENT_PROMPTS: Record<AgentType, SuggestedPrompt[]> = {
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>',
       title: 'Poland Segments',
       prompt: 'Show annual solar installations by segment for Poland',
-    },
-  ],
-  price: [
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
-      title: 'Module Prices',
-      prompt: 'Show module prices in China',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>',
-      title: 'Cell Prices',
-      prompt: 'Compare cell prices across regions',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="7" rx="2"></rect><rect x="7" y="4" width="10" height="7" rx="2"></rect><path d="M12 11V4"></path></svg>',
-      title: 'Polysilicon Trends',
-      prompt: 'What are polysilicon price trends?',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>',
-      title: 'Wafer Prices',
-      prompt: 'Plot wafer prices over time',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
-      title: 'US Pricing',
-      prompt: 'Show US module pricing trends',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>',
-      title: 'N-type vs P-type',
-      prompt: 'Compare N-type vs P-type module prices',
     },
   ],
   news: [
@@ -170,38 +132,6 @@ export const AGENT_PROMPTS: Record<AgentType, SuggestedPrompt[]> = {
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
       title: 'Blockchain',
       prompt: 'Blockchain applications in solar energy trading',
-    },
-  ],
-  leo_om: [
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>',
-      title: 'Best Practices',
-      prompt: 'What are best practices for PV system maintenance?',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>',
-      title: 'Optimize Performance',
-      prompt: 'How to optimize solar plant performance?',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
-      title: 'Failure Modes',
-      prompt: 'Common failure modes in solar panels',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
-      title: 'Predictive Maintenance',
-      prompt: 'Predictive maintenance strategies for solar assets',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
-      title: 'Cost Reduction',
-      prompt: 'O&M cost reduction strategies',
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>',
-      title: 'Remote Monitoring',
-      prompt: 'Remote monitoring and diagnostics for solar plants',
     },
   ],
   nzia_policy: [

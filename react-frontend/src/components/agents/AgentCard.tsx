@@ -69,8 +69,8 @@ export default function AgentCard({
             position: 'absolute',
             top: '1rem',
             left: '1rem',
-            background: '#FFA726',
-            color: 'white',
+            background: '#fbbf24', /* becq-gold */
+            color: '#0a1850', /* becq-blue */
             fontSize: '0.625rem',
             fontWeight: '700',
             letterSpacing: '0.05em',

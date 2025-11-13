@@ -26,7 +26,6 @@ from agents import (
     CodeInterpreterTool,
     Agent,
     Runner,
-    SQLiteSession,
     ModelSettings,
     RunConfig,
     trace,
@@ -34,6 +33,7 @@ from agents import (
     AgentOutputSchema
 )
 from openai.types.shared.reasoning import Reasoning
+from fastapi_app.utils.session_factory import create_agent_session
 
 # Logfire imports
 import logfire
@@ -297,12 +297,12 @@ Never give any link to the user to download anything.
     def __init__(self, config: Optional[MarketIntelligenceConfig] = None):
         """Initialize the Market Intelligence Agent with multi-agent workflow"""
         self.config = config or MarketIntelligenceConfig()
-        self.conversation_sessions: Dict[str, Any] = {}
+        # Removed conversation_sessions dict - using stateless PostgreSQL sessions now
 
         # Initialize agents
         self._initialize_agents()
 
-        logger.info("✅ Market Intelligence Agent initialized (Memory: SQLite)")
+        logger.info("✅ Market Intelligence Agent initialized (Memory: Stateless PostgreSQL)")
 
     def _initialize_agents(self):
         """Initialize all agents in the workflow"""
@@ -1000,17 +1000,11 @@ Our experts typically respond within **24-48 hours** with thorough, actionable i
             Dictionary with output from the appropriate agent
         """
         with trace("New workflow"):
-            # Get or create session for this conversation
+            # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                if conversation_id not in self.conversation_sessions:
-                    session_id = f"market_intel_{conversation_id}"
-                    self.conversation_sessions[conversation_id] = SQLiteSession(
-                        session_id=session_id
-                    )
-                    logger.info(f"Created SQLite session for conversation {conversation_id}")
-
-                session = self.conversation_sessions[conversation_id]
+                session = create_agent_session(conversation_id)
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Get user query as string (required when using session)
             workflow = workflow_input.model_dump()
@@ -1147,17 +1141,11 @@ Our experts typically respond within **24-48 hours** with thorough, actionable i
         try:
             logger.info(f"Processing query (streaming): {query}")
 
-            # Get or create session for this conversation
+            # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                if conversation_id not in self.conversation_sessions:
-                    session_id = f"market_intel_{conversation_id}"
-                    self.conversation_sessions[conversation_id] = SQLiteSession(
-                        session_id=session_id
-                    )
-                    logger.info(f"Created SQLite session for conversation {conversation_id}")
-
-                session = self.conversation_sessions[conversation_id]
+                session = create_agent_session(conversation_id)
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Step 1: Classification - Determine intent (data vs plot)
             # IMPORTANT: Pass session so classification can understand context (e.g., "now do it for Italy")
@@ -1361,21 +1349,21 @@ Agent Response: {market_intelligence_response}"""
             yield f"\n\n**Error:** {error_msg}"
 
     def clear_conversation_memory(self, conversation_id: str = None):
-        """Clear conversation memory by removing session"""
-        if conversation_id:
-            if conversation_id in self.conversation_sessions:
-                del self.conversation_sessions[conversation_id]
-                logger.info(f"Cleared conversation session for {conversation_id}")
-        else:
-            # Clear all sessions
-            self.conversation_sessions.clear()
-            logger.info("Cleared all conversation sessions")
+        """
+        Clear conversation memory (note: with stateless sessions, memory is stored in PostgreSQL)
+        This method is kept for API compatibility but has no effect with stateless sessions.
+        To clear session data, you would need to delete from the database directly.
+        """
+        logger.info(f"clear_conversation_memory called for {conversation_id or 'all'} - no action needed with stateless sessions")
 
     def get_conversation_memory_info(self) -> Dict[str, Any]:
-        """Get information about conversation memory usage"""
+        """
+        Get information about conversation memory usage
+        Note: With stateless sessions, memory is stored in PostgreSQL, not in-memory
+        """
         return {
-            "total_conversations": len(self.conversation_sessions),
-            "conversation_ids": list(self.conversation_sessions.keys()),
+            "memory_type": "stateless_postgresql",
+            "note": "Session data stored in PostgreSQL database",
         }
 
     def cleanup(self):

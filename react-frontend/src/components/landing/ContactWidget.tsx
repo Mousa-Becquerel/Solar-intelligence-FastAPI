@@ -43,15 +43,32 @@ export function ContactWidget({ isOpen, onClose }: ContactWidgetProps) {
 
     const formData = new FormData(e.currentTarget);
 
+    // Convert FormData to API format
+    const firstName = formData.get('firstName') as string;
+    const lastName = formData.get('lastName') as string;
+    const email = formData.get('email') as string;
+    const company = formData.get('company') as string;
+    const message = formData.get('message') as string;
+
+    const data = {
+      name: `${firstName} ${lastName}`.trim(),
+      email,
+      company: company || undefined,
+      message,
+    };
+
     try {
-      const response = await fetch('/submit-contact', {
+      const response = await fetch('http://localhost:8000/api/v1/contact/submit', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
       });
 
       const result = await response.json();
 
-      if (result.success) {
+      if (result.success || response.ok) {
         setStatus('success');
       } else {
         setStatus('error');
@@ -131,7 +148,7 @@ export function ContactWidget({ isOpen, onClose }: ContactWidgetProps) {
                   <label htmlFor="message" className={styles.label}>
                     Message *
                   </label>
-                  <textarea id="message" name="message" rows={4} className={`${styles.input} ${styles.textarea}`} required></textarea>
+                  <textarea id="message" name="message" rows={3} className={`${styles.input} ${styles.textarea}`} required></textarea>
                 </div>
 
                 <button type="submit" className={styles.submitButton} disabled={status === 'loading'}>

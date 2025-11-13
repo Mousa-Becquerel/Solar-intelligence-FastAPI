@@ -81,6 +81,13 @@ export function Footer({ onContactClick }: FooterProps) {
               Contact
             </button>
           </div>
+          <div className={styles.legalLinks}>
+            <a href="/terms" className={styles.legalLink}>Terms of Service</a>
+            <span className={styles.separator}>•</span>
+            <a href="/privacy" className={styles.legalLink}>Privacy Policy</a>
+            <span className={styles.separator}>•</span>
+            <a href="/cookie-policy" className={styles.legalLink}>Cookie Policy</a>
+          </div>
           <div className={styles.copyright}>© 2025 Solarintelligence. All rights reserved.</div>
         </div>
       </div>

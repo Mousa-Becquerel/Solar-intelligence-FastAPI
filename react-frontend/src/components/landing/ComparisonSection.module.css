@@ -1,10 +1,12 @@
 /**
- * ComparisonSection Styles
- * Ported from static/css/landing.css
+ * ComparisonSection Styles - Material Design 3 Flat Design
+ * Follows MD3 principles: soft, spacious, tonal surfaces, no shadows
  */
 
 .section {
   padding: 6rem 0;
+  /* MD3: Dark background with subtle gradient */
+  background: linear-gradient(180deg, #0a1850 0%, #060B5A 100%); /* becq-blue gradient */
 }
 
 .container {
@@ -29,11 +31,11 @@
 
 .title {
   font-size: 1.875rem;
-  font-weight: 300;
-  color: white;
+  font-weight: 400; /* MD3: Regular weight for headlines */
+  color: #ffffff; /* White on dark background */
   margin-bottom: 1rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', sans-serif;
-  letter-spacing: -0.02em;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em; /* MD3: Humanist typography */
 }
 
 @media (min-width: 768px) {
@@ -43,17 +45,18 @@
 }
 
 .accent {
-  color: #e9a544;
-  font-weight: 500;
+  color: #fbbf24; /* becq-gold */
+  font-weight: 600; /* MD3: Semibold for emphasis */
 }
 
 .subtitle {
   font-size: 1.125rem;
-  color: #d1d5db;
+  color: rgba(255, 255, 255, 0.8); /* Light white on dark background */
   max-width: 48rem;
   margin: 0 auto;
-  font-weight: 300;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Text', sans-serif;
+  font-weight: 300; /* MD3: Light weight for body text */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
 }
 
 /* Comparison Grid */
@@ -70,41 +73,60 @@
   }
 }
 
-/* Comparison Cards */
+/* Comparison Cards - MD3 Flat Design */
 .card {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  padding: 36px 32px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* MD3: Clean white surface on dark background */
+  background: #ffffff;
+  border-radius: 20px; /* MD3: Large corner radius */
+  padding: 2rem; /* MD3: Generous padding */
+  border: 1px solid rgba(10, 24, 80, 0.08); /* MD3: Subtle tonal border */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  /* MD3: Flat design - no shadows or backdrop-filter */
+}
+
+/* MD3: State layer for hover */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.04) 0%, rgba(10, 24, 80, 0.04) 100%);
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.card:hover::before {
+  opacity: 1; /* MD3: State layer on hover */
 }
 
 .card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  /* MD3: Border emphasis on hover, no lift or shadows */
+  border-color: rgba(251, 191, 36, 0.3);
 }
 
 /* Left card (negative) specific styling */
 .cardLeft {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(10, 24, 80, 0.08);
 }
 
 .cardLeft:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(239, 68, 68, 0.3); /* Red tint on hover */
 }
 
-/* Right card (positive) specific styling */
+/* Right card (positive) specific styling - MD3 Emphasized */
 .cardRight {
-  border: 1px solid rgba(233, 165, 68, 0.3);
-  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.2); /* becq-gold tonal border */
+  background: #ffffff;
 }
 
 .cardRight:hover {
-  border-color: rgba(233, 165, 68, 0.5);
-  box-shadow: 0 20px 40px rgba(233, 165, 68, 0.2);
+  border-color: rgba(251, 191, 36, 0.4);
+  /* MD3: Flat design - no shadows */
 }
 
 @media (max-width: 1024px) {
@@ -115,41 +137,50 @@
 
 /* Card Header */
 .cardHeader {
-  margin-bottom: 28px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1.75rem; /* MD3: Generous spacing */
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(10, 24, 80, 0.08); /* MD3: Subtle tonal divider */
+  position: relative;
+  z-index: 1;
 }
 
 .badge {
   display: inline-block;
-  padding: 6px 14px;
-  border-radius: 16px;
-  font-size: 0.7rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px; /* MD3: Small corner radius for chips */
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-bottom: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', sans-serif;
+  margin-bottom: 0.75rem;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  position: relative;
+  z-index: 1;
 }
 
 .badgeGeneric {
-  background: rgba(156, 163, 175, 0.15);
-  color: #d1d5db;
-  border: 1px solid rgba(156, 163, 175, 0.25);
+  /* MD3: Tonal surface for generic badge */
+  background: rgba(100, 116, 139, 0.12);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.2);
 }
 
 .badgePremium {
-  background: rgba(233, 165, 68, 0.2);
-  color: #e9a544;
-  border: 1px solid rgba(233, 165, 68, 0.3);
+  /* MD3: Tonal surface with brand gold */
+  background: rgba(251, 191, 36, 0.12);
+  color: #f59e42; /* becq-gold-dark */
+  border: 1px solid rgba(251, 191, 36, 0.2);
 }
 
 .cardTitle {
   font-size: 1.5rem;
-  font-weight: 600;
-  color: #ffffff;
-  letter-spacing: -0.02em;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', sans-serif;
+  font-weight: 600; /* MD3: Semibold for titles */
+  color: #0a1850; /* becq-blue */
+  letter-spacing: -0.01em; /* MD3: Tight letter spacing */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.3;
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 1024px) {
@@ -162,29 +193,31 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1rem; /* MD3: Generous spacing */
+  position: relative;
+  z-index: 1;
 }
 
 .item {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 0.875rem;
   padding: 0;
   border-radius: 0;
-  transition: all 0.3s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
 }
 
 .item:hover {
-  transform: translateX(4px);
+  transform: translateX(0.25rem); /* MD3: Subtle motion */
 }
 
 .item p {
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
   line-height: 1.6;
-  color: #d1d5db;
+  color: #64748b; /* md-text-secondary */
   margin: 0;
-  font-weight: 400;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Text', sans-serif;
+  font-weight: 300; /* MD3: Light weight for body text */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 @media (max-width: 1024px) {
@@ -193,7 +226,7 @@
   }
 }
 
-/* Icons */
+/* Icons - MD3 Tonal Containers */
 .icon {
   flex-shrink: 0;
   width: 28px;
@@ -202,36 +235,69 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-  margin-top: 2px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
+  margin-top: 0.125rem;
+  position: relative;
+  overflow: hidden;
+  /* MD3: Flat design - no shadows */
+}
+
+/* MD3: State layer for icons */
+.icon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
 }
 
 .iconNegative {
+  /* MD3: Tonal surface for negative state */
   background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .item:hover .iconNegative {
-  background: rgba(239, 68, 68, 0.2);
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.3);
+  /* MD3: Flat design - no glow shadows */
+}
+
+.item:hover .iconNegative::before {
+  opacity: 0.08; /* MD3: State layer on hover */
 }
 
 .iconPositive {
-  background: rgba(233, 165, 68, 0.15);
-  color: #e9a544;
+  /* MD3: Tonal surface with brand gold */
+  background: rgba(251, 191, 36, 0.12);
+  color: #f59e42; /* becq-gold-dark */
+  border: 1px solid rgba(251, 191, 36, 0.2);
 }
 
 .item:hover .iconPositive {
-  background: rgba(233, 165, 68, 0.25);
-  box-shadow: 0 0 16px rgba(233, 165, 68, 0.4);
+  background: rgba(251, 191, 36, 0.16);
+  border-color: rgba(251, 191, 36, 0.3);
+  /* MD3: Flat design - no glow shadows */
+}
+
+.item:hover .iconPositive::before {
+  opacity: 0.08; /* MD3: State layer on hover */
 }
 
 .iconSvg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1rem;
+  height: 1rem;
+  position: relative;
+  z-index: 1;
 }
 
-/* CTA Button */
+/* CTA Button - MD3 Filled Button (Flat) */
 .cta {
   text-align: center;
   margin-top: 4rem;
@@ -239,27 +305,54 @@
 
 .ctaButton {
   display: inline-block;
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-  color: white;
+  /* MD3: Filled button with brand gold */
+  background: #fbbf24; /* becq-gold */
+  color: #0a1850; /* becq-blue */
   padding: 1rem 2.5rem;
-  border-radius: 0.75rem;
+  border-radius: 12px; /* MD3: Medium corner radius */
   font-weight: 600;
   font-size: 1rem;
-  transition: all 0.3s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  border: none;
+  /* MD3: Flat design - no shadows or gradients */
+  position: relative;
+  overflow: hidden;
+}
+
+/* MD3: State layer for button */
+.ctaButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ctaButton:hover::before {
+  opacity: 0.08; /* MD3: State layer on hover */
 }
 
 .ctaButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(233, 165, 68, 0.3);
+  /* MD3: No lift, just subtle press effect */
+  transform: scale(0.98);
+}
+
+.ctaButton:active {
+  transform: scale(0.96); /* MD3: Subtle press effect */
 }
 
 .ctaText {
-  color: #d1d5db;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 0.875rem;
   margin-top: 1rem;
   font-weight: 300;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Text', sans-serif;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }

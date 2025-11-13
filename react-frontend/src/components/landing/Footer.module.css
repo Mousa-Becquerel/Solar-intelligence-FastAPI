@@ -1,11 +1,12 @@
 /**
- * Footer Styles
- * Ported from static/css/landing.css
+ * Footer Styles - Material Design 3 Flat Design
+ * Follows MD3 principles: soft, spacious, tonal surfaces, no shadows
  */
 
 .footer {
-  background: linear-gradient(135deg, #0a1850 0%, #1e1b4b 50%, #312e81 100%);
-  padding: 80px 0 40px 0;
+  /* MD3: Dark gradient using brand colors */
+  background: linear-gradient(135deg, #0a1850 0%, #060B5A 100%);
+  padding: 5rem 0 2.5rem 0;
   position: relative;
 }
 
@@ -16,7 +17,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(233, 165, 68, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.3), transparent); /* becq-gold */
 }
 
 .container {
@@ -40,41 +41,41 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 2rem;
-  margin-bottom: 60px;
+  margin-bottom: 3.75rem;
 }
 
 .ctaText {
   font-size: 2rem;
-  font-weight: 300;
+  font-weight: 300; /* MD3: Light weight for display text */
   color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', sans-serif;
-  letter-spacing: -0.02em;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em; /* MD3: Humanist typography */
   margin: 0;
 }
 
 .ctaLink {
-  color: #e9a544;
+  color: #fbbf24; /* becq-gold */
   font-weight: 400;
   text-decoration: none;
-  transition: all 0.3s ease;
-  border-bottom: 1px solid #e9a544;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
+  border-bottom: 1px solid #fbbf24;
   padding-bottom: 2px;
   background: none;
   border: none;
-  border-bottom: 1px solid #e9a544;
+  border-bottom: 1px solid #fbbf24;
   cursor: pointer;
   font-size: inherit;
   font-family: inherit;
 }
 
 .ctaLink:hover {
-  color: #e8bf4f;
-  border-bottom-color: #e8bf4f;
+  color: #f59e42; /* becq-gold-dark */
+  border-bottom-color: #f59e42;
 }
 
 .social {
   display: flex;
-  gap: 20px;
+  gap: 1.25rem;
   align-items: center;
 }
 
@@ -86,22 +87,45 @@
   align-items: center;
   justify-content: center;
   color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* MD3: Tonal surface */
+  background: rgba(251, 191, 36, 0.08);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* MD3: State layer for social links */
+.socialLink::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+}
+
+.socialLink:hover::before {
+  opacity: 0.08; /* MD3: State layer on hover */
 }
 
 .socialLink:hover {
-  background: rgba(233, 165, 68, 0.2);
-  border-color: rgba(233, 165, 68, 0.4);
-  color: #e9a544;
-  transform: translateY(-3px);
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fbbf24; /* becq-gold */
+  /* MD3: Subtle motion */
+  transform: translateY(-0.125rem);
 }
 
 .socialIcon {
   width: 1.5rem;
   height: 1.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 /* Logo Section */
@@ -109,7 +133,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 40px 0;
+  padding: 2.5rem 0;
 }
 
 .logo {
@@ -123,11 +147,11 @@
 
 /* Bottom Section */
 .bottom {
-  padding-top: 30px;
+  padding-top: 1.875rem;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 1.25rem;
   align-items: center;
 }
 
@@ -143,15 +167,43 @@
   font-size: 0.9rem;
   font-weight: 400;
   text-decoration: none;
-  transition: color 0.3s ease;
+  transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
   background: none;
   border: none;
   cursor: pointer;
-  font-family: inherit;
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .link:hover {
-  color: #e9a544;
+  color: #fbbf24; /* becq-gold */
+}
+
+.legalLinks {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.legalLink {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-decoration: none;
+  transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3: Standard easing */
+  font-family: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.legalLink:hover {
+  color: #fbbf24; /* becq-gold */
+  text-decoration: underline;
+}
+
+.separator {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.8rem;
 }
 
 .copyright {

@@ -16,7 +16,8 @@ import asyncio
 from pydantic import BaseModel
 
 # Import from openai-agents library
-from agents import Agent, Runner, CodeInterpreterTool, SQLiteSession, ModelSettings, RunConfig, trace, TResponseInputItem
+from agents import Agent, Runner, CodeInterpreterTool, ModelSettings, RunConfig, trace, TResponseInputItem
+from fastapi_app.utils.session_factory import create_agent_session
 from openai.types.shared.reasoning import Reasoning
 
 # Logfire imports
@@ -178,14 +179,12 @@ You can:
         """
         self.config = config or ManufacturerFinancialAgentConfig()
         self.manufacturer_financial_expert = None
-        self.conversation_sessions: Dict[str, Any] = {}  # conversation_id -> session
-
-        logger.info("Using SQLite for session storage (simple and reliable)")
+        # Removed conversation_sessions dict - using stateless PostgreSQL sessions now
 
         # Initialize agent
         self._initialize_agent()
 
-        logger.info(f"✅ Manufacturer Financial Agent initialized (Memory: SQLite)")
+        logger.info(f"✅ Manufacturer Financial Agent initialized (Memory: Stateless PostgreSQL)")
 
     def _initialize_agent(self):
         """Create the manufacturer financial expert agent"""
@@ -200,17 +199,17 @@ You can:
             })
 
             # Create manufacturer financial expert agent with code interpreter
-            # Match AWS production settings exactly
             self.manufacturer_financial_expert = Agent(
                 name="PV Manufacturer Financial Analyst",
                 instructions=self.MANUFACTURER_FINANCIAL_PROMPT,
-                model="gpt-4.1",  # Match AWS production
+                model="gpt-5-mini",
                 tools=[code_interpreter],
                 model_settings=ModelSettings(
-                    temperature=1,
-                    top_p=1,
-                    max_tokens=2048,
-                    store=True  # This enables conversation memory in OpenAI's cloud
+                    store=True,  # This enables conversation memory in OpenAI's cloud
+                    reasoning=Reasoning(
+                        effort="low",
+                        summary="auto"
+                    )
                 )
             )
             logger.info(f"✅ Created manufacturer financial expert with {len(self.config.file_ids)} data files")
@@ -231,17 +230,11 @@ You can:
             Dictionary with output_text containing the response
         """
         with trace("New workflow"):
-            # Get or create session for this conversation
+            # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                if conversation_id not in self.conversation_sessions:
-                    session_id = f"manufacturer_financial_{conversation_id}"
-                    self.conversation_sessions[conversation_id] = SQLiteSession(
-                        session_id=session_id
-                    )
-                    logger.info(f"Created SQLite session for conversation {conversation_id}")
-
-                session = self.conversation_sessions[conversation_id]
+                session = create_agent_session(conversation_id)
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Prepare conversation history
             workflow = workflow_input.model_dump()
@@ -297,19 +290,11 @@ You can:
         try:
             logger.info(f"Processing query (streaming): {query}")
 
-            # Get or create session for this conversation
+            # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                if conversation_id not in self.conversation_sessions:
-                    session_id = f"manufacturer_financial_{conversation_id}"
-                    self.conversation_sessions[conversation_id] = SQLiteSession(
-                        session_id=session_id
-                    )
-                    logger.info(f"Created SQLite session for conversation {conversation_id}")
-                else:
-                    logger.debug(f"Reusing existing SQLite session for conversation {conversation_id}")
-
-                session = self.conversation_sessions[conversation_id]
+                session = create_agent_session(conversation_id)
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Run with streaming - match working agents (Digitalization, News)
             result = Runner.run_streamed(self.manufacturer_financial_expert, query, session=session)
@@ -390,21 +375,21 @@ You can:
                 }
 
     def clear_conversation_memory(self, conversation_id: str = None):
-        """Clear conversation memory by removing session"""
-        if conversation_id:
-            if conversation_id in self.conversation_sessions:
-                del self.conversation_sessions[conversation_id]
-                logger.info(f"Cleared conversation session for {conversation_id}")
-        else:
-            # Clear all sessions
-            self.conversation_sessions.clear()
-            logger.info("Cleared all conversation sessions")
+        """
+        Clear conversation memory (note: with stateless sessions, memory is stored in PostgreSQL)
+        This method is kept for API compatibility but has no effect with stateless sessions.
+        To clear session data, you would need to delete from the database directly.
+        """
+        logger.info(f"clear_conversation_memory called for {conversation_id or 'all'} - no action needed with stateless sessions")
 
     def get_conversation_memory_info(self) -> Dict[str, Any]:
-        """Get information about conversation memory usage"""
+        """
+        Get information about conversation memory usage
+        Note: With stateless sessions, memory is stored in PostgreSQL, not in-memory
+        """
         return {
-            "total_conversations": len(self.conversation_sessions),
-            "conversation_ids": list(self.conversation_sessions.keys()),
+            "memory_type": "stateless_postgresql",
+            "note": "Session data stored in PostgreSQL database",
         }
 
     def cleanup(self):
