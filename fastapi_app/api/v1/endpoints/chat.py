@@ -5,11 +5,13 @@ Handles chat messages with SSE (Server-Sent Events) streaming
 import json
 import logging
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, Field
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from fastapi_app.db.session import get_db
 from fastapi_app.core.deps import get_current_active_user
@@ -19,6 +21,9 @@ from fastapi_app.services.agent_access_service import AgentAccessService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Initialize limiter for this router
+limiter = Limiter(key_func=get_remote_address)
 
 
 # ============================================
@@ -62,8 +67,10 @@ class AgentAccessError(BaseModel):
     summary="Send chat message",
     description="Send a message and get streaming or non-streaming response based on agent type"
 )
+@limiter.limit("60/minute")  # 60 chat messages per minute per IP
 async def send_chat_message(
-    request: ChatRequest,
+    request: Request,  # Required for rate limiting (must be named 'request')
+    chat_request: ChatRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -75,9 +82,9 @@ async def send_chat_message(
         - JSON response for non-streaming agents
     """
     try:
-        user_message = request.message.strip()
-        conv_id = request.conversation_id
-        agent_type = request.agent_type
+        user_message = chat_request.message.strip()
+        conv_id = chat_request.conversation_id
+        agent_type = chat_request.agent_type
 
         # Input validation
         if not user_message:
@@ -261,7 +268,7 @@ async def send_chat_message(
             elif agent_type == "news":
                 return StreamingResponse(
                     ChatProcessingService.process_news_agent_stream(
-                        db, user_message, conv_id
+                        db, user_message, conv_id, agent_type
                     ),
                     media_type="text/event-stream",
                     headers={
@@ -276,7 +283,7 @@ async def send_chat_message(
             elif agent_type == "digitalization":
                 return StreamingResponse(
                     ChatProcessingService.process_digitalization_agent_stream(
-                        db, user_message, conv_id
+                        db, user_message, conv_id, agent_type
                     ),
                     media_type="text/event-stream",
                     headers={
@@ -291,7 +298,7 @@ async def send_chat_message(
             elif agent_type == "market":
                 return StreamingResponse(
                     ChatProcessingService.process_market_intelligence_agent_stream(
-                        db, user_message, conv_id
+                        db, user_message, conv_id, agent_type
                     ),
                     media_type="text/event-stream",
                     headers={
@@ -306,7 +313,7 @@ async def send_chat_message(
             elif agent_type == "nzia_policy":
                 return StreamingResponse(
                     ChatProcessingService.process_nzia_policy_agent_stream(
-                        db, user_message, conv_id
+                        db, user_message, conv_id, agent_type
                     ),
                     media_type="text/event-stream",
                     headers={
@@ -321,7 +328,7 @@ async def send_chat_message(
             elif agent_type == "manufacturer_financial":
                 return StreamingResponse(
                     ChatProcessingService.process_manufacturer_financial_agent_stream(
-                        db, user_message, conv_id
+                        db, user_message, conv_id, agent_type
                     ),
                     media_type="text/event-stream",
                     headers={
@@ -336,7 +343,7 @@ async def send_chat_message(
             elif agent_type == "nzia_market_impact":
                 return StreamingResponse(
                     ChatProcessingService.process_nzia_market_impact_agent_stream(
-                        db, user_message, conv_id
+                        db, user_message, conv_id, agent_type
                     ),
                     media_type="text/event-stream",
                     headers={
@@ -472,6 +479,13 @@ async def approval_response(
         # Save approval response to conversation history
         if request.conversation_id:
             try:
+                # Get conversation to retrieve agent_type
+                result = await db.execute(
+                    select(Conversation).where(Conversation.id == request.conversation_id)
+                )
+                conversation = result.scalar_one_or_none()
+                conversation_agent_type = conversation.agent_type if conversation else None
+
                 # Save user's approval decision
                 approval_text = "Yes, I want to contact an expert" if request.approved else "No, thanks"
                 user_msg = Message(
@@ -489,6 +503,7 @@ async def approval_response(
                 bot_msg = Message(
                     conversation_id=request.conversation_id,
                     sender='bot',
+                    agent_type=conversation_agent_type,
                     content=json.dumps({
                         "type": "string",
                         "value": response_message,

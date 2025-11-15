@@ -4,12 +4,14 @@ JWT-based authentication (replaces Flask-Login)
 """
 from datetime import datetime, timedelta
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from jose import jwt
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from fastapi_app.core.config import settings
 from fastapi_app.db.session import get_db
@@ -18,6 +20,9 @@ from fastapi_app.core.deps import get_current_active_user
 from fastapi_app.services.auth_service import AuthService
 
 router = APIRouter()
+
+# Initialize limiter for this router
+limiter = Limiter(key_func=get_remote_address)
 
 
 # Schemas
@@ -113,7 +118,9 @@ def create_access_token(user_id: int) -> str:
 
 
 @router.post("/login", response_model=Token, tags=["Authentication"])
+@limiter.limit("5/minute")  # Prevent brute-force attacks - 5 login attempts per minute
 async def login(
+    request: Request,  # Required for rate limiting
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: AsyncSession = Depends(get_db)
 ):
@@ -150,7 +157,9 @@ async def login(
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
+@limiter.limit("3/hour")  # Prevent spam registration - 3 registrations per hour per IP
 async def register(
+    request: Request,  # Required for rate limiting
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db)
 ):

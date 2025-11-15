@@ -242,6 +242,7 @@ class APIClient {
       sender: msg.sender,
       // Parse content if it's JSON string, otherwise use as-is
       content: this.parseMessageContent(msg.content),
+      agent_type: msg.agent_type,  // Include agent_type for multi-agent conversations
       timestamp: msg.timestamp,
     }));
   }

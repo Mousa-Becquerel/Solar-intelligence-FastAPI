@@ -6,11 +6,13 @@
  */
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUIStore, useAuthStore } from '../../stores';
 import NewConversationButton from './NewConversationButton';
 import ConversationList from './ConversationList';
 
 export default function SidebarPanel() {
+  const navigate = useNavigate();
   const { sidebarExpanded, toggleSidebar } = useUIStore();
   const { user, logout } = useAuthStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -46,11 +48,70 @@ export default function SidebarPanel() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: sidebarExpanded ? 'space-between' : 'center',
-          padding: sidebarExpanded ? '1rem' : '1rem 0.5rem',
+          padding: sidebarExpanded ? '24px 16px' : '1rem 0.5rem',
           background: '#F5F5F5',
           flexShrink: 0,
         }}
       >
+        {/* Logo - visible when expanded */}
+        {sidebarExpanded && (
+          <div style={{ marginBottom: '0', flex: 1 }}>
+            <img
+              src="/new_logo.svg"
+              alt="Solar Intelligence"
+              style={{
+                height: '50px',
+                width: 'auto',
+                opacity: 1,
+                filter: 'none',
+              }}
+            />
+          </div>
+        )}
+
+        {/* Collapse button (visible when expanded) */}
+        {sidebarExpanded && (
+          <button
+            className="sidebar-toggle-btn"
+            onClick={toggleSidebar}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            style={{
+              width: '36px',
+              height: '36px',
+              border: 'none',
+              background: 'transparent',
+              color: '#2563eb',
+              cursor: 'pointer',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(37, 99, 235, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6"></path>
+            </svg>
+          </button>
+        )}
+
         {/* Expand button (visible when collapsed) */}
         {!sidebarExpanded && (
           <button
@@ -97,78 +158,6 @@ export default function SidebarPanel() {
             </svg>
           </button>
         )}
-
-        {/* Title (visible when expanded) */}
-        {sidebarExpanded && (
-          <div
-            className="sidebar-title"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
-              fontSize: '1rem',
-              fontWeight: 500,
-              color: '#1e293b',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.4,
-              flex: 1,
-              minWidth: 0,
-            }}
-          >
-            <span
-              style={{
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              Solar Intelligence
-            </span>
-          </div>
-        )}
-
-        {/* Collapse button (visible when expanded) */}
-        {sidebarExpanded && (
-          <button
-            className="sidebar-toggle-btn"
-            onClick={toggleSidebar}
-            aria-label="Collapse sidebar"
-            title="Collapse sidebar"
-            style={{
-              width: '36px',
-              height: '36px',
-              border: 'none',
-              background: 'transparent',
-              color: '#2563eb',
-              cursor: 'pointer',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(37, 99, 235, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M15 18l-6-6 6-6"></path>
-            </svg>
-          </button>
-        )}
       </div>
 
       {/* ===== CONTENT SECTION ===== */}
@@ -178,10 +167,10 @@ export default function SidebarPanel() {
           gridArea: 'content',
           display: 'flex',
           flexDirection: 'column',
-          padding: sidebarExpanded ? '1rem' : '0.5rem 0',
+          padding: sidebarExpanded ? '16px' : '0.5rem 0',
           overflowY: 'auto',
           overflowX: 'hidden',
-          gap: '0.5rem',
+          gap: '8px',
           alignItems: sidebarExpanded ? 'stretch' : 'center',
           width: sidebarExpanded ? '100%' : '72px',
         }}
@@ -195,8 +184,8 @@ export default function SidebarPanel() {
               title="New Chat"
               aria-label="New Chat"
               onClick={() => {
-                // Handle new chat
-                window.location.href = '/app';
+                // Navigate to new chat without conversation ID
+                navigate('/chat');
               }}
               style={{
                 width: '40px',
@@ -268,10 +257,75 @@ export default function SidebarPanel() {
         {/* Expanded state content */}
         {sidebarExpanded && (
           <>
-            {/* New Chat Button */}
-            <div className="sidebar-header">
-              <NewConversationButton />
-            </div>
+            {/* New Chat Tab */}
+            <button
+              onClick={() => {
+                // Navigate to new chat without conversation ID
+                navigate('/chat');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                background: 'white',
+                cursor: 'pointer',
+                color: '#010654',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                border: 'none',
+                width: '100%',
+                textAlign: 'left',
+                transition: 'background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#F3F4F6';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'white';
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              New Chat
+            </button>
+
+            {/* Back to Agents Tab */}
+            <a
+              href="/agents"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease',
+                color: '#6B7280',
+                fontSize: '0.875rem',
+                fontWeight: '400',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#F3F4F6';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18"/>
+                <path d="M9 21V9"/>
+              </svg>
+              Agents
+            </a>
+
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
 
             {/* Recent Section Title */}
             <div
@@ -300,9 +354,9 @@ export default function SidebarPanel() {
         className="sidebar-footer"
         style={{
           gridArea: 'footer',
-          padding: sidebarExpanded ? '1rem' : '0.5rem',
+          padding: sidebarExpanded ? '12px 16px' : '0.5rem',
           background: '#F5F5F5',
-          borderTop: '1px solid rgba(0, 0, 0, 0.05)',
+          borderTop: '1px solid #E5E7EB',
           position: 'relative',
         }}
       >
@@ -314,65 +368,35 @@ export default function SidebarPanel() {
             width: sidebarExpanded ? '100%' : '40px',
             height: sidebarExpanded ? 'auto' : '40px',
             border: 'none',
-            background: 'white',
+            background: 'transparent',
             cursor: 'pointer',
-            borderRadius: sidebarExpanded ? '12px' : '50%',
+            borderRadius: '0',
             display: 'flex',
             alignItems: 'center',
-            gap: sidebarExpanded ? '0.75rem' : '0',
-            padding: sidebarExpanded ? '0.75rem' : '0',
+            gap: sidebarExpanded ? '12px' : '0',
+            padding: sidebarExpanded ? '0' : '0',
             margin: sidebarExpanded ? '0' : '0 auto',
             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             justifyContent: sidebarExpanded ? 'flex-start' : 'center',
             position: 'relative',
-            overflow: sidebarExpanded ? 'hidden' : 'visible',
+            overflow: 'visible',
             boxShadow: 'none',
           }}
-          onMouseEnter={(e) => {
-            if (sidebarExpanded) {
-              e.currentTarget.style.background = '#EEEEEE';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (sidebarExpanded) {
-              e.currentTarget.style.background = 'white';
-            }
-          }}
         >
-          {/* MD3 State Layer */}
-          {sidebarExpanded && (
-            <span
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: '#1e293b',
-                opacity: 0,
-                transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                pointerEvents: 'none',
-                borderRadius: '12px',
-              }}
-            />
-          )}
-
           {/* User Avatar */}
           <div
             style={{
               width: '32px',
               height: '32px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: '#010654',
               color: 'white',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '14px',
-              fontWeight: 600,
+              fontSize: '0.875rem',
+              fontWeight: '600',
               flexShrink: 0,
-              position: 'relative',
-              zIndex: 1,
             }}
           >
             {getUserInitials()}
@@ -380,60 +404,37 @@ export default function SidebarPanel() {
 
           {/* User Info (visible when expanded) */}
           {sidebarExpanded && (
-            <>
+            <div
+              style={{
+                flex: 1,
+                textAlign: 'left',
+                minWidth: 0,
+              }}
+            >
               <div
                 style={{
-                  flex: 1,
-                  textAlign: 'left',
-                  minWidth: 0,
-                  position: 'relative',
-                  zIndex: 1,
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: '#111827',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#1e293b',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {user?.full_name || 'User'}
-                </div>
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: '#64748b',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {user?.plan_type || 'Free'} plan
-                </div>
+                {user?.full_name || 'User'}
               </div>
-
-              {/* Chevron */}
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#64748b"
-                strokeWidth="2"
+              <div
                 style={{
-                  flexShrink: 0,
-                  transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s ease',
-                  position: 'relative',
-                  zIndex: 1,
+                  fontSize: '0.75rem',
+                  color: '#6B7280',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </>
+                {user?.plan_type || 'Free'} Plan
+              </div>
+            </div>
           )}
         </button>
 
@@ -444,12 +445,12 @@ export default function SidebarPanel() {
             style={{
               position: 'absolute',
               bottom: '100%',
-              left: '0.5rem',
-              right: '0.5rem',
-              marginBottom: '0.5rem',
+              left: '16px',
+              right: '16px',
+              marginBottom: '8px',
               background: 'white',
-              borderRadius: '12px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
               overflow: 'hidden',
               zIndex: 1000,
             }}
@@ -460,39 +461,22 @@ export default function SidebarPanel() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.75rem 1rem',
+                gap: '12px',
+                padding: '12px 16px',
                 textDecoration: 'none',
-                color: '#1e293b',
-                fontSize: '14px',
+                color: '#111827',
+                fontSize: '0.875rem',
+                fontWeight: '400',
                 transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                borderBottom: '1px solid #f1f5f9',
-                position: 'relative',
-                overflow: 'hidden',
-                boxShadow: 'none',
+                borderBottom: '1px solid #E5E7EB',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#EEEEEE';
+                e.currentTarget.style.background = '#F3F4F6';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent';
               }}
             >
-              {/* MD3 State Layer */}
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: '#1e293b',
-                  opacity: 0,
-                  transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  pointerEvents: 'none',
-                }}
-              />
-
               <svg
                 width="18"
                 height="18"
@@ -502,12 +486,11 @@ export default function SidebarPanel() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ position: 'relative', zIndex: 1, flexShrink: 0 }}
               >
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
-              <span style={{ position: 'relative', zIndex: 1, flex: 1 }}>Profile</span>
+              <span>Profile</span>
             </a>
 
             {/* Admin Link - Only visible for admin users */}
@@ -518,39 +501,22 @@ export default function SidebarPanel() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.75rem 1rem',
+                  gap: '12px',
+                  padding: '12px 16px',
                   textDecoration: 'none',
-                  color: '#1e293b',
-                  fontSize: '14px',
+                  color: '#111827',
+                  fontSize: '0.875rem',
+                  fontWeight: '400',
                   transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  borderBottom: '1px solid #f1f5f9',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  boxShadow: 'none',
+                  borderBottom: '1px solid #E5E7EB',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#EEEEEE';
+                  e.currentTarget.style.background = '#F3F4F6';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
                 }}
               >
-                {/* MD3 State Layer */}
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: '#1e293b',
-                    opacity: 0,
-                    transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    pointerEvents: 'none',
-                  }}
-                />
-
                 <svg
                   width="18"
                   height="18"
@@ -560,12 +526,11 @@ export default function SidebarPanel() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ position: 'relative', zIndex: 1, flexShrink: 0 }}
                 >
                   <circle cx="12" cy="12" r="3"></circle>
                   <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
                 </svg>
-                <span style={{ position: 'relative', zIndex: 1, flex: 1 }}>Admin</span>
+                <span>Admin</span>
               </a>
             )}
 
@@ -579,40 +544,24 @@ export default function SidebarPanel() {
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.75rem 1rem',
+                gap: '12px',
+                padding: '12px 16px',
                 border: 'none',
                 background: 'transparent',
-                color: '#1e293b',
-                fontSize: '14px',
+                color: '#111827',
+                fontSize: '0.875rem',
+                fontWeight: '400',
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                position: 'relative',
-                overflow: 'hidden',
-                boxShadow: 'none',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#EEEEEE';
+                e.currentTarget.style.background = '#F3F4F6';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent';
               }}
             >
-              {/* MD3 State Layer */}
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: '#1e293b',
-                  opacity: 0,
-                  transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  pointerEvents: 'none',
-                }}
-              />
               <svg
                 width="18"
                 height="18"
@@ -622,13 +571,12 @@ export default function SidebarPanel() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ position: 'relative', zIndex: 1, flexShrink: 0 }}
               >
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                 <polyline points="16 17 21 12 16 7"></polyline>
                 <line x1="21" y1="12" x2="9" y2="12"></line>
               </svg>
-              <span style={{ position: 'relative', zIndex: 1, flex: 1 }}>Logout</span>
+              <span>Logout</span>
             </button>
           </div>
         )}

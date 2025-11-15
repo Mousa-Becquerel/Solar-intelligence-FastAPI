@@ -17,6 +17,9 @@ email-validator>=2.1.0  # Required for EmailStr validation
 python-jose[cryptography]==3.3.0  # JWT tokens
 passlib[bcrypt]==1.7.4  # Password hashing
 
+# Rate Limiting
+slowapi==0.1.9  # Rate limiting for FastAPI
+
 # Async HTTP client
 httpx==0.26.0
 

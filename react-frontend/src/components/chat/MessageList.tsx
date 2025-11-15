@@ -60,6 +60,7 @@ export default function MessageList({ messages, isStreaming = false, queryLimitP
         <MessageBubble
           key={message.id}
           message={message}
+          agentType={message.agent_type as any}
           queryLimitProps={queryLimitProps}
         />
       ))}

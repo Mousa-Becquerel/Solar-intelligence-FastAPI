@@ -233,8 +233,8 @@ You can:
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
-                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
+                session = create_agent_session(conversation_id, agent_type='manufacturer_financial')
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (manufacturer_financial agent)")
 
             # Prepare conversation history
             workflow = workflow_input.model_dump()
@@ -293,8 +293,8 @@ You can:
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
-                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
+                session = create_agent_session(conversation_id, agent_type='manufacturer_financial')
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (manufacturer_financial agent)")
 
             # Run with streaming - match working agents (Digitalization, News)
             result = Runner.run_streamed(self.manufacturer_financial_expert, query, session=session)

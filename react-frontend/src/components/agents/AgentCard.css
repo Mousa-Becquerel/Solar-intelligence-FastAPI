@@ -1,215 +1,24 @@
 /**
  * Agent Card Styles
  *
- * Material Design 3 color variations for agent cards
- * Matches Flask agents.css exactly
+ * Material Design 3 - Clean minimal styling
+ * All cards have white background for readability
  */
 
 /* ============================================
-   AGENT CARD COLOR VARIATIONS
+   AGENT CARD BASE - ALL WHITE
    ============================================ */
 
-/* Unhired (pastel backgrounds) */
-.agent-card[data-color='navy'] {
-  background: #e8eaf6;
-}
-
-.agent-card[data-color='gold'] {
-  background: #fff8e1;
-}
-
-.agent-card[data-color='navy-light'] {
-  background: #f3f4f9;
-}
-
-.agent-card[data-color='gold-dark'] {
-  background: #ffe9d5;
-}
-
-.agent-card[data-color='purple'] {
-  background: #f3e5f5;
-}
-
-.agent-card[data-color='emerald'] {
-  background: #e8f5e9;
-}
-
-.agent-card[data-color='indigo'] {
-  background: #e8eaf6;
-}
-
-.agent-card[data-color='teal'] {
-  background: #e0f2f1;
-}
-
-/* Hired (solid colors) */
-.agent-card--hired[data-color='navy'] {
-  background: #5c6bc0 !important;
-}
-
-.agent-card--hired[data-color='gold'] {
-  background: #ffb74d !important;
-}
-
-.agent-card--hired[data-color='navy-light'] {
-  background: #7986cb !important;
-}
-
-.agent-card--hired[data-color='gold-dark'] {
-  background: #ffa726 !important;
-}
-
-.agent-card--hired[data-color='purple'] {
-  background: #ab47bc !important;
-}
-
-.agent-card--hired[data-color='emerald'] {
-  background: #66bb6a !important;
-}
-
-.agent-card--hired[data-color='indigo'] {
-  background: #5c6bc0 !important;
-}
-
-.agent-card--hired[data-color='teal'] {
-  background: #26a69a !important;
-}
-
-/* ============================================
-   INITIAL CIRCLE COLOR VARIATIONS
-   ============================================ */
-
-/* Unhired initials */
-.agent-card[data-color='navy'] .agent-card__initial {
-  background: #c5cae9;
-  color: #3f51b5;
-}
-
-.agent-card[data-color='gold'] .agent-card__initial {
-  background: #ffe082;
-  color: #f57c00;
-}
-
-.agent-card[data-color='navy-light'] .agent-card__initial {
-  background: #d1d5e8;
-  color: #5c6bc0;
-}
-
-.agent-card[data-color='gold-dark'] .agent-card__initial {
-  background: #ffcc80;
-  color: #f57c00;
-}
-
-.agent-card[data-color='purple'] .agent-card__initial {
-  background: #e1bee7;
-  color: #7b1fa2;
-}
-
-.agent-card[data-color='emerald'] .agent-card__initial {
-  background: #c8e6c9;
-  color: #388e3c;
-}
-
-.agent-card[data-color='indigo'] .agent-card__initial {
-  background: #c5cae9;
-  color: #283593;
-}
-
-.agent-card[data-color='teal'] .agent-card__initial {
-  background: #b2dfdb;
-  color: #00695c;
-}
-
-/* Hired initials (white background with colored text) */
-.agent-card--hired .agent-card__initial {
+/* All cards have white background */
+.agent-card {
   background: white !important;
 }
 
-.agent-card--hired[data-color='navy'] .agent-card__initial,
-.agent-card--hired[data-color='navy-light'] .agent-card__initial,
-.agent-card--hired[data-color='indigo'] .agent-card__initial {
-  color: #3f51b5 !important;
-}
-
-.agent-card--hired[data-color='gold'] .agent-card__initial,
-.agent-card--hired[data-color='gold-dark'] .agent-card__initial {
-  color: #f57c00 !important;
-}
-
-.agent-card--hired[data-color='purple'] .agent-card__initial {
-  color: #7b1fa2 !important;
-}
-
-.agent-card--hired[data-color='emerald'] .agent-card__initial {
-  color: #388e3c !important;
-}
-
-.agent-card--hired[data-color='teal'] .agent-card__initial {
-  color: #00695c !important;
+.agent-card--hired {
+  background: white !important;
 }
 
 /* ============================================
-   CHECKMARK COLOR VARIATIONS
+   NO COLOR VARIATIONS - KEEP IT CLEAN
    ============================================ */
-.agent-card[data-color='navy'] .agent-card__check svg,
-.agent-card[data-color='navy-light'] .agent-card__check svg,
-.agent-card[data-color='indigo'] .agent-card__check svg {
-  color: #000a55;
-}
-
-.agent-card[data-color='gold'] .agent-card__check svg,
-.agent-card[data-color='gold-dark'] .agent-card__check svg {
-  color: #fbbf24;
-}
-
-.agent-card[data-color='purple'] .agent-card__check svg {
-  color: #ab47bc;
-}
-
-.agent-card[data-color='emerald'] .agent-card__check svg {
-  color: #66bb6a;
-}
-
-.agent-card[data-color='teal'] .agent-card__check svg {
-  color: #26a69a;
-}
-
-/* ============================================
-   BADGE COLOR VARIATIONS
-   ============================================ */
-.agent-card__badge--datahub {
-  background: rgba(251, 191, 36, 0.1);
-  color: #d97706;
-  border-color: rgba(251, 191, 36, 0.3);
-}
-
-.agent-card__badge--charts {
-  background: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
-  border-color: rgba(37, 99, 235, 0.3);
-}
-
-.agent-card__badge--news {
-  background: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
-  border-color: rgba(37, 99, 235, 0.3);
-}
-
-.agent-card__badge--ai {
-  background: rgba(0, 10, 85, 0.1);
-  color: #000a55;
-  border-color: rgba(0, 10, 85, 0.3);
-}
-
-.agent-card__badge--code {
-  background: rgba(139, 92, 246, 0.1);
-  color: #7c3aed;
-  border-color: rgba(139, 92, 246, 0.3);
-}
-
-/* Hired card badges (white with transparency) */
-.agent-card--hired .agent-card__badge {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.3);
-}
+/* Removed all colored backgrounds for cleaner design */

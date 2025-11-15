@@ -10,6 +10,8 @@ import { useState, useContext } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message } from '../../types/api';
+import type { AgentType } from '../../constants/agents';
+import { AGENT_METADATA } from '../../constants/agentMetadata';
 import PlotMessage from './PlotMessage';
 import ApprovalButtons from './ApprovalButtons';
 import QueryLimitMessage from './QueryLimitMessage';
@@ -17,6 +19,7 @@ import { ArtifactContext } from '../../pages/ChatPage';
 
 interface MessageBubbleProps {
   message: Message & { isQueryLimitMessage?: boolean };
+  agentType?: AgentType;
   queryLimitProps?: {
     onUpgrade: () => void;
     onTakeSurvey: () => void;
@@ -25,10 +28,13 @@ interface MessageBubbleProps {
   };
 }
 
-export default function MessageBubble({ message, queryLimitProps }: MessageBubbleProps) {
+export default function MessageBubble({ message, agentType, queryLimitProps }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const isUser = message.sender === 'user';
   const artifactContext = useContext(ArtifactContext);
+
+  // Get agent metadata if this is a bot message
+  const agentMetadata = agentType && !isUser ? AGENT_METADATA[agentType] : null;
 
   // Check if this is a query limit message
   if (message.isQueryLimitMessage && queryLimitProps) {
@@ -77,6 +83,72 @@ export default function MessageBubble({ message, queryLimitProps }: MessageBubbl
           alignItems: isUser ? 'flex-end' : 'flex-start',
         }}
       >
+        {/* Agent Name and Icon - Only for bot messages */}
+        {!isUser && agentMetadata && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '6px',
+              paddingLeft: '4px',
+            }}
+          >
+            {/* Agent Icon */}
+            <div
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '6px',
+                background: agentMetadata.color === 'navy' ? '#010654' :
+                           agentMetadata.color === 'gold' ? '#E89C43' :
+                           agentMetadata.color === 'purple' ? '#9C27B0' :
+                           agentMetadata.color === 'navy-light' ? '#5C6BC0' :
+                           agentMetadata.color === 'emerald' ? '#10B981' :
+                           agentMetadata.color === 'teal' ? '#14B8A6' :
+                           agentMetadata.color === 'indigo' ? '#6366F1' : '#E4C154',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4px',
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src={`/agents/${agentMetadata.name}.svg`}
+                alt={agentMetadata.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  filter: 'brightness(0) invert(1)',
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    parent.innerHTML = agentMetadata.initial;
+                    parent.style.fontSize = '0.75rem';
+                    parent.style.fontWeight = '600';
+                    parent.style.color = 'white';
+                  }
+                }}
+              />
+            </div>
+            {/* Agent Name */}
+            <span
+              style={{
+                fontSize: '0.8125rem',
+                fontWeight: '600',
+                color: '#111827',
+                fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+              }}
+            >
+              {agentMetadata.name}
+            </span>
+          </div>
+        )}
+
         {/* Message bubble */}
         <div
           className={isUser ? 'user-message-bubble' : 'bot-message-bubble'}

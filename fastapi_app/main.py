@@ -10,6 +10,10 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
 from fastapi_app.core.config import settings
 from fastapi_app.db.session import init_db, close_db
 from fastapi_app.api.v1.router import api_router
@@ -20,6 +24,11 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+# Initialize rate limiter
+# Uses client IP address to track request rates
+limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
@@ -82,7 +91,68 @@ app = FastAPI(
     }
 )
 
+# Configure rate limiter for the app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Security Headers Middleware
+# IMPORTANT: This must be defined BEFORE CORS middleware is added
+# Middleware execution order: last defined runs first
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """
+    Add security headers to all responses
+
+    Headers added:
+    - X-Content-Type-Options: Prevents MIME type sniffing
+    - X-Frame-Options: Prevents clickjacking attacks
+    - X-XSS-Protection: Enables XSS filter in older browsers
+    - Strict-Transport-Security: Enforces HTTPS
+    - Content-Security-Policy: Restricts resource loading
+    - Referrer-Policy: Controls referrer information
+    - Permissions-Policy: Controls browser features
+    """
+    response = await call_next(request)
+
+    # Prevent MIME type sniffing
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    # Prevent clickjacking - deny embedding in iframes
+    response.headers["X-Frame-Options"] = "DENY"
+
+    # XSS protection for older browsers
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+
+    # Enforce HTTPS for 1 year (31536000 seconds)
+    # Only add in production to avoid issues during development
+    if settings.ENVIRONMENT == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+
+    # Content Security Policy - adjust based on your needs
+    # This is a strict policy; you may need to relax it based on your frontend requirements
+    csp_directives = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.googletagmanager.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data: https:",
+        "connect-src 'self' http://localhost:5173 https://api.openai.com",
+        "frame-ancestors 'none'",
+    ]
+    response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
+
+    # Control referrer information
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    # Permissions Policy (formerly Feature-Policy)
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+    return response
+
+
 # CORS middleware
+# IMPORTANT: Add CORS middleware AFTER security headers middleware is defined
+# This ensures CORS runs first (middleware runs in reverse order of definition)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -90,6 +160,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)

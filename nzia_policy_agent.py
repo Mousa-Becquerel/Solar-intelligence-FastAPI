@@ -194,8 +194,8 @@ Your primary objectives:
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
-                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
+                session = create_agent_session(conversation_id, agent_type='nzia_policy')
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (nzia_policy agent)")
 
             # Prepare conversation history
             workflow = workflow_input.model_dump()
@@ -254,8 +254,8 @@ Your primary objectives:
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
-                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
+                session = create_agent_session(conversation_id, agent_type='nzia_policy')
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (nzia_policy agent)")
 
             # Run with streaming
             result = Runner.run_streamed(self.nzia_policy_expert, query, session=session)

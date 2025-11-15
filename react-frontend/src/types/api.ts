@@ -92,6 +92,7 @@ export interface Message {
   conversation_id: number;
   sender: 'user' | 'bot';  // Database field: sender (not role)
   content: string;
+  agent_type?: string;  // Which agent sent this message (for bot messages)
   timestamp: string;
   metadata?: Record<string, any>;
   plotData?: PlotData; // Optional plot data for chart messages

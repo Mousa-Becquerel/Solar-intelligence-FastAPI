@@ -53,6 +53,7 @@ class Settings(BaseSettings):
 
     # CORS - Allow both Flask and React frontend
     CORS_ORIGINS: list[str] = [
+        "http://localhost",       # Production frontend (Nginx on port 80)
         "http://localhost:3000",  # React dev server (Create React App)
         "http://localhost:5173",  # React dev server (Vite)
         "http://localhost:5174",  # React dev server (Vite alt port)
@@ -61,6 +62,7 @@ class Settings(BaseSettings):
         "http://localhost:5177",  # React dev server (Vite alt port)
         "http://localhost:5000",  # Flask (during transition)
         "http://localhost:5002",  # Flask alt port
+        "http://127.0.0.1",       # Production frontend (IP)
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",

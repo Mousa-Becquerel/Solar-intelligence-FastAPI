@@ -68,7 +68,7 @@ export default function ChatHeader({
       }}
     >
       {/* Left section: Agent Selector - Clean Minimal Design */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
         <div ref={dropdownRef} style={{ position: 'relative', minWidth: '240px' }}>
           {/* Agent Selector Button */}
           <button
@@ -220,66 +220,6 @@ export default function ChatHeader({
             </div>
           )}
         </div>
-
-        <button
-          onClick={() => navigate('/agents')}
-          className="back-to-agents-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '10px 16px',
-            background: '#F3F4F9',
-            color: '#1e293b',
-            border: 'none',
-            borderRadius: '9999px',
-            fontSize: '0.8125rem',
-            fontWeight: '400',
-            cursor: 'pointer',
-            fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
-            letterSpacing: '-0.01em',
-            transition: 'background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#E8EAF6';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#F3F4F9';
-          }}
-        >
-          {/* MD3 State Layer */}
-          <span
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: '#5C6BC0',
-              opacity: 0,
-              transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              pointerEvents: 'none',
-            }}
-          />
-
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ position: 'relative', zIndex: 1 }}
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          <span style={{ position: 'relative', zIndex: 1 }}>Back to Agents</span>
-        </button>
       </div>
 
       {/* Right section: Artifact reopen button */}

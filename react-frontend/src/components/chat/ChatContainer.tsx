@@ -297,6 +297,7 @@ export default function ChatContainer() {
                     conversation_id: convId,
                     sender: 'bot',
                     content: accumulated || parsed.message || '',
+                    agent_type: selectedAgent,  // Include agent type for proper display
                     timestamp: new Date().toISOString(),
                     approvalData: {
                       conversationId: parsed.conversation_id || convId,
@@ -336,6 +337,7 @@ export default function ChatContainer() {
           conversation_id: convId,
           sender: 'bot',
           content: accumulated || '', // Can be empty if only plot
+          agent_type: selectedAgent,  // Include agent that answered
           timestamp: new Date().toISOString(),
           plotData: plotData || undefined, // Include plot data if present
         };
@@ -425,6 +427,7 @@ export default function ChatContainer() {
                     conversation_id: Number(conversationId) || 0,
                     sender: 'bot' as const,
                     content: streamingMessage,
+                    agent_type: selectedAgent,  // Use current selected agent for streaming
                     timestamp: new Date().toISOString(),
                   },
                 ]

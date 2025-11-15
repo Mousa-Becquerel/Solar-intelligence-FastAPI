@@ -17,6 +17,7 @@ Thumbs.db
 # Environment / Secrets
 .env
 .env.*
+!.env.prod.example  # Keep example file in git
 
 # Node
 node_modules/

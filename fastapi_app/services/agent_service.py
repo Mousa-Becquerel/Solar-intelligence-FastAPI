@@ -156,7 +156,8 @@ class AgentService:
         conversation_id: int,
         response: str,
         response_type: str = "string",
-        plot_data: Optional[Dict] = None
+        plot_data: Optional[Dict] = None,
+        agent_type: Optional[str] = None
     ) -> Tuple[bool, Optional[str]]:
         """
         Save bot response to database
@@ -167,6 +168,7 @@ class AgentService:
             response: Bot's response text
             response_type: Type of response (string, plot, data)
             plot_data: Optional plot data
+            agent_type: Type of agent that generated the response
 
         Returns:
             Tuple of (success, error_message)
@@ -184,6 +186,7 @@ class AgentService:
             bot_msg = Message(
                 conversation_id=conversation_id,
                 sender='bot',
+                agent_type=agent_type,
                 content=json.dumps(content)
             )
             db.add(bot_msg)
@@ -462,14 +465,20 @@ class AgentService:
     async def format_conversation_history_for_agent(
         db: AsyncSession,
         conversation_id: int,
+        agent_type: str = None,
         limit: int = 50
     ) -> List[Dict[str, str]]:
         """
         Format conversation history for agent consumption
 
+        In multi-agent conversations, only includes:
+        - All user messages
+        - Bot messages from the specified agent_type only
+
         Args:
             db: Database session
             conversation_id: ID of the conversation
+            agent_type: Filter to only include messages from this agent (None = all messages)
             limit: Maximum number of messages to include
 
         Returns:
@@ -487,6 +496,11 @@ class AgentService:
 
             formatted = []
             for msg in messages:
+                # Skip bot messages from other agents in multi-agent conversations
+                if agent_type and msg.sender == 'bot' and msg.agent_type != agent_type:
+                    logger.debug(f"Skipping message from agent '{msg.agent_type}' (current agent: '{agent_type}')")
+                    continue
+
                 try:
                     content = json.loads(msg.content)
                     if content.get('type') == 'string':

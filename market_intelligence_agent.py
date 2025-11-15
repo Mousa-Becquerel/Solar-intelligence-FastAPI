@@ -1003,7 +1003,7 @@ Our experts typically respond within **24-48 hours** with thorough, actionable i
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
+                session = create_agent_session(conversation_id, agent_type="market")
                 logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Get user query as string (required when using session)
@@ -1092,7 +1092,7 @@ Our experts typically respond within **24-48 hours** with thorough, actionable i
                     follow_up_result_temp = await Runner.run(
                         self.follow_up_agent,
                         input=user_query,
-                        session=session,  # Follow-up agent should have context
+                        session=session,
                         run_config=RunConfig(trace_metadata={
                             "__trace_source__": "agent-builder",
                             "workflow_id": "market_intelligence_workflow"
@@ -1144,7 +1144,7 @@ Our experts typically respond within **24-48 hours** with thorough, actionable i
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
+                session = create_agent_session(conversation_id, agent_type="market")
                 logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Step 1: Classification - Determine intent (data vs plot)
@@ -1165,13 +1165,13 @@ Our experts typically respond within **24-48 hours** with thorough, actionable i
             # Step 2: Route to appropriate agent with streaming
             if intent == "plot":
                 # Step 2a: Use plotting agent - plots return complete JSON (no streaming)
-                # IMPORTANT: Pass session so plot queries are added to conversation history
+                # IMPORTANT: Don't pass session to plotting agent (uses code interpreter which doesn't serialize well)
                 logger.info("Routing to plotting agent")
 
                 plotting_result = await Runner.run(
                     self.plotting_agent,
                     input=query,
-                    session=session,  # Changed from None to session to maintain conversation history
+                    session=session,
                     run_config=RunConfig(trace_metadata={
                         "__trace_source__": "agent-builder",
                         "workflow_id": "market_intelligence_workflow"
@@ -1342,11 +1342,23 @@ Agent Response: {market_intelligence_response}"""
                                     })
 
         except Exception as e:
-            error_msg = f"Failed to stream query: {str(e)}"
-            logger.error(error_msg)
-            import traceback
-            logger.error(traceback.format_exc())
-            yield f"\n\n**Error:** {error_msg}"
+            # Check if this is a BadRequestError from OpenAI with corrupted reasoning items
+            error_str = str(e)
+            if "code_interpreter_call" in error_str and "reasoning" in error_str and "invalid_request_error" in error_str:
+                logger.error(f"Detected corrupted session with reasoning items. Clearing session...")
+                # Clear the corrupted session
+                from fastapi_app.utils.session_factory import clear_agent_session
+                if conversation_id:
+                    clear_agent_session(conversation_id, agent_type="market")
+                    yield f"\n\n**Session Error:** The conversation history contained corrupted data from a previous code execution. The session has been cleared. Please try your query again in a new message."
+                else:
+                    yield f"\n\n**Error:** {error_str}"
+            else:
+                error_msg = f"Failed to stream query: {str(e)}"
+                logger.error(error_msg)
+                import traceback
+                logger.error(traceback.format_exc())
+                yield f"\n\n**Error:** {error_msg}"
 
     def clear_conversation_memory(self, conversation_id: str = None):
         """

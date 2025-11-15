@@ -272,8 +272,8 @@ Analyze the conversation history carefully to determine the intent.
             # Create stateless session for this conversation (no caching)
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
-                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
+                session = create_agent_session(conversation_id, agent_type='news')
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (news agent)")
 
             # Step 1: Classify the intent (non-streaming)
             # IMPORTANT: Don't pass session to intent classifier to avoid duplicate messages in history
@@ -335,8 +335,8 @@ Analyze the conversation history carefully to determine the intent.
                 # Create stateless session for this conversation (no caching)
                 session = None
                 if conversation_id:
-                    session = create_agent_session(conversation_id)
-                    logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
+                    session = create_agent_session(conversation_id, agent_type='news')
+                    logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (news agent)")
 
                 # Step 1: Classify the intent
                 # IMPORTANT: Don't pass session to intent classifier to avoid duplicate messages in history

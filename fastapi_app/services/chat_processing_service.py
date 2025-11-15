@@ -111,10 +111,14 @@ class ChatProcessingService:
     async def process_news_agent_stream(
         db: AsyncSession,
         user_message: str,
-        conv_id: int
+        conv_id: int,
+        agent_type: str = 'news'
     ) -> AsyncGenerator[str, None]:
         """
         Process message with news agent (streaming via SSE)
+
+        Args:
+            agent_type: The agent type to store with the bot message
 
         Yields:
             SSE-formatted strings (data: {...}\n\n)
@@ -134,6 +138,7 @@ class ChatProcessingService:
                 bot_msg = Message(
                     conversation_id=conv_id,
                     sender='bot',
+                    agent_type=agent_type,
                     content=json.dumps({
                         'type': 'string',
                         'value': full_response,
@@ -160,7 +165,8 @@ class ChatProcessingService:
     async def process_digitalization_agent_stream(
         db: AsyncSession,
         user_message: str,
-        conv_id: int
+        conv_id: int,
+        agent_type: str = 'digitalization'
     ) -> AsyncGenerator[str, None]:
         """
         Process message with digitalization agent (streaming via SSE)
@@ -182,6 +188,7 @@ class ChatProcessingService:
                 bot_msg = Message(
                     conversation_id=conv_id,
                     sender='bot',
+                    agent_type=agent_type,
                     content=json.dumps({
                         'type': 'string',
                         'value': full_response,
@@ -207,7 +214,8 @@ class ChatProcessingService:
     async def process_market_intelligence_agent_stream(
         db: AsyncSession,
         user_message: str,
-        conv_id: int
+        conv_id: int,
+        agent_type: str = 'market'
     ) -> AsyncGenerator[str, None]:
         """
         Process message with market intelligence agent (streaming via SSE)
@@ -312,6 +320,7 @@ class ChatProcessingService:
                 bot_msg = Message(
                     conversation_id=conv_id,
                     sender='bot',
+                    agent_type=agent_type,
                     content=json.dumps(content_to_save)
                 )
                 db.add(bot_msg)
@@ -333,7 +342,8 @@ class ChatProcessingService:
     async def process_nzia_policy_agent_stream(
         db: AsyncSession,
         user_message: str,
-        conv_id: int
+        conv_id: int,
+        agent_type: str = 'nzia_policy'
     ) -> AsyncGenerator[str, None]:
         """
         Process message with NZIA policy agent (streaming via SSE)
@@ -355,6 +365,7 @@ class ChatProcessingService:
                 bot_msg = Message(
                     conversation_id=conv_id,
                     sender='bot',
+                    agent_type=agent_type,
                     content=json.dumps({
                         'type': 'string',
                         'value': full_response,
@@ -380,7 +391,8 @@ class ChatProcessingService:
     async def process_manufacturer_financial_agent_stream(
         db: AsyncSession,
         user_message: str,
-        conv_id: int
+        conv_id: int,
+        agent_type: str = 'manufacturer_financial'
     ) -> AsyncGenerator[str, None]:
         """
         Process message with manufacturer financial agent (streaming via SSE)
@@ -402,6 +414,7 @@ class ChatProcessingService:
                 bot_msg = Message(
                     conversation_id=conv_id,
                     sender='bot',
+                    agent_type=agent_type,
                     content=json.dumps({
                         'type': 'string',
                         'value': full_response,
@@ -427,7 +440,8 @@ class ChatProcessingService:
     async def process_nzia_market_impact_agent_stream(
         db: AsyncSession,
         user_message: str,
-        conv_id: int
+        conv_id: int,
+        agent_type: str = 'nzia_market_impact'
     ) -> AsyncGenerator[str, None]:
         """
         Process message with NZIA market impact agent (streaming via SSE)
@@ -449,6 +463,7 @@ class ChatProcessingService:
                 bot_msg = Message(
                     conversation_id=conv_id,
                     sender='bot',
+                    agent_type=agent_type,
                     content=json.dumps({
                         'type': 'string',
                         'value': full_response,

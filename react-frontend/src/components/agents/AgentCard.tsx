@@ -16,6 +16,7 @@ interface AgentCardProps {
   isHired: boolean;
   userPlan: string;
   onToggleHire: (agentType: AgentType) => void;
+  onCardClick?: (agentType: AgentType) => void;
 }
 
 export default function AgentCard({
@@ -24,334 +25,365 @@ export default function AgentCard({
   isHired,
   userPlan,
   onToggleHire,
+  onCardClick,
 }: AgentCardProps) {
-  const { name, role, color, initial, badges, description, premium } = metadata;
+  const { name, role, color, initial, description, premium } = metadata;
 
   // Check if user can hire this agent
   const canHire = !premium || userPlan === 'premium' || userPlan === 'max' || userPlan === 'admin';
   const requiresUpgrade = premium && !canHire;
 
-  // Get badge label
-  const getBadgeLabel = (badge: string) => {
-    const labels: Record<string, string> = {
-      datahub: 'DataHub',
-      charts: 'Charts',
-      news: 'News DB',
-      ai: 'AI',
-      code: 'Code Interpreter',
-    };
-    return labels[badge] || badge;
+  // Get color mapping for circular badge
+  const colorMap: Record<typeof color, { bg: string; text: string }> = {
+    'navy': { bg: '#010654', text: 'white' },
+    'gold': { bg: '#E89C43', text: 'white' },
+    'navy-light': { bg: '#5C6BC0', text: 'white' },
+    'gold-dark': { bg: '#E4C154', text: '#010654' },
+    'purple': { bg: '#9C27B0', text: 'white' },
+    'emerald': { bg: '#10B981', text: 'white' },
+    'indigo': { bg: '#6366F1', text: 'white' },
+    'teal': { bg: '#14B8A6', text: 'white' },
   };
+
+  const badgeColors = colorMap[color];
 
   return (
     <div
       className={`agent-card ${isHired ? 'agent-card--hired' : ''}`}
       data-color={color}
+      onClick={() => onCardClick?.(agentType)}
       style={{
         position: 'relative',
-        borderRadius: '20px',
-        padding: '1.25rem',
+        borderRadius: '16px', // MD3 large corner radius
+        padding: '24px',
         cursor: 'pointer',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.875rem',
-        minHeight: '160px',
+        gap: '12px',
+        minHeight: '140px',
         overflow: 'hidden',
         boxShadow: 'none',
-        border: 'none',
+        border: 'none', // MD3 flat design - no borders
+        background: 'white',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = '#f5f5f5'; // Slightly darker on hover
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'white';
       }}
     >
-      {/* Premium Badge */}
+      {/* Hired Indicator - Top Right (takes priority over premium badge) */}
+      {isHired && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            background: '#10B981',
+            color: 'white',
+            fontSize: '0.625rem',
+            fontWeight: '600',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            zIndex: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          Hired
+        </div>
+      )}
+
+      {/* Premium Badge - Top Right (only shown when not hired) */}
       {premium && !isHired && (
         <div
           style={{
             position: 'absolute',
-            top: '1rem',
-            left: '1rem',
-            background: '#fbbf24', /* becq-gold */
-            color: '#0a1850', /* becq-blue */
+            top: '12px',
+            right: '12px',
+            background: '#E89C43',
+            color: 'white',
             fontSize: '0.625rem',
-            fontWeight: '700',
-            letterSpacing: '0.05em',
-            padding: '0.375rem 0.75rem',
-            borderRadius: '9999px',
+            fontWeight: '600',
+            padding: '4px 8px',
+            borderRadius: '4px',
             zIndex: 3,
-            boxShadow: 'none',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
           }}
         >
-          PREMIUM
+          Premium
         </div>
       )}
 
-      {/* Checkmark when hired */}
-      <div
-        className="agent-card__check"
-        style={{
-          position: 'absolute',
-          top: '1rem',
-          right: '1rem',
-          width: '32px',
-          height: '32px',
-          borderRadius: '50%',
-          background: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: isHired ? 1 : 0,
-          transform: isHired ? 'scale(1) rotate(0deg)' : 'scale(0) rotate(-180deg)',
-          transition: 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-          zIndex: 3,
-        }}
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </div>
-
-      {/* Header with initial and name */}
+      {/* Header with small square icon and name */}
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          marginBottom: '0.5rem',
+          alignItems: 'flex-start',
+          gap: '12px',
         }}
       >
-        {/* Initial circle */}
+        {/* Small Square Icon - Image or Letter */}
         <div
-          className="agent-card__initial"
           style={{
             width: '48px',
             height: '48px',
-            borderRadius: '10px',
+            borderRadius: '8px',
+            background: badgeColors.bg,
+            color: badgeColors.text,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flexShrink: 0,
-            fontSize: '1.375rem',
+            fontSize: '1.25rem',
             fontWeight: '600',
-            letterSpacing: '-0.02em',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            flexShrink: 0,
             fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+            padding: '8px',
+            overflow: 'hidden',
           }}
         >
-          {initial}
+          {/* Try to load agent icon, fallback to initial */}
+          <img
+            src={`/agents/${name}.svg`}
+            alt={name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              filter: 'brightness(0) invert(1)', // Make SVG white
+            }}
+            onError={(e) => {
+              // Hide image and show initial letter on error
+              e.currentTarget.style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                parent.innerHTML = initial;
+              }
+            }}
+          />
         </div>
 
-        {/* Name and role */}
+        {/* Name, Provider, and Role */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3
-            className="agent-card__name"
             style={{
-              fontSize: '1rem',
-              fontWeight: '500',
-              color: isHired ? 'white' : '#1e293b',
-              margin: 0,
-              letterSpacing: '-0.02em',
-              transition: 'color 0.3s ease',
-              lineHeight: '1.3',
+              fontSize: '0.9375rem',
+              fontWeight: '600',
+              color: '#1e3a8a', // Same blue as chat screen
+              margin: '0 0 4px 0',
+              letterSpacing: '-0.01em',
               fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+              lineHeight: '1.3',
             }}
           >
             {name}
           </h3>
           <p
-            className="agent-card__role"
             style={{
-              fontSize: '0.625rem',
+              fontSize: '0.6875rem',
+              color: '#9CA3AF',
+              lineHeight: '1.3',
+              margin: '0 0 4px 0',
               fontWeight: '500',
-              color: isHired ? 'rgba(255, 255, 255, 0.85)' : '#64748b',
-              margin: 0,
+              fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              transition: 'color 0.3s ease',
+              letterSpacing: '0.3px',
+            }}
+          >
+            {metadata.provider}
+          </p>
+          <p
+            style={{
+              fontSize: '0.8125rem',
+              color: '#6B7280',
+              lineHeight: '1.4',
+              margin: '0 0 8px 0',
+              fontWeight: '400',
               fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
             }}
           >
             {role}
           </p>
+          {/* Feature Badges */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '4px',
+            }}
+          >
+            {metadata.badges.map((badge) => (
+              <span
+                key={badge}
+                style={{
+                  fontSize: '0.625rem',
+                  fontWeight: '500',
+                  color: '#6B7280',
+                  background: '#F3F4F6',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.3px',
+                }}
+              >
+                {badge === 'datahub' ? 'Data' : badge === 'charts' ? 'Charts' : badge}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Action Buttons - Hire and Explore */}
       <div
         style={{
-          flex: 1,
           display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
+          gap: '8px',
+          marginTop: 'auto',
         }}
       >
-        {/* Badges */}
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '0.3rem',
-            marginBottom: '0.125rem',
+        {/* Hire/Unhire Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent card click
+            if (!requiresUpgrade) onToggleHire(agentType);
           }}
-        >
-          {badges.map((badge) => (
-            <span
-              key={badge}
-              className={`agent-card__badge agent-card__badge--${badge}`}
-              style={{
-                display: 'inline-block',
-                fontSize: '0.625rem',
-                fontWeight: '500',
-                padding: '0.3rem 0.625rem',
-                borderRadius: '9999px',
-                border: '1px solid',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-            >
-              {getBadgeLabel(badge)}
-            </span>
-          ))}
-        </div>
-
-        {/* Description */}
-        <p
-          className="agent-card__description"
+          disabled={requiresUpgrade}
           style={{
-            fontSize: '0.75rem',
-            color: isHired ? 'rgba(255, 255, 255, 0.9)' : '#64748b',
-            lineHeight: '1.5',
-            margin: 0,
             flex: 1,
-            fontWeight: '300',
-            transition: 'color 0.3s ease',
-            letterSpacing: '-0.01em',
+            padding: '12px 16px',
+            background: requiresUpgrade
+              ? '#f5f5f5'
+              : isHired
+                ? '#10B981'
+                : '#FFB74D', // Butterscotch - matching profile page
+            color: requiresUpgrade ? '#9ca3af' : isHired ? 'white' : '#1e293b', // Dark text on butterscotch
+            border: 'none',
+            borderRadius: '9999px', // Full rounded
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            cursor: requiresUpgrade ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
             fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+            minHeight: '40px',
+            boxShadow: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+          onMouseEnter={(e) => {
+            if (requiresUpgrade) {
+              e.currentTarget.style.background = '#eeeeee';
+              return;
+            }
+            if (isHired) {
+              e.currentTarget.style.background = '#059669';
+            } else {
+              e.currentTarget.style.background = '#F5A73B'; // Slightly darker butterscotch
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (requiresUpgrade) {
+              e.currentTarget.style.background = '#f5f5f5';
+              return;
+            }
+            if (isHired) {
+              e.currentTarget.style.background = '#10B981';
+            } else {
+              e.currentTarget.style.background = '#FFB74D';
+            }
           }}
         >
-          {description}
-        </p>
-      </div>
+          {requiresUpgrade ? (
+            <>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <span>Upgrade</span>
+            </>
+          ) : isHired ? (
+            <>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>Hired</span>
+            </>
+          ) : (
+            <span>Hire</span>
+          )}
+        </button>
 
-      {/* Hire/Unhire button */}
-      <button
-        onClick={() => !requiresUpgrade && onToggleHire(agentType)}
-        disabled={requiresUpgrade}
-        className={`agent-card__btn ${isHired ? 'agent-card__btn--hired' : ''}`}
-        style={{
-          width: '100%',
-          padding: '0.75rem 1rem',
-          background: requiresUpgrade
-            ? '#E0E0E0'
-            : isHired
-              ? 'rgba(255, 255, 255, 0.2)'
-              : '#5C6BC0',
-          color: requiresUpgrade ? '#9E9E9E' : 'white',
-          border: isHired ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
-          borderRadius: '9999px',
-          fontSize: '0.8125rem',
-          fontWeight: '500',
-          cursor: requiresUpgrade ? 'not-allowed' : 'pointer',
-          opacity: requiresUpgrade ? 0.6 : 1,
-          transition: 'background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.375rem',
-          marginTop: '0.375rem',
-          boxShadow: 'none',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-        onMouseEnter={(e) => {
-          if (!requiresUpgrade && isHired) {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!requiresUpgrade && isHired) {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-          }
-        }}
-      >
-        {/* MD3 State Layer */}
-        <span
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'white',
-            opacity: 0,
-            transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-            pointerEvents: 'none',
+        {/* Explore Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent card click
+            onCardClick?.(agentType);
           }}
-        />
-
-        {requiresUpgrade ? (
-          <>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ position: 'relative', zIndex: 1 }}
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-              <path d="M2 17l10 5 10-5"/>
-              <path d="M2 12l10 5 10-5"/>
-            </svg>
-            <span style={{ position: 'relative', zIndex: 1 }}>Upgrade Required</span>
-          </>
-        ) : isHired ? (
-          <>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ position: 'relative', zIndex: 1 }}
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span style={{ position: 'relative', zIndex: 1 }}>Hired</span>
-          </>
-        ) : (
-          <>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ position: 'relative', zIndex: 1 }}
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            <span style={{ position: 'relative', zIndex: 1 }}>Hire Agent</span>
-          </>
-        )}
-      </button>
+          style={{
+            flex: 1,
+            padding: '12px 16px',
+            background: '#f5f5f5', // MD3 secondary button background
+            color: '#64748b',
+            border: 'none',
+            borderRadius: '9999px', // Full rounded
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+            minHeight: '40px',
+            boxShadow: 'none',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#eeeeee';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#f5f5f5';
+          }}
+        >
+          <span>Explore</span>
+        </button>
+      </div>
 
       <style>{`
         /* MD3 State Layer for button hover */

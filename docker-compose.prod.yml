@@ -1,0 +1,128 @@
+# Production Docker Compose Configuration
+# Solar Intelligence - Full Stack Application
+#
+# Services:
+# - postgres: PostgreSQL database
+# - fastapi-app: FastAPI backend (production mode)
+# - react-frontend: React frontend served by Nginx
+#
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: solar-intelligence-db-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fastapi_db}
+      POSTGRES_USER: ${POSTGRES_USER:-fastapi_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # REQUIRED - set in .env.prod
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Different port to avoid conflict with dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fastapi_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - solar-network
+
+  # ===========================================
+  # FastAPI Backend (Production)
+  # ===========================================
+  fastapi-app:
+    build:
+      context: ./fastapi_app
+      dockerfile: Dockerfile.prod  # Production Dockerfile (to be created)
+    container_name: solar-intelligence-api-prod
+    restart: unless-stopped
+    environment:
+      # Application
+      ENVIRONMENT: production
+      DEBUG: "false"
+      APP_NAME: "Solar Intelligence API"
+      VERSION: "2.0.0"
+
+      # Database
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-fastapi_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-fastapi_db}
+
+      # Security
+      SECRET_KEY: ${SECRET_KEY}  # REQUIRED - set in .env.prod
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}  # REQUIRED - set in .env.prod
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
+      # OpenAI
+      OPENAI_API_KEY: ${OPENAI_API_KEY}  # REQUIRED - set in .env.prod
+
+      # CORS - Allow frontend origin
+      CORS_ORIGINS: ${FRONTEND_URL:-http://localhost}
+
+      # Monitoring (optional)
+      LOGFIRE_TOKEN: ${LOGFIRE_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - solar-network
+    # Production: Don't mount volumes to avoid code changes
+    # volumes:
+    #   - ./fastapi_app:/app
+
+  # ===========================================
+  # React Frontend (Nginx)
+  # ===========================================
+  react-frontend:
+    build:
+      context: ./react-frontend
+      dockerfile: Dockerfile
+      args:
+        # Build-time arguments
+        VITE_API_BASE_URL: ${API_BASE_URL:-http://localhost:8000}
+    container_name: solar-intelligence-frontend-prod
+    restart: unless-stopped
+    environment:
+      # Runtime environment variables (injected by entrypoint)
+      VITE_API_BASE_URL: ${API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      - fastapi-app
+    ports:
+      - "80:80"  # HTTP
+      # - "443:443"  # HTTPS (when SSL is configured)
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - solar-network
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  solar-network:
+    driver: bridge
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  postgres_data_prod:
+    driver: local

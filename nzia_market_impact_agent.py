@@ -210,8 +210,8 @@ The Becquerel database contains comprehensive information about:
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
-                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
+                session = create_agent_session(conversation_id, agent_type='nzia_market_impact')
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (nzia_market_impact agent)")
 
             # Prepare conversation history
             workflow = workflow_input.model_dump()
@@ -270,8 +270,8 @@ The Becquerel database contains comprehensive information about:
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
-                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
+                session = create_agent_session(conversation_id, agent_type='nzia_market_impact')
+                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (nzia_market_impact agent)")
 
             # Run with streaming
             result = Runner.run_streamed(self.nzia_market_impact_expert, query, session=session)

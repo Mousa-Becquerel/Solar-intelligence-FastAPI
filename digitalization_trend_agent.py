@@ -176,7 +176,7 @@ class DigitalizationAgent:
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
+                session = create_agent_session(conversation_id, agent_type='digitalization')
                 logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Prepare conversation history
@@ -236,7 +236,7 @@ class DigitalizationAgent:
             # Get or create stateless session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id)
+                session = create_agent_session(conversation_id, agent_type='digitalization')
                 logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id}")
 
             # Run with streaming

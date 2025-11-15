@@ -118,6 +118,7 @@ class Message(Base):
     conversation_id = Column(Integer, nullable=False, index=True)
     sender = Column(String(16))  # 'user' or 'bot'
     content = Column(Text)
+    agent_type = Column(String(50), nullable=True)  # Which agent answered (for bot messages)
     timestamp = Column(DateTime, default=datetime.utcnow, server_default=func.now())
 
 

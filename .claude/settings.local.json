@@ -10,7 +10,8 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(tasklist:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(docker exec:*)"
     ],
     "deny": [],
     "ask": []
