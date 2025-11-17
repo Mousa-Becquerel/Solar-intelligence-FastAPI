@@ -125,27 +125,6 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
     premium: true,
     icon: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
   },
-  // Excluded agents (not shown on agents page per user request)
-  price: {
-    name: 'Maya',
-    role: 'Price Analysis',
-    provider: 'Bequerel Institute',
-    color: 'gold',
-    initial: 'M',
-    badges: ['datahub', 'charts', 'code'],
-    description: 'Tracks and analyzes solar component pricing including modules, cells, wafers, and polysilicon across global markets.',
-    icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-  },
-  om: {
-    name: 'Leo',
-    role: 'O&M Expert',
-    provider: 'Bequerel Institute',
-    color: 'indigo',
-    initial: 'L',
-    badges: ['ai', 'code'],
-    description: 'Provides expertise on solar plant operations and maintenance, including best practices, predictive strategies, and cost optimization.',
-    icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
-  },
 };
 
 // Agents to display on the agents page (excluding Maya and Leo per user request)

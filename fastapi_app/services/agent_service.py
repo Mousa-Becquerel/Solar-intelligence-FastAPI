@@ -21,13 +21,11 @@ class AgentService:
     # Agent type constants
     AGENT_TYPES = {
         'market': 'Market Intelligence Agent',
-        'price': 'Module Prices Agent',
         'news': 'News Agent',
         'digitalization': 'Digitalization Trends Agent',
         'nzia_policy': 'NZIA Policy Agent',
         'nzia_market_impact': 'NZIA Market Impact Agent',
         'manufacturer_financial': 'Manufacturer Financial Agent',
-        'leo_om': 'O&M Agent',
         'weaviate': 'Database Query Agent'
     }
 
@@ -213,13 +211,11 @@ class AgentService:
 
         # Keywords for each agent type
         keywords = {
-            'price': ['price', 'cost', 'module', 'wafer', 'polysilicon', 'cell', 'pv glass', 'usd', 'yuan', 'rmb'],
             'news': ['news', 'article', 'report', 'latest', 'update', 'announcement', 'press release'],
             'digitalization': ['digital', 'automation', 'ai', 'machine learning', 'iot', 'smart', 'technology'],
             'nzia_policy': ['nzia', 'ferx', 'italy', 'italian', 'policy', 'compliance', 'auction', 'eligibility', 'regulatory'],
             'nzia_market_impact': ['nzia', 'market impact', 'eu manufacturing', 'european pv', 'nzia target', 'nzia compliance', 'resilience', 'sustainability', 'procurement', 'germany', 'spain', 'france', 'country forecast'],
-            'manufacturer_financial': ['manufacturer', 'financial', 'revenue', 'profit', 'margin', 'ebitda', 'jinko', 'longi', 'trina', 'canadian solar', 'ja solar', 'risen', 'tongwei', 'gcl'],
-            'leo_om': ['operation', 'maintenance', 'o&m', 'om', 'monitoring', 'performance', 'efficiency']
+            'manufacturer_financial': ['manufacturer', 'financial', 'revenue', 'profit', 'margin', 'ebitda', 'jinko', 'longi', 'trina', 'canadian solar', 'ja solar', 'risen', 'tongwei', 'gcl']
         }
 
         # Check for keyword matches
@@ -282,12 +278,6 @@ class AgentService:
                 'Forecast generation',
                 'Supply chain insights'
             ],
-            'price': [
-                'Module price tracking',
-                'Historical price data',
-                'Price forecasting',
-                'Regional price comparison'
-            ],
             'news': [
                 'Latest industry news',
                 'Company announcements',
@@ -322,12 +312,6 @@ class AgentService:
                 'Margin and profitability metrics',
                 'Manufacturing capacity tracking',
                 'Revenue per watt analysis'
-            ],
-            'leo_om': [
-                'O&M best practices',
-                'Performance optimization',
-                'Maintenance scheduling',
-                'Asset monitoring'
             ],
             'weaviate': [
                 'Custom database queries',

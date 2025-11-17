@@ -355,20 +355,22 @@ async def test_query_count_increments(
 
     # Mock the agent processing to avoid actual AI calls
     with patch(
-        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_price_agent',
+        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_market_agent_stream',
         new_callable=AsyncMock
     ) as mock_agent:
-        mock_agent.return_value = {
-            'response': [{'type': 'string', 'value': 'Test response', 'comment': None}]
-        }
+        async def mock_stream():
+            yield {'type': 'chunk', 'content': 'Test response'}
+            yield {'type': 'done'}
+
+        mock_agent.return_value = mock_stream()
 
         response = await client.post(
             "/api/v1/chat/send",
             headers=auth_headers,
             json={
-                "message": "What are prices?",
+                "message": "What are market trends?",
                 "conversation_id": test_conversation.id,
-                "agent_type": "price"  # Non-streaming agent
+                "agent_type": "market"  # Streaming agent
             }
         )
 
@@ -412,78 +414,6 @@ async def test_agent_access_control_free_user(
 # ============================================
 # Test: Non-Streaming Agents
 # ============================================
-
-@pytest.mark.asyncio
-async def test_price_agent_non_streaming(
-    client, auth_headers, test_conversation, async_session
-):
-    """Test price agent (non-streaming) message handling"""
-    with patch(
-        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_price_agent',
-        new_callable=AsyncMock
-    ) as mock_agent:
-        mock_agent.return_value = {
-            'response': [{
-                'type': 'interactive_chart',
-                'value': 'Price Chart',
-                'plot_data': {
-                    'plot_type': 'line',
-                    'title': 'Module Prices',
-                    'data': []
-                },
-                'comment': None
-            }]
-        }
-
-        response = await client.post(
-            "/api/v1/chat/send",
-            headers=auth_headers,
-            json={
-                "message": "What are current module prices?",
-                "conversation_id": test_conversation.id,
-                "agent_type": "price"
-            }
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert "response" in data
-        assert len(data["response"]) > 0
-        assert data["response"][0]["type"] == "interactive_chart"
-
-
-@pytest.mark.asyncio
-async def test_leo_om_agent_non_streaming(
-    client, auth_headers, test_conversation
-):
-    """Test Leo O&M agent (non-streaming) message handling"""
-    with patch(
-        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_leo_om_agent',
-        new_callable=AsyncMock
-    ) as mock_agent:
-        mock_agent.return_value = {
-            'response': [{
-                'type': 'string',
-                'value': 'O&M best practices...',
-                'comment': None
-            }]
-        }
-
-        response = await client.post(
-            "/api/v1/chat/send",
-            headers=auth_headers,
-            json={
-                "message": "What are best practices for O&M?",
-                "conversation_id": test_conversation.id,
-                "agent_type": "om"
-            }
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert "response" in data
-        assert data["response"][0]["type"] == "string"
-
 
 # ============================================
 # Test: Streaming Agents (SSE)
@@ -595,18 +525,22 @@ async def test_conversation_agent_type_updates(
     assert initial_agent_type == "market"
 
     with patch(
-        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_price_agent',
+        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_news_agent_stream',
         new_callable=AsyncMock
     ) as mock_agent:
-        mock_agent.return_value = {'response': [{'type': 'string', 'value': 'Test', 'comment': None}]}
+        async def mock_stream():
+            yield {'type': 'chunk', 'content': 'Test'}
+            yield {'type': 'done'}
+
+        mock_agent.return_value = mock_stream()
 
         response = await client.post(
             "/api/v1/chat/send",
             headers=auth_headers,
             json={
-                "message": "What are prices?",
+                "message": "What are the latest news?",
                 "conversation_id": test_conversation.id,
-                "agent_type": "price"  # Different from initial "market"
+                "agent_type": "news"  # Different from initial "market"
             }
         )
 
@@ -614,7 +548,7 @@ async def test_conversation_agent_type_updates(
         await async_session.refresh(test_conversation)
 
         assert response.status_code == 200
-        assert test_conversation.agent_type == "price"
+        assert test_conversation.agent_type == "news"
 
 
 # ============================================
@@ -632,10 +566,14 @@ async def test_user_message_stored(
     user_message_text = "Test message for storage"
 
     with patch(
-        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_leo_om_agent',
+        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_digitalization_agent_stream',
         new_callable=AsyncMock
     ) as mock_agent:
-        mock_agent.return_value = {'response': [{'type': 'string', 'value': 'Response', 'comment': None}]}
+        async def mock_stream():
+            yield {'type': 'chunk', 'content': 'Response'}
+            yield {'type': 'done'}
+
+        mock_agent.return_value = mock_stream()
 
         response = await client.post(
             "/api/v1/chat/send",
@@ -643,7 +581,7 @@ async def test_user_message_stored(
             json={
                 "message": user_message_text,
                 "conversation_id": test_conversation.id,
-                "agent_type": "om"
+                "agent_type": "digitalization"
             }
         )
 
@@ -701,34 +639,30 @@ async def test_complete_chat_flow(
     initial_query_count = test_user.monthly_query_count
 
     with patch(
-        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_price_agent',
+        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_market_agent_stream',
         new_callable=AsyncMock
     ) as mock_agent:
-        mock_agent.return_value = {
-            'response': [{
-                'type': 'string',
-                'value': 'Module prices are...',
-                'comment': None
-            }]
-        }
+        async def mock_stream():
+            yield {'type': 'chunk', 'content': 'Market analysis is...'}
+            yield {'type': 'done'}
+
+        mock_agent.return_value = mock_stream()
 
         # Send message
         response = await client.post(
             "/api/v1/chat/send",
             headers=auth_headers,
             json={
-                "message": "What are current prices?",
+                "message": "What are current market trends?",
                 "conversation_id": test_conversation.id,
-                "agent_type": "price"
+                "agent_type": "market"
             }
         )
 
         assert response.status_code == 200
 
-        # Verify response
-        data = response.json()
-        assert "response" in data
-        assert len(data["response"]) > 0
+        # For streaming responses, we just check the status code
+        # The actual content would be in SSE format
 
         # Verify query count incremented
         await async_session.refresh(test_user)

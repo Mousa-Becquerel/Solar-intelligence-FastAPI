@@ -208,79 +208,8 @@ async def send_chat_message(
 
         # Process with appropriate agent
         try:
-            # Non-streaming agents - but we still return as SSE for frontend compatibility
-            if agent_type == "price":
-                async def price_agent_sse_wrapper():
-                    """Wrapper to convert non-streaming price agent to SSE format"""
-                    try:
-                        # Get the full response from price agent
-                        result = await ChatProcessingService.process_price_agent(
-                            db, user_message, conv_id
-                        )
-
-                        # Extract response data
-                        response_data = result.get('response', [])
-
-                        # Send each response item as an SSE chunk
-                        for item in response_data:
-                            if item.get('type') == 'interactive_chart':
-                                # Send plot data
-                                yield f"data: {json.dumps({'type': 'plot', 'content': item.get('plot_data')})}\n\n"
-                            else:
-                                # Send text content
-                                content = item.get('value', '')
-                                yield f"data: {json.dumps({'type': 'chunk', 'content': content})}\n\n"
-
-                        # Send completion event
-                        yield f"data: {json.dumps({'type': 'done'})}\n\n"
-                    except Exception as e:
-                        logger.error(f"Price agent SSE wrapper error: {e}")
-                        yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-
-                return StreamingResponse(
-                    price_agent_sse_wrapper(),
-                    media_type="text/event-stream",
-                    headers={
-                        'Cache-Control': 'no-cache, no-transform',
-                        'X-Accel-Buffering': 'no',
-                        'Connection': 'keep-alive',
-                        'Content-Type': 'text/event-stream; charset=utf-8',
-                        'X-Content-Type-Options': 'nosniff'
-                    }
-                )
-
-            elif agent_type == "om":
-                async def leo_om_sse_wrapper():
-                    """Wrapper to convert non-streaming Leo O&M agent to SSE format"""
-                    try:
-                        result = await ChatProcessingService.process_leo_om_agent(
-                            db, user_message, conv_id
-                        )
-
-                        response_data = result.get('response', [])
-                        for item in response_data:
-                            content = item.get('value', '')
-                            yield f"data: {json.dumps({'type': 'chunk', 'content': content})}\n\n"
-
-                        yield f"data: {json.dumps({'type': 'done'})}\n\n"
-                    except Exception as e:
-                        logger.error(f"Leo O&M SSE wrapper error: {e}")
-                        yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-
-                return StreamingResponse(
-                    leo_om_sse_wrapper(),
-                    media_type="text/event-stream",
-                    headers={
-                        'Cache-Control': 'no-cache, no-transform',
-                        'X-Accel-Buffering': 'no',
-                        'Connection': 'keep-alive',
-                        'Content-Type': 'text/event-stream; charset=utf-8',
-                        'X-Content-Type-Options': 'nosniff'
-                    }
-                )
-
             # Streaming agents - return SSE response
-            elif agent_type == "news":
+            if agent_type == "news":
                 return StreamingResponse(
                     ChatProcessingService.process_news_agent_stream(
                         db, user_message, conv_id, agent_type

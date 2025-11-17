@@ -153,7 +153,7 @@ export interface ValidationError {
 // Utility Types
 // ========================================
 
-export type AgentType = 'market' | 'price' | 'news' | 'digitalization' | 'leo_om' | 'nzia_policy' | 'manufacturer_financial' | 'nzia_market_impact' | 'weaviate';
+export type AgentType = 'market' | 'news' | 'digitalization' | 'nzia_policy' | 'manufacturer_financial' | 'nzia_market_impact' | 'weaviate';
 
 export type PlanType = 'free' | 'premium' | 'enterprise';
 

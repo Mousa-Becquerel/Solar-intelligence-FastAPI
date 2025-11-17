@@ -29,11 +29,6 @@ const SAMPLE_QUESTIONS: Record<AgentType, string[]> = {
     'Show me solar installation forecasts for 2024',
     'Compare China and US manufacturing capacity',
   ],
-  price: [
-    'What are the current module prices?',
-    'Show me price trends for polysilicon',
-    'Compare wafer prices across regions',
-  ],
   news: [
     'What are the latest solar industry news?',
     'Show me recent announcements from major manufacturers',
@@ -58,11 +53,6 @@ const SAMPLE_QUESTIONS: Record<AgentType, string[]> = {
     'Compare JinkoSolar and LONGi financial performance',
     'What are Trina Solar\'s recent quarterly results?',
     'Show me margin trends for top manufacturers',
-  ],
-  leo_om: [
-    'What are best practices for O&M in solar plants?',
-    'How can I optimize performance monitoring?',
-    'Tell me about maintenance scheduling strategies',
   ],
   weaviate: [
     'Query custom data from the database',
