@@ -28,7 +28,11 @@ logger = logging.getLogger(__name__)
 
 # Initialize rate limiter
 # Uses client IP address to track request rates
-limiter = Limiter(key_func=get_remote_address)
+# Disable rate limiting in testing environment
+limiter = Limiter(
+    key_func=get_remote_address,
+    enabled=settings.ENVIRONMENT != "testing"
+)
 
 
 @asynccontextmanager
