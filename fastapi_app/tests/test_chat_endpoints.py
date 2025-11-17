@@ -115,15 +115,18 @@ async def premium_user(async_session):
 
 
 @pytest_asyncio.fixture
-async def agent_configs(async_session):
-    """Create agent access configurations for all agents"""
+async def agent_configs(async_session, test_user):
+    """Create agent access configurations for all agents and hire them for test_user"""
+    from fastapi_app.db.models import UserAgentAccess
+
     agent_types = [
-        "market", "price", "news", "digitalization",
+        "market", "news", "digitalization",
         "nzia_policy", "nzia_market_impact",
-        "manufacturer_financial", "om"
+        "manufacturer_financial"
     ]
 
     for agent_type in agent_types:
+        # Create agent access config
         config = AgentAccess(
             agent_type=agent_type,
             is_enabled=True,
@@ -131,6 +134,13 @@ async def agent_configs(async_session):
             description=f"{agent_type.title()} Agent"
         )
         async_session.add(config)
+
+        # Hire the agent for the test user
+        user_agent_access = UserAgentAccess(
+            user_id=test_user.id,
+            agent_type=agent_type
+        )
+        async_session.add(user_agent_access)
 
     await async_session.commit()
     return True
