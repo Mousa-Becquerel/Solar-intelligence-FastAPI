@@ -29,10 +29,11 @@ logger = logging.getLogger(__name__)
 # Initialize rate limiter
 # Uses client IP address to track request rates
 # Disable rate limiting in testing environment
-limiter = Limiter(
-    key_func=get_remote_address,
-    enabled=settings.ENVIRONMENT != "testing"
-)
+if settings.ENVIRONMENT != "testing":
+    limiter = Limiter(key_func=get_remote_address)
+else:
+    # Create a mock limiter for testing that doesn't enforce limits
+    limiter = None
 
 
 @asynccontextmanager
@@ -95,9 +96,10 @@ app = FastAPI(
     }
 )
 
-# Configure rate limiter for the app
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# Configure rate limiter for the app (only if not in testing)
+if limiter is not None:
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Security Headers Middleware
 # IMPORTANT: This must be defined BEFORE CORS middleware is added
