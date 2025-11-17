@@ -29,7 +29,7 @@ export default function AgentCard({
   onCardClick,
   isRecommended = false,
 }: AgentCardProps) {
-  const { name, role, color, initial, description, premium } = metadata;
+  const { name, role, color, initial, premium } = metadata;
 
   // Check if user can hire this agent
   const canHire = !premium || userPlan === 'premium' || userPlan === 'max' || userPlan === 'admin';

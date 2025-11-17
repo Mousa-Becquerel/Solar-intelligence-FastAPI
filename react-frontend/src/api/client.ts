@@ -7,13 +7,10 @@
 
 import API_CONFIG from './config';
 import type {
-  LoginRequest,
   LoginResponse,
   RegisterRequest,
   User,
   Conversation,
-  CreateConversationResponse,
-  ChatRequest,
   Message,
   Agent,
   AgentAccessInfo,

@@ -5,7 +5,7 @@
  * Handles message loading, sending, and streaming responses
  */
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '../../api';
@@ -76,9 +76,9 @@ export default function ChatContainer() {
     }
 
     setPrevConversationId(conversationId);
-  }, [conversationId, saveArtifact, restoreArtifact]);
+  }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages]);
 
-  const loadMessages = async (convId: number) => {
+  const loadMessages = useCallback(async (convId: number) => {
     try {
       setLoading(true);
 
@@ -100,7 +100,7 @@ export default function ChatContainer() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setSelectedAgent]);
 
   const handleSendMessage = async (content: string) => {
     try {

@@ -7,7 +7,7 @@
  * Matches Flask design exactly
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AgentCard from '../components/agents/AgentCard';
 import AgentDetailsModal from '../components/agents/AgentDetailsModal';
@@ -37,12 +37,7 @@ export default function AgentsPage() {
   const [recommendedAgents, setRecommendedAgents] = useState<AgentType[]>([]);
   const [isRecommending, setIsRecommending] = useState(false);
 
-  // Load hired agents and user plan on mount
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       // Load user plan
       const user = await apiClient.getCurrentUser();
@@ -56,11 +51,17 @@ export default function AgentsPage() {
       setHiredAgents(agentTypes);
     } catch (error) {
       console.error('Failed to load data:', error);
-      showToast('Failed to load data', 'error');
+      // showToast is defined later, so we'll just log for now
+      setToast({ message: 'Failed to load data', type: 'error' });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Load hired agents and user plan on mount
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleToggleHire = async (agentType: AgentType) => {
     const isHired = hiredAgents.includes(agentType);

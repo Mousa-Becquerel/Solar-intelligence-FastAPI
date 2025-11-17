@@ -10,7 +10,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores';
 import type { AgentType } from '../../constants/agents';
-import { AGENT_METADATA } from '../../constants/agentMetadata';
 
 interface HiredAgentsListProps {
   hiredAgents: AgentType[];
