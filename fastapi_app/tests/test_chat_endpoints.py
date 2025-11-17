@@ -375,7 +375,7 @@ async def test_query_count_increments(
             yield {'type': 'chunk', 'content': 'Test response'}
             yield {'type': 'done'}
 
-        mock_agent.return_value = mock_stream()
+        mock_agent.return_value = mock_stream
 
         response = await client.post(
             "/api/v1/chat/send",
@@ -545,7 +545,7 @@ async def test_conversation_agent_type_updates(
             yield {'type': 'chunk', 'content': 'Test'}
             yield {'type': 'done'}
 
-        mock_agent.return_value = mock_stream()
+        mock_agent.return_value = mock_stream
 
         response = await client.post(
             "/api/v1/chat/send",
@@ -586,7 +586,7 @@ async def test_user_message_stored(
             yield {'type': 'chunk', 'content': 'Response'}
             yield {'type': 'done'}
 
-        mock_agent.return_value = mock_stream()
+        mock_agent.return_value = mock_stream
 
         response = await client.post(
             "/api/v1/chat/send",
@@ -659,7 +659,7 @@ async def test_complete_chat_flow(
             yield {'type': 'chunk', 'content': 'Market analysis is...'}
             yield {'type': 'done'}
 
-        mock_agent.return_value = mock_stream()
+        mock_agent.return_value = mock_stream
 
         # Send message
         response = await client.post(
