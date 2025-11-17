@@ -355,7 +355,7 @@ async def test_query_count_increments(
 
     # Mock the agent processing to avoid actual AI calls
     with patch(
-        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_market_agent_stream',
+        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_market_intelligence_agent_stream',
         new_callable=AsyncMock
     ) as mock_agent:
         async def mock_stream():
@@ -639,7 +639,7 @@ async def test_complete_chat_flow(
     initial_query_count = test_user.monthly_query_count
 
     with patch(
-        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_market_agent_stream',
+        'fastapi_app.services.chat_processing_service.ChatProcessingService.process_market_intelligence_agent_stream',
         new_callable=AsyncMock
     ) as mock_agent:
         async def mock_stream():

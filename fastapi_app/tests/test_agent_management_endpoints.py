@@ -248,19 +248,19 @@ async def test_check_agent_availability_invalid_agent(client, auth_headers):
 # ============================================
 
 @pytest.mark.asyncio
-async def test_suggest_agent_type_price(client, auth_headers):
-    """Test agent type suggestion for price-related query"""
+async def test_suggest_agent_type_market(client, auth_headers):
+    """Test agent type suggestion for market-related query"""
     response = await client.post(
         "/api/v1/agent-management/suggest-agent-type",
-        params={"query": "What is the current module price in USD?"},
+        params={"query": "What is the current PV capacity trend in Europe?"},
         headers=auth_headers
     )
 
     assert response.status_code == 200
     data = response.json()
 
-    assert data["suggested_agent_type"] == "price"
-    assert "Price" in data["agent_display_name"]
+    assert data["suggested_agent_type"] == "market"
+    assert "Market" in data["agent_display_name"]
 
 
 @pytest.mark.asyncio
@@ -687,7 +687,8 @@ async def test_get_agent_types(client, auth_headers):
     assert "agent_types" in data
     assert isinstance(data["agent_types"], dict)
     assert "market" in data["agent_types"]
-    assert "price" in data["agent_types"]
+    assert "news" in data["agent_types"]
+    assert "digitalization" in data["agent_types"]
 
 
 # ============================================
