@@ -55,14 +55,14 @@ export const useAuthStore = create<AuthState>()(
       register: async (registerData: import('../types/api').RegisterRequest) => {
         set({ isLoading: true, error: null });
         try {
-          const user = await apiClient.register(registerData);
-          // User is automatically logged in by API client
+          // Registration now returns a message, not a user object
+          // User must verify email before they can login
+          await apiClient.register(registerData);
           set({
-            user: apiClient.getUser(),
-            isAuthenticated: true,
             isLoading: false,
             error: null,
           });
+          // Don't set user or isAuthenticated - email verification required
         } catch (error) {
           set({
             user: null,

@@ -181,15 +181,15 @@ class APIClient {
 
   async register(
     registerData: RegisterRequest
-  ): Promise<User> {
-    const response = await this.request<User>('auth/register', {
+  ): Promise<{ message: string }> {
+    // Registration now returns a message about email verification
+    // User must verify email before they can login
+    const response = await this.request<{ message: string }>('auth/register', {
       method: 'POST',
       body: JSON.stringify(registerData),
     });
 
-    // After registration, log the user in automatically
-    const loginResponse = await this.login(registerData.email, registerData.password);
-
+    // Do NOT auto-login - email verification required
     return response;
   }
 

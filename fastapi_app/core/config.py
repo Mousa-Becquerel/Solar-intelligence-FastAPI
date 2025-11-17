@@ -51,6 +51,19 @@ class Settings(BaseSettings):
     # Logfire
     LOGFIRE_TOKEN: str = ''
 
+    # AWS Configuration
+    AWS_REGION: str = "us-east-1"
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+
+    # AWS SES Email Configuration
+    SES_SENDER_EMAIL: str = "noreply@yourdomain.com"
+    SES_SENDER_NAME: str = "Solar Intelligence"
+    SUPPORT_EMAIL: str = "support@yourdomain.com"
+
+    # JWT Configuration
+    JWT_SECRET_KEY: str = ""  # Will use SECRET_KEY if not set
+
     # CORS - Allow both Flask and React frontend
     CORS_ORIGINS: list[str] = [
         "http://localhost",       # Production frontend (Nginx on port 80)

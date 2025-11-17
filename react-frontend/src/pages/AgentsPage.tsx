@@ -96,16 +96,6 @@ export default function AgentsPage() {
     setToast({ message, type });
   };
 
-  const handleLogout = () => {
-    // Implement logout logic
-    navigate('/login');
-  };
-
-  const handleProfile = () => {
-    // Implement profile navigation
-    navigate('/profile');
-  };
-
   // Filter agents based on selected category
   const filteredAgents = AVAILABLE_AGENTS.filter((agentType) => {
     if (selectedFilter === 'all') return true;
@@ -181,100 +171,6 @@ export default function AgentsPage() {
           >
             Hire Your AI Team
           </h1>
-
-          {/* User Menu (top right) */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-          {/* Profile Button */}
-          <button
-            onClick={handleProfile}
-            style={{
-              width: '40px',
-              height: '40px',
-              background: '#FFFFFF',
-              border: '1px solid #E0E0E0',
-              borderRadius: '20px', // MD3 full rounded
-              cursor: 'pointer',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#616161',
-              textDecoration: 'none',
-              boxShadow: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#F5F5F5';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#FFFFFF';
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </button>
-
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
-            style={{
-              width: '40px',
-              height: '40px',
-              background: '#FFFFFF',
-              border: '1px solid #E0E0E0',
-              borderRadius: '20px', // MD3 full rounded
-              cursor: 'pointer',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#616161',
-              textDecoration: 'none',
-              boxShadow: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#FFEBEE';
-              e.currentTarget.style.color = '#D32F2F';
-              e.currentTarget.style.borderColor = '#FFCDD2';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#FFFFFF';
-              e.currentTarget.style.color = '#616161';
-              e.currentTarget.style.borderColor = '#E0E0E0';
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </button>
-        </div>
         </div>
 
         {/* Scrollable Content Area */}

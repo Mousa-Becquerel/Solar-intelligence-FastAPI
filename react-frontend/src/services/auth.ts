@@ -1,17 +1,38 @@
 /**
  * Auth Service
- * Provides authentication-related functionality for password reset flows
+ * Provides authentication-related functionality for email verification and password reset flows
  */
 
 import { apiClient } from '../api';
 
 class AuthService {
   /**
+   * Verify email with token
+   */
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    const response = await apiClient.request<{ message: string }>('auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+    return response;
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerification(): Promise<{ message: string }> {
+    const response = await apiClient.request<{ message: string }>('auth/send-verification', {
+      method: 'POST',
+    });
+    return response;
+  }
+
+  /**
    * Request password reset email
    */
   async forgotPassword(email: string): Promise<void> {
     // Call the backend forgot password endpoint
-    await apiClient.request<{ message: string }>('auth/forgot-password', {
+    await apiClient.request<{ message: string }>('auth/request-password-reset', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });

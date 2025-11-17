@@ -29,6 +29,13 @@ services:
       - DB_ECHO_POOL=False
       - DB_CONNECT_TIMEOUT=10
       - DB_COMMAND_TIMEOUT=60
+      # AWS SES Email Configuration
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - SES_SENDER_EMAIL=${SES_SENDER_EMAIL}
+      - SES_SENDER_NAME=${SES_SENDER_NAME}
+      - SUPPORT_EMAIL=${SUPPORT_EMAIL}
     volumes:
       - ./fastapi_app:/app/fastapi_app
       - ./datasets:/app/datasets:ro

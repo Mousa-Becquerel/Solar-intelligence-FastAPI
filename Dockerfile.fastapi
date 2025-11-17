@@ -30,7 +30,7 @@ RUN poetry install --no-root --no-interaction --no-ansi
 # Note: Using 'poetry add' to add new dependencies on top of existing ones
 # Added openai-agents[sqlalchemy] for stateless PostgreSQL sessions
 RUN poetry add fastapi uvicorn[standard] sqlalchemy[asyncio] asyncpg aiosqlite \
-    python-jose[cryptography] passlib[bcrypt] python-multipart email-validator --no-interaction && \
+    python-jose[cryptography] passlib[bcrypt] python-multipart email-validator slowapi --no-interaction && \
     poetry add "openai-agents[sqlalchemy]" --no-interaction
 
 # Verify asyncpg is installed

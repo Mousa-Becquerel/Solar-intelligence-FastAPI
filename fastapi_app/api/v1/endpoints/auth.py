@@ -12,12 +12,17 @@ from jose import jwt
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import secrets
+import logging
 
 from fastapi_app.core.config import settings
 from fastapi_app.db.session import get_db
 from fastapi_app.db.models import User
 from fastapi_app.core.deps import get_current_active_user
 from fastapi_app.services.auth_service import AuthService
+from fastapi_app.services.email_service import email_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -132,6 +137,7 @@ async def login(
     - password: User's password
 
     Returns JWT token for subsequent authenticated requests.
+    Requires email verification to login.
     """
     # Authenticate user using service
     user, error = await AuthService.authenticate_user(
@@ -147,6 +153,14 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Check if email is verified
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email address before logging in. Check your inbox for the verification link.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     # Create access token
     access_token = create_access_token(user.id)
 
@@ -156,17 +170,18 @@ async def login(
     }
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
-@limiter.limit("3/hour")  # Prevent spam registration - 3 registrations per hour per IP
+@router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
+# @limiter.limit("3/hour")  # Prevent spam registration - TEMPORARILY DISABLED FOR TESTING
 async def register(
     request: Request,  # Required for rate limiting
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Register a new user
+    Register a new user with email verification
 
-    Matches Flask registration - collects full user profile data
+    Creates an inactive account and sends a verification email.
+    User must verify email before they can login.
     """
     # Validate terms agreement
     if not user_data.terms_agreement:
@@ -187,13 +202,22 @@ async def register(
             detail="An account with this email already exists"
         )
 
-    # Create new user - matches Flask behavior
+    # Generate verification token
+    verification_token = secrets.token_urlsafe(32)
+    token_expiry = datetime.utcnow() + timedelta(hours=24)
+
+    # Create new user - inactive until email verified
     consent_timestamp = datetime.utcnow()
     new_user = User(
         username=user_data.email,  # Use email as username
         full_name=f"{user_data.first_name} {user_data.last_name}",
         role='user',
-        is_active=True,  # Auto-activate in FastAPI (Flask checks waitlist)
+        is_active=False,  # Inactive until email verified
+
+        # Email Verification
+        email_verified=False,
+        verification_token=verification_token,
+        verification_token_expiry=token_expiry,
 
         # GDPR Consent Tracking
         gdpr_consent_given=True,
@@ -211,7 +235,23 @@ async def register(
     await db.commit()
     await db.refresh(new_user)
 
-    return new_user
+    # Send verification email
+    success, error = await email_service.send_verification_email(
+        email=user_data.email,
+        token=verification_token,
+        full_name=new_user.full_name
+    )
+
+    if not success:
+        logger.error(f"Failed to send verification email to {user_data.email}: {error}")
+        # Don't fail registration if email fails - user can request resend
+        return {
+            "message": "Account created! However, we couldn't send the verification email. Please contact support or try resending the verification email."
+        }
+
+    return {
+        "message": "Account created successfully! Please check your email to verify your account before logging in."
+    }
 
 
 @router.get("/me", response_model=UserResponse, tags=["Authentication"])

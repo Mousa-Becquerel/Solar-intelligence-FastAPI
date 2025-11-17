@@ -6,6 +6,7 @@
  * Matches Flask design exactly
  */
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores';
 import type { AgentType } from '../../constants/agents';
@@ -21,7 +22,8 @@ export default function HiredAgentsList({
   onUnhire,
 }: HiredAgentsListProps) {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Get user initials
   const getUserInitials = () => {
@@ -220,55 +222,209 @@ export default function HiredAgentsList({
         {/* User Profile at Bottom */}
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '12px',
             borderTop: '1px solid #E5E7EB',
             marginTop: '16px',
+            padding: '12px 16px',
+            position: 'relative',
           }}
         >
-          <div
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            type="button"
             style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: '#010654',
+              width: '100%',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: '0',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '0.875rem',
-              fontWeight: '600',
+              gap: '12px',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
-            {getUserInitials()}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: '#010654',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
                 fontSize: '0.875rem',
-                fontWeight: '500',
-                color: '#111827',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                fontWeight: '600',
+                flexShrink: 0,
               }}
             >
-              {user?.full_name || 'User'}
+              {getUserInitials()}
             </div>
+            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+              <div
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: '#111827',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {user?.full_name || 'User'}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.75rem',
+                  color: '#6B7280',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {user?.plan_type ? `${user.plan_type.charAt(0).toUpperCase() + user.plan_type.slice(1)} Plan` : 'Free Plan'}
+              </div>
+            </div>
+          </button>
+
+          {/* Dropdown Menu */}
+          {dropdownOpen && (
             <div
               style={{
-                fontSize: '0.75rem',
-                color: '#6B7280',
+                position: 'absolute',
+                bottom: '100%',
+                left: '16px',
+                right: '16px',
+                marginBottom: '8px',
+                background: 'white',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                zIndex: 1000,
               }}
             >
-              {user?.plan_type ? `${user.plan_type.charAt(0).toUpperCase() + user.plan_type.slice(1)} Plan` : 'Free Plan'}
+              <a
+                href="/profile"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px 16px',
+                  textDecoration: 'none',
+                  color: '#111827',
+                  fontSize: '0.875rem',
+                  fontWeight: '400',
+                  transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  borderBottom: '1px solid #E5E7EB',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#F3F4F6';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Profile</span>
+              </a>
+
+              {/* Admin Link - Only visible for admin users */}
+              {user?.role === 'admin' && (
+                <a
+                  href="/admin/users"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 16px',
+                    textDecoration: 'none',
+                    color: '#111827',
+                    fontSize: '0.875rem',
+                    fontWeight: '400',
+                    transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    borderBottom: '1px solid #E5E7EB',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#F3F4F6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
+                  </svg>
+                  <span>Admin</span>
+                </a>
+              )}
+
+              <button
+                onClick={() => {
+                  logout();
+                  window.location.href = '/login';
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px 16px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#111827',
+                  fontSize: '0.875rem',
+                  fontWeight: '400',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#F3F4F6';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
+              </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

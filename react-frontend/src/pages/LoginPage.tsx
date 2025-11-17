@@ -4,7 +4,7 @@
  * Login form with gradient background matching Flask design
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,6 +27,18 @@ export default function LoginPage() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  // Show info message from navigation state (e.g., from registration)
+  useEffect(() => {
+    const message = (location.state as any)?.message;
+    if (message) {
+      setInfoMessage(message);
+      toast.info(message, { duration: 5000 });
+      // Clear the state to prevent showing message on page refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -40,7 +52,17 @@ export default function LoginPage() {
         navigate(from, { replace: true });
       }, 1000);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Login failed');
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+
+      // Check if it's an email verification error
+      if (errorMessage.includes('verify your email')) {
+        toast.error(errorMessage, {
+          duration: 7000,
+          description: 'Please check your inbox for the verification link.'
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 

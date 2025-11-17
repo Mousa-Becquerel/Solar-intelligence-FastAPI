@@ -41,12 +41,17 @@ export default function RegisterPage() {
 
       await registerUser(registerData as RegisterRequest);
 
-      toast.success('Account created successfully! Redirecting...');
+      toast.success('Account created! Please check your email to verify your account.', {
+        duration: 6000,
+      });
 
-      // Redirect to agents page after successful registration
+      // Redirect to login page after successful registration
       setTimeout(() => {
-        navigate('/agents', { replace: true });
-      }, 1000);
+        navigate('/login', {
+          replace: true,
+          state: { message: 'Please check your email to verify your account before logging in.' }
+        });
+      }, 2000);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Registration failed');
     }

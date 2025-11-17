@@ -31,6 +31,7 @@ const MainLayout = lazy(() => import('./components/layout/MainLayout'));
 // Auth pages (lazy loaded)
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
+const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'));
 
 // Main app pages (lazy loaded)
 const ChatPage = lazy(() => import('./pages/ChatPage'));
@@ -62,6 +63,10 @@ export const router = createBrowserRouter([
   {
     path: '/reset-password',
     element: lazyLoad(ResetPasswordPage),
+  },
+  {
+    path: '/verify-email',
+    element: lazyLoad(VerifyEmailPage),
   },
   {
     path: '/agents',

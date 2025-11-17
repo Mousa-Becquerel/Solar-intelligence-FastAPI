@@ -11,10 +11,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 import logging
+import secrets
 
 from fastapi_app.db.models import User
 
 logger = logging.getLogger(__name__)
+
+
+def generate_token() -> str:
+    """Generate a secure random token for email verification and password reset"""
+    return secrets.token_urlsafe(32)
 
 
 class AuthService:
@@ -390,7 +396,7 @@ class AuthService:
             Tuple of (success, error_message)
         """
         try:
-            from fastapi_app.services.email_service import EmailService, generate_token
+            from fastapi_app.services.email_service import email_service
 
             # Find user
             result = await db.execute(
@@ -411,17 +417,17 @@ class AuthService:
             await db.commit()
 
             # Send email
-            email_sent = await EmailService.send_password_reset_email(
+            success, error = await email_service.send_password_reset_email(
                 email=email,
-                reset_token=reset_token,
-                reset_url=reset_url
+                token=reset_token,
+                full_name=user.full_name
             )
 
-            if email_sent:
+            if success:
                 logger.info(f"Password reset email sent to {email}")
                 return True, None
             else:
-                logger.error(f"Failed to send password reset email to {email}")
+                logger.error(f"Failed to send password reset email to {email}: {error}")
                 return False, "Failed to send reset email"
 
         except Exception as e:
@@ -447,6 +453,8 @@ class AuthService:
             Tuple of (success, error_message)
         """
         try:
+            from fastapi_app.services.email_service import email_service
+
             # Find user with this token
             result = await db.execute(
                 select(User).where(User.reset_token == token)
@@ -470,6 +478,12 @@ class AuthService:
             user.reset_token_expiry = None
 
             await db.commit()
+
+            # Send password changed notification
+            await email_service.send_password_changed_notification(
+                email=user.username,
+                full_name=user.full_name
+            )
 
             logger.info(f"Password reset successful for user {user.id}")
             return True, None
@@ -499,7 +513,7 @@ class AuthService:
             Tuple of (success, error_message)
         """
         try:
-            from fastapi_app.services.email_service import EmailService, generate_token
+            from fastapi_app.services.email_service import email_service
 
             # Generate verification token
             verification_token = generate_token()
@@ -509,16 +523,17 @@ class AuthService:
             await db.commit()
 
             # Send email
-            email_sent = await EmailService.send_verification_email(
+            success, error = await email_service.send_verification_email(
                 email=user.username,
-                verification_token=verification_token,
-                verification_url=verification_url
+                token=verification_token,
+                full_name=user.full_name
             )
 
-            if email_sent:
+            if success:
                 logger.info(f"Verification email sent to {user.username}")
                 return True, None
             else:
+                logger.error(f"Failed to send verification email to {user.username}: {error}")
                 return False, "Failed to send verification email"
 
         except Exception as e:
@@ -542,6 +557,8 @@ class AuthService:
             Tuple of (success, error_message)
         """
         try:
+            from fastapi_app.services.email_service import email_service
+
             # Find user with this token
             result = await db.execute(
                 select(User).where(User.verification_token == token)
@@ -555,14 +572,21 @@ class AuthService:
             if user.verification_token_expiry and user.verification_token_expiry < datetime.utcnow():
                 return False, "Verification token has expired"
 
-            # Verify email
+            # Verify email and activate account
             user.email_verified = True
+            user.is_active = True  # Activate account upon email verification
             user.verification_token = None
             user.verification_token_expiry = None
 
             await db.commit()
 
-            logger.info(f"Email verified for user {user.id}")
+            # Send welcome email
+            await email_service.send_welcome_email(
+                email=user.username,
+                full_name=user.full_name
+            )
+
+            logger.info(f"Email verified and account activated for user {user.id}")
             return True, None
 
         except Exception as e:
