@@ -22,8 +22,23 @@ from fastapi_app.services.agent_access_service import AgentAccessService
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Initialize limiter for this router
-limiter = Limiter(key_func=get_remote_address)
+# Initialize limiter for this router (disable in testing environment)
+from fastapi_app.core.config import settings
+
+if settings.ENVIRONMENT != "testing":
+    limiter = Limiter(key_func=get_remote_address)
+
+    # Helper to apply rate limiting decorator
+    def rate_limit(limit_string: str):
+        """Apply rate limiting decorator"""
+        return limiter.limit(limit_string)
+else:
+    # No-op decorator for testing - doesn't apply any rate limiting
+    def rate_limit(limit_string: str):
+        """No-op decorator for testing"""
+        def decorator(func):
+            return func
+        return decorator
 
 
 # ============================================
@@ -67,7 +82,7 @@ class AgentAccessError(BaseModel):
     summary="Send chat message",
     description="Send a message and get streaming or non-streaming response based on agent type"
 )
-@limiter.limit("60/minute")  # 60 chat messages per minute per IP
+@rate_limit("60/minute")  # 60 chat messages per minute per IP
 async def send_chat_message(
     request: Request,  # Required for rate limiting (must be named 'request')
     chat_request: ChatRequest,

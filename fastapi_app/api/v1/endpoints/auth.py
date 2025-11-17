@@ -26,8 +26,21 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Initialize limiter for this router
-limiter = Limiter(key_func=get_remote_address)
+# Initialize limiter for this router (disable in testing environment)
+if settings.ENVIRONMENT != "testing":
+    limiter = Limiter(key_func=get_remote_address)
+
+    # Helper to apply rate limiting decorator
+    def rate_limit(limit_string: str):
+        """Apply rate limiting decorator"""
+        return limiter.limit(limit_string)
+else:
+    # No-op decorator for testing - doesn't apply any rate limiting
+    def rate_limit(limit_string: str):
+        """No-op decorator for testing"""
+        def decorator(func):
+            return func
+        return decorator
 
 
 # Schemas
@@ -123,7 +136,7 @@ def create_access_token(user_id: int) -> str:
 
 
 @router.post("/login", response_model=Token, tags=["Authentication"])
-@limiter.limit("5/minute")  # Prevent brute-force attacks - 5 login attempts per minute
+@rate_limit("5/minute")  # Prevent brute-force attacks - 5 login attempts per minute
 async def login(
     request: Request,  # Required for rate limiting
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -171,7 +184,7 @@ async def login(
 
 
 @router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
-# @limiter.limit("3/hour")  # Prevent spam registration - TEMPORARILY DISABLED FOR TESTING
+# @rate_limit("3/hour")  # Prevent spam registration - TEMPORARILY DISABLED FOR TESTING
 async def register(
     request: Request,  # Required for rate limiting
     user_data: UserCreate,
