@@ -117,7 +117,7 @@ async def premium_user(async_session):
 @pytest_asyncio.fixture
 async def agent_configs(async_session, test_user):
     """Create agent access configurations for all agents and hire them for test_user"""
-    from fastapi_app.db.models import UserAgentAccess
+    from fastapi_app.db.models import HiredAgent
 
     agent_types = [
         "market", "news", "digitalization",
@@ -136,11 +136,12 @@ async def agent_configs(async_session, test_user):
         async_session.add(config)
 
         # Hire the agent for the test user
-        user_agent_access = UserAgentAccess(
+        hired_agent = HiredAgent(
             user_id=test_user.id,
-            agent_type=agent_type
+            agent_type=agent_type,
+            is_active=True
         )
-        async_session.add(user_agent_access)
+        async_session.add(hired_agent)
 
     await async_session.commit()
     return True
