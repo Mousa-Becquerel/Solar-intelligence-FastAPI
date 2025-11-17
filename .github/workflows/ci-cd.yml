@@ -95,6 +95,7 @@ jobs:
           JWT_SECRET_KEY: test-jwt-secret-key-for-ci
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ENVIRONMENT: testing
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           pytest fastapi_app/tests/ -v --cov=fastapi_app --cov-report=xml --cov-report=term
         continue-on-error: false
