@@ -138,6 +138,7 @@ async def auth_headers(client, test_user):
             "password": "testpass123"
         }
     )
+    assert response.status_code == 200, f"Login failed: {response.status_code} - {response.text}"
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
@@ -152,6 +153,7 @@ async def premium_auth_headers(client, premium_user):
             "password": "testpass123"
         }
     )
+    assert response.status_code == 200, f"Login failed: {response.status_code} - {response.text}"
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
@@ -166,6 +168,7 @@ async def admin_auth_headers(client, admin_user):
             "password": "adminpass123"
         }
     )
+    assert response.status_code == 200, f"Login failed: {response.status_code} - {response.text}"
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
