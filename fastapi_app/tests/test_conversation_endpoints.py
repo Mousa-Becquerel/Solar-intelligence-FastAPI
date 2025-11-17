@@ -91,6 +91,12 @@ async def test_user(async_session):
     assert error is None
     assert user is not None
 
+    # Manually verify email for testing (bypass email verification requirement)
+    user.email_verified = True
+    async_session.add(user)
+    await async_session.commit()
+    await async_session.refresh(user)
+
     return user
 
 
@@ -113,6 +119,12 @@ async def test_user2(async_session):
 
     assert error is None
     assert user is not None
+
+    # Manually verify email for testing (bypass email verification requirement)
+    user.email_verified = True
+    async_session.add(user)
+    await async_session.commit()
+    await async_session.refresh(user)
 
     return user
 

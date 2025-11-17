@@ -75,6 +75,7 @@ async def test_user(async_session):
         full_name="Test User",
         role="user",
         is_active=True,
+        email_verified=True,  # Required for login
         plan_type="free"
     )
     user.set_password("testpass123")
@@ -94,6 +95,7 @@ async def premium_user(async_session):
         full_name="Premium User",
         role="user",
         is_active=True,
+        email_verified=True,  # Required for login
         plan_type="premium"
     )
     user.set_password("testpass123")
@@ -113,6 +115,7 @@ async def admin_user(async_session):
         full_name="Admin User",
         role="admin",
         is_active=True,
+        email_verified=True,  # Required for login
         plan_type="free"
     )
     user.set_password("adminpass123")

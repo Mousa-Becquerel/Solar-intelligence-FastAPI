@@ -74,8 +74,9 @@ async def test_user(async_session):
     assert error is None
     assert user is not None
 
-    # Approve user for testing
+    # Approve user and verify email for testing
     user.is_approved = True
+    user.email_verified = True
     user.plan_type = "free"
     await async_session.commit()
     await async_session.refresh(user)
@@ -103,8 +104,9 @@ async def premium_user(async_session):
     assert error is None
     assert user is not None
 
-    # Approve and set as premium
+    # Approve, verify email, and set as premium
     user.is_approved = True
+    user.email_verified = True
     user.plan_type = "premium"
     await async_session.commit()
     await async_session.refresh(user)
