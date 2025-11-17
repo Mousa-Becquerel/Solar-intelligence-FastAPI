@@ -13,12 +13,11 @@ import type { AgentType } from '../../constants/agents';
 
 interface HiredAgentsListProps {
   hiredAgents: AgentType[];
-  onUnhire: (agentType: AgentType) => void;
+  onUnhire?: (agentType: AgentType) => void;
 }
 
 export default function HiredAgentsList({
   hiredAgents,
-  onUnhire,
 }: HiredAgentsListProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();

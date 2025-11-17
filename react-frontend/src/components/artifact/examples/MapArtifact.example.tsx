@@ -12,14 +12,8 @@ interface MapLocation {
   lat: number;
   lng: number;
   label: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
-
-const sampleLocations: MapLocation[] = [
-  { lat: 52.52, lng: 13.405, label: 'Berlin Solar Plant' },
-  { lat: 48.8566, lng: 2.3522, label: 'Paris Installation' },
-  { lat: 51.5074, lng: -0.1278, label: 'London Site' },
-];
 
 /**
  * Map component (replace with your actual map library)
@@ -110,3 +104,6 @@ export function openMapArtifact(locations: MapLocation[]) {
     'map'
   );
 }
+
+// Export the component type for external use
+export type { MapLocation };

@@ -72,7 +72,7 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
     setLoading(true);
 
     try {
-      const response = await apiClient.request('chat/contact/submit', {
+      await apiClient.request('chat/contact/submit', {
         method: 'POST',
         body: JSON.stringify({
           message: message.trim(),

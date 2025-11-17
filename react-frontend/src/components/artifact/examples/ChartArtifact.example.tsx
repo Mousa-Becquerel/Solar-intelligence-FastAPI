@@ -21,7 +21,7 @@ const sampleChartData = {
 /**
  * Chart component (replace with your actual chart library)
  */
-function ChartComponent({ data }: { data: any }) {
+function ChartComponent({ data }: { data: Record<string, unknown> }) {
   return (
     <div style={{ padding: '2rem' }}>
       <h2 style={{ marginBottom: '1rem' }}>PV Installation Trends</h2>
@@ -67,7 +67,7 @@ export function openChartArtifact() {
 /**
  * Example: How to handle chart data from backend SSE stream
  */
-export function handleChartFromStream(plotData: any) {
+export function handleChartFromStream(plotData: Record<string, unknown>) {
   const { openArtifact } = useUIStore.getState();
 
   // plotData comes from backend with structure:

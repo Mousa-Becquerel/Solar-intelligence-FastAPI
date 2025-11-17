@@ -228,7 +228,7 @@ class APIClient {
 
   async getMessages(conversationId: number): Promise<Message[]> {
     // Get raw messages from backend
-    const rawMessages = await this.request<any[]>(`conversations/${conversationId}/messages`);
+    const rawMessages = await this.request<Record<string, unknown>[]>(`conversations/${conversationId}/messages`);
 
     // Transform backend format to frontend format
     return rawMessages.map(msg => ({
@@ -285,7 +285,7 @@ class APIClient {
       // Otherwise return original content
       console.warn('⚠️ Unexpected parsed type:', typeof parsed, parsed);
       return content;
-    } catch (error) {
+    } catch (_error) {
       // Not JSON, return as-is
       console.log('✅ Content is not JSON, using as plain text');
       return content;
