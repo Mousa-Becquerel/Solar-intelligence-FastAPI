@@ -45,6 +45,31 @@ export default function ChatContainer() {
   const [surveyStage, setSurveyStage] = useState<1 | 2>(1);
   const [bothSurveysCompleted, setBothSurveysCompleted] = useState(false);
 
+  // Define loadMessages function before useEffect that uses it
+  const loadMessages = useCallback(async (convId: number) => {
+    try {
+      setLoading(true);
+
+      // Fetch conversation details to get agent_type
+      const conversation = await apiClient.getConversation(convId);
+
+      // Restore the agent selection from the conversation
+      if (conversation.agent_type) {
+        setSelectedAgent(conversation.agent_type as AgentType);
+        console.log(`🔄 [ChatContainer] Restored agent selection: ${conversation.agent_type}`);
+      }
+
+      // Then load messages
+      const data = await apiClient.getMessages(convId);
+      setMessages(data);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+      toast.error('Failed to load messages');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Load messages and handle artifact persistence when conversation changes
   useEffect(() => {
     const convId = conversationId ? Number(conversationId) : null;
@@ -77,30 +102,6 @@ export default function ChatContainer() {
 
     setPrevConversationId(conversationId);
   }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages]);
-
-  const loadMessages = useCallback(async (convId: number) => {
-    try {
-      setLoading(true);
-
-      // Fetch conversation details to get agent_type
-      const conversation = await apiClient.getConversation(convId);
-
-      // Restore the agent selection from the conversation
-      if (conversation.agent_type) {
-        setSelectedAgent(conversation.agent_type as AgentType);
-        console.log(`🔄 [ChatContainer] Restored agent selection: ${conversation.agent_type}`);
-      }
-
-      // Then load messages
-      const data = await apiClient.getMessages(convId);
-      setMessages(data);
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-      toast.error('Failed to load messages');
-    } finally {
-      setLoading(false);
-    }
-  }, [setSelectedAgent]);
 
   const handleSendMessage = async (content: string) => {
     try {
