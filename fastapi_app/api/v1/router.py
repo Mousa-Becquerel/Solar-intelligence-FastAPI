@@ -3,7 +3,7 @@ API v1 Router - Aggregates all endpoint routers
 """
 from fastapi import APIRouter
 
-from fastapi_app.api.v1.endpoints import auth, agents, chat, conversations, agent_access, admin, agent_management, health, profile, survey, contact
+from fastapi_app.api.v1.endpoints import auth, agents, chat, conversations, agent_access, admin, agent_management, health, profile, survey, contact, recommendations
 
 api_router = APIRouter()
 
@@ -72,4 +72,10 @@ api_router.include_router(
     contact.router,
     prefix="/contact",
     tags=["Contact"]
+)
+
+api_router.include_router(
+    recommendations.router,
+    prefix="/recommendations",
+    tags=["Recommendations"]
 )

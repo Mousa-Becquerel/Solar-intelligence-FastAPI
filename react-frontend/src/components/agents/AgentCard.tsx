@@ -17,6 +17,7 @@ interface AgentCardProps {
   userPlan: string;
   onToggleHire: (agentType: AgentType) => void;
   onCardClick?: (agentType: AgentType) => void;
+  isRecommended?: boolean;
 }
 
 export default function AgentCard({
@@ -26,6 +27,7 @@ export default function AgentCard({
   userPlan,
   onToggleHire,
   onCardClick,
+  isRecommended = false,
 }: AgentCardProps) {
   const { name, role, color, initial, description, premium } = metadata;
 
@@ -62,10 +64,13 @@ export default function AgentCard({
         flexDirection: 'column',
         gap: '12px',
         minHeight: '140px',
-        overflow: 'hidden',
+        overflow: 'visible', // Changed to visible to show top border
         boxShadow: 'none',
         border: 'none', // MD3 flat design - no borders
         background: 'white',
+        // Add top border for recommended agents
+        borderTop: isRecommended ? '3px solid #FFB74D' : 'none',
+        paddingTop: isRecommended ? '21px' : '24px', // Adjust padding to maintain height
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = '#f5f5f5'; // Slightly darker on hover
@@ -74,43 +79,39 @@ export default function AgentCard({
         e.currentTarget.style.background = 'white';
       }}
     >
-      {/* Hired Indicator - Top Right (takes priority over premium badge) */}
-      {isHired && (
+      {/* Recommended Star Icon - Small badge in top-right */}
+      {isRecommended && (
         <div
           style={{
             position: 'absolute',
-            top: '12px',
-            right: '12px',
-            background: '#10B981',
-            color: 'white',
-            fontSize: '0.625rem',
-            fontWeight: '600',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            zIndex: 3,
+            top: '8px',
+            right: premium ? '46px' : '8px', // Shift left if there's a premium badge
+            background: '#FFB74D',
+            borderRadius: '50%',
+            width: '28px',
+            height: '28px',
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
+            justifyContent: 'center',
+            zIndex: 3,
+            boxShadow: '0 2px 4px rgba(255, 183, 77, 0.3)',
           }}
+          title="Recommended for you"
         >
           <svg
-            width="10"
-            height="10"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            fill="#1e293b"
+            stroke="none"
           >
-            <polyline points="20 6 9 17 4 12" />
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
-          Hired
         </div>
       )}
 
-      {/* Premium Badge - Top Right (only shown when not hired) */}
-      {premium && !isHired && (
+      {/* Premium Badge - Top Right */}
+      {premium && (
         <div
           style={{
             position: 'absolute',

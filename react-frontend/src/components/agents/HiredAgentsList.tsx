@@ -63,13 +63,13 @@ export default function HiredAgentsList({
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          padding: '24px 16px',
+          padding: '16px 16px 24px 16px', // Match top padding with top bar (16px)
           gap: '8px',
           minHeight: 0,
         }}
       >
         {/* Logo */}
-        <div style={{ marginBottom: '32px', padding: '8px 0' }}>
+        <div style={{ marginBottom: '32px', padding: '0', display: 'flex', alignItems: 'center', minHeight: '32px' }}>
           <img
             src="/new_logo.svg"
             alt="Solar Intelligence"

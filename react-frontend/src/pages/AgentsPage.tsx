@@ -33,6 +33,9 @@ export default function AgentsPage() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<FilterCategory>('all');
   const [selectedAgentForModal, setSelectedAgentForModal] = useState<AgentType | null>(null);
+  const [userQuery, setUserQuery] = useState<string>('');
+  const [recommendedAgents, setRecommendedAgents] = useState<AgentType[]>([]);
+  const [isRecommending, setIsRecommending] = useState(false);
 
   // Load hired agents and user plan on mount
   useEffect(() => {
@@ -106,6 +109,16 @@ export default function AgentsPage() {
     return true;
   });
 
+  // Reorder agents: recommended ones first, then others
+  const sortedAgents = [...filteredAgents].sort((a, b) => {
+    const aIsRecommended = recommendedAgents.includes(a);
+    const bIsRecommended = recommendedAgents.includes(b);
+
+    if (aIsRecommended && !bIsRecommended) return -1;
+    if (!aIsRecommended && bIsRecommended) return 1;
+    return 0;
+  });
+
   if (loading) {
     return (
       <div
@@ -163,13 +176,13 @@ export default function AgentsPage() {
             style={{
               fontSize: '20px',
               lineHeight: '28px',
-              fontWeight: '600',
+              fontWeight: '400',
               color: '#1e3a8a', // Same blue as chat screen
               margin: 0,
               fontFamily: "'Inter', 'Roboto', 'Google Sans', Arial, sans-serif",
             }}
           >
-            Hire Your AI Team
+            Agents Gallery
           </h1>
         </div>
 
@@ -181,20 +194,207 @@ export default function AgentsPage() {
             padding: '24px',
           }}
         >
-          {/* Page Description */}
-          <p
+          {/* AI-Powered Agent Recommendation - Centered Modern Design */}
+          <div
             style={{
-              fontSize: '14px',
-              lineHeight: '20px',
-              color: '#1e3a8a', // Same blue as chat screen
-              fontWeight: '400',
-              margin: '0 0 24px 0',
-              letterSpacing: '0.25px',
-              fontFamily: "'Inter', 'Roboto', 'Google Sans Text', Arial, sans-serif",
+              marginBottom: '48px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
             }}
           >
-            Choose from our team of specialized AI experts to build your perfect solar intelligence team
-          </p>
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '900px',
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                padding: '32px 40px',
+                border: '1px solid #F0F0F0',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              {/* Header */}
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <h3
+                  style={{
+                    fontSize: '24px',
+                    fontWeight: '400',
+                    color: '#1e3a8a',
+                    margin: '0 0 8px 0',
+                    fontFamily: "'Inter', 'Roboto', 'Google Sans', Arial, sans-serif",
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Find Your Perfect AI Team
+                </h3>
+                <p
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    color: '#94a3b8',
+                    margin: '0',
+                    fontFamily: "'Inter', 'Roboto', 'Google Sans Text', Arial, sans-serif",
+                    fontWeight: '300',
+                    maxWidth: '600px',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                  }}
+                >
+                  Describe what you need help with, and we'll recommend the best agents for you
+                </p>
+              </div>
+
+              {/* Input Section - MD3 Flat Design matching ChatInput */}
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  background: '#F5F5F5',
+                  borderRadius: '16px',
+                  padding: '0.8rem',
+                  boxShadow: 'none',
+                  border: 'none',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                  }}
+                >
+                  {/* Input Field */}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={userQuery}
+                      onChange={(e) => setUserQuery(e.target.value)}
+                      placeholder="e.g., I need help analyzing solar panel market trends..."
+                      style={{
+                        width: '100%',
+                        height: '48px',
+                        padding: '0.875rem 1.125rem',
+                        fontSize: '0.9375rem',
+                        fontWeight: '300',
+                        letterSpacing: '-0.01em',
+                        lineHeight: '1.5',
+                        border: 'none',
+                        borderRadius: '12px',
+                        outline: 'none',
+                        fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+                        background: '#ffffff',
+                        color: '#1e293b',
+                        transition: 'background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: 'none',
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.background = '#fafafa';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.background = '#ffffff';
+                      }}
+                    />
+                  </div>
+
+                  {/* Recommend Button - MD3 Filled Button */}
+                  <button
+                    onClick={async () => {
+                      if (userQuery.trim() && !isRecommending) {
+                        setIsRecommending(true);
+                        try {
+                          // Call AI recommendation API using apiClient.request
+                          const response = await apiClient.request<{ recommended_agents: string[] }>(
+                            'recommendations/recommend',
+                            {
+                              method: 'POST',
+                              body: JSON.stringify({ query: userQuery })
+                            }
+                          );
+
+                          const recommendedAgents = response.recommended_agents as AgentType[];
+                          setRecommendedAgents(recommendedAgents);
+
+                          if (recommendedAgents.length > 0) {
+                            showToast(`Found ${recommendedAgents.length} recommended agent${recommendedAgents.length > 1 ? 's' : ''} for you!`, 'success');
+                          } else {
+                            showToast('No specific agents recommended. Try refining your query.', 'error');
+                          }
+                        } catch (error: any) {
+                          console.error('Error getting recommendations:', error);
+                          showToast('Failed to get recommendations. Please try again.', 'error');
+                        } finally {
+                          setIsRecommending(false);
+                        }
+                      }
+                    }}
+                    disabled={!userQuery.trim() || isRecommending}
+                    style={{
+                      background: (userQuery.trim() && !isRecommending) ? '#FFB74D' : '#f5f5f5',
+                      color: (userQuery.trim() && !isRecommending) ? '#1e293b' : '#9CA3AF',
+                      border: 'none',
+                      borderRadius: '9999px',
+                      padding: '14px 32px',
+                      fontSize: '15px',
+                      lineHeight: '22px',
+                      fontWeight: '400',
+                      cursor: (userQuery.trim() && !isRecommending) ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      fontFamily: "'Inter', 'Roboto', 'Google Sans Text', Arial, sans-serif",
+                      boxShadow: 'none',
+                      minWidth: '140px',
+                      whiteSpace: 'nowrap',
+                      letterSpacing: '0.1px',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (userQuery.trim() && !isRecommending) {
+                        e.currentTarget.style.background = '#F5A73B';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (userQuery.trim() && !isRecommending) {
+                        e.currentTarget.style.background = '#FFB74D';
+                      }
+                    }}
+                  >
+                    {isRecommending ? (
+                      <>
+                        {/* Modern Spinner */}
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          style={{
+                            animation: 'spin 1s linear infinite',
+                          }}
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="#9CA3AF"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeDasharray="60"
+                            strokeDashoffset="15"
+                          />
+                        </svg>
+                        <span>Finding...</span>
+                      </>
+                    ) : (
+                      'Recommend'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
         {/* Category Filters */}
         <div
@@ -265,7 +465,7 @@ export default function AgentsPage() {
               paddingBottom: '2rem',
             }}
           >
-            {filteredAgents.map((agentType) => (
+            {sortedAgents.map((agentType) => (
               <AgentCard
                 key={agentType}
                 agentType={agentType}
@@ -274,6 +474,7 @@ export default function AgentsPage() {
                 userPlan={userPlan}
                 onToggleHire={handleToggleHire}
                 onCardClick={setSelectedAgentForModal}
+                isRecommended={recommendedAgents.includes(agentType)}
               />
             ))}
           </div>
@@ -308,6 +509,16 @@ export default function AgentsPage() {
       )}
 
       <style>{`
+        /* Spinner animation */
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
         /* Responsive layout */
         @media (max-width: 768px) {
           .agents-container {

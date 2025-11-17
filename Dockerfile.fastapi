@@ -33,9 +33,12 @@ RUN poetry add fastapi uvicorn[standard] sqlalchemy[asyncio] asyncpg aiosqlite \
     python-jose[cryptography] passlib[bcrypt] python-multipart email-validator slowapi --no-interaction && \
     poetry add "openai-agents[sqlalchemy]" --no-interaction
 
-# Verify asyncpg is installed
+# Verify asyncpg and agents packages are installed
 RUN python -c "import asyncpg; print('✅ asyncpg installed successfully')" || \
     (echo "❌ asyncpg installation failed" && exit 1)
+
+RUN python -c "import agents; print('✅ OpenAI Agents SDK installed successfully')" || \
+    (echo "❌ OpenAI Agents SDK installation failed" && exit 1)
 
 # Copy FastAPI application code
 COPY fastapi_app/ ./fastapi_app/
