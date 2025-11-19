@@ -55,14 +55,19 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
     }
   };
 
-  // Format timestamp
+  // Format timestamp - ensure consistent timezone handling
   const formatTime = (dateString: string) => {
+    // Parse the timestamp consistently
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+
+    // Use the same timezone for all messages by using local time consistently
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+
+    return `${displayHours}:${displayMinutes} ${ampm}`;
   };
 
   return (
@@ -100,13 +105,7 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
                 width: '24px',
                 height: '24px',
                 borderRadius: '6px',
-                background: agentMetadata.color === 'navy' ? '#010654' :
-                           agentMetadata.color === 'gold' ? '#E89C43' :
-                           agentMetadata.color === 'purple' ? '#9C27B0' :
-                           agentMetadata.color === 'navy-light' ? '#5C6BC0' :
-                           agentMetadata.color === 'emerald' ? '#10B981' :
-                           agentMetadata.color === 'teal' ? '#14B8A6' :
-                           agentMetadata.color === 'indigo' ? '#6366F1' : '#E4C154',
+                background: '#FFB74D', // Unified yellow background
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -121,7 +120,7 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
                   width: '100%',
                   height: '100%',
                   objectFit: 'contain',
-                  filter: 'brightness(0) invert(1)',
+                  filter: 'brightness(0) saturate(100%) invert(18%) sepia(85%) saturate(2476%) hue-rotate(215deg) brightness(93%) contrast(98%)', // Blue icon (#1e3a8a)
                 }}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
@@ -130,7 +129,7 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
                     parent.innerHTML = agentMetadata.initial;
                     parent.style.fontSize = '0.75rem';
                     parent.style.fontWeight = '600';
-                    parent.style.color = 'white';
+                    parent.style.color = '#1e3a8a'; // Blue text for fallback
                   }
                 }}
               />

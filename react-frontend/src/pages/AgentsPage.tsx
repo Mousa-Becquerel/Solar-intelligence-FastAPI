@@ -17,6 +17,7 @@ import type { AgentType } from '../constants/agents';
 import { AGENT_METADATA, AVAILABLE_AGENTS } from '../constants/agentMetadata';
 import { hireAgent, unhireAgent, getHiredAgents } from '../services/agentService';
 import { apiClient } from '../api';
+import { useUIStore } from '../stores';
 
 interface ToastState {
   message: string;
@@ -27,8 +28,10 @@ type FilterCategory = 'all' | 'premium' | 'market' | 'policy' | 'financial';
 
 export default function AgentsPage() {
   const navigate = useNavigate();
+  const { sidebarExpanded, setSidebarExpanded } = useUIStore();
   const [hiredAgents, setHiredAgents] = useState<AgentType[]>([]);
   const [userPlan, setUserPlan] = useState<string>('free');
+  const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<FilterCategory>('all');
@@ -39,9 +42,22 @@ export default function AgentsPage() {
 
   const loadData = useCallback(async () => {
     try {
-      // Load user plan
+      // Load user plan and name
       const user = await apiClient.getCurrentUser();
+      console.log('User data received:', user);
       setUserPlan(user.plan_type || 'free');
+
+      // Extract first name from full_name (e.g., "John Doe" -> "John")
+      let firstName = 'there';
+      if (user.full_name) {
+        const nameParts = user.full_name.trim().split(/\s+/);
+        firstName = nameParts[0] || 'there';
+      } else if (user.username) {
+        // Fallback to username if full_name is not available
+        firstName = user.username;
+      }
+      console.log('Extracted first name:', firstName);
+      setUserName(firstName);
 
       // Load hired agents
       const hiredAgentsList = await getHiredAgents();
@@ -57,6 +73,11 @@ export default function AgentsPage() {
       setLoading(false);
     }
   }, []);
+
+  // Ensure sidebar is collapsed on agents page mount
+  useEffect(() => {
+    setSidebarExpanded(false);
+  }, [setSidebarExpanded]);
 
   // Load hired agents and user plan on mount
   useEffect(() => {
@@ -148,28 +169,30 @@ export default function AgentsPage() {
       {/* Sidebar */}
       <HiredAgentsList hiredAgents={hiredAgents} onUnhire={handleUnhireFromSidebar} />
 
-      {/* Main Content */}
+      {/* Main Content - Scrollable */}
       <div
         style={{
           flex: 1,
-          marginLeft: '220px',
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: '100vh',
-          overflow: 'hidden',
+          marginLeft: sidebarExpanded ? '220px' : '72px',
+          height: '100vh',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        {/* Top Bar */}
+        {/* Top Bar - Sticky */}
         <div
           style={{
             background: '#FFFFFF',
             borderBottom: '1px solid #E5E7EB',
-            padding: '16px 24px',
+            padding: '10px 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            minHeight: '64px',
-            flexShrink: 0,
+            minHeight: '52px',
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
           }}
         >
           {/* Page Title */}
@@ -185,84 +208,212 @@ export default function AgentsPage() {
           >
             Agents Gallery
           </h1>
-        </div>
 
-        {/* Scrollable Content Area */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '24px',
-          }}
-        >
-          {/* AI-Powered Agent Recommendation - Centered Modern Design */}
-          <div
+          {/* Start Chat Button - Material Design Style */}
+          <button
+            onClick={() => navigate('/chat')}
+            disabled={hiredAgents.length === 0}
             style={{
-              marginBottom: '48px',
+              padding: '10px 24px',
+              background: hiredAgents.length > 0 ? '#1e3a8a' : '#f5f5f5',
+              color: hiredAgents.length > 0 ? '#FFFFFF' : '#9ca3af',
+              border: 'none',
+              borderRadius: '100px',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: hiredAgents.length > 0 ? 'pointer' : 'not-allowed',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               display: 'flex',
-              justifyContent: 'center',
               alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+              boxShadow: hiredAgents.length > 0 ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
+            }}
+            onMouseEnter={(e) => {
+              if (hiredAgents.length > 0) {
+                e.currentTarget.style.background = '#1e40af';
+                e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15)';
+              } else {
+                e.currentTarget.style.background = '#eeeeee';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (hiredAgents.length > 0) {
+                e.currentTarget.style.background = '#1e3a8a';
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+              } else {
+                e.currentTarget.style.background = '#f5f5f5';
+              }
             }}
           >
-            <div
-              style={{
-                width: '100%',
-                maxWidth: '900px',
-                background: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '32px 40px',
-                border: '1px solid #F0F0F0',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
+            {/* Chat icon */}
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {/* Header */}
-              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <h3
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: '400',
-                    color: '#1e3a8a',
-                    margin: '0 0 8px 0',
-                    fontFamily: "'Inter', 'Roboto', 'Google Sans', Arial, sans-serif",
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  Find Your Perfect AI Team
-                </h3>
-                <p
-                  style={{
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    color: '#94a3b8',
-                    margin: '0',
-                    fontFamily: "'Inter', 'Roboto', 'Google Sans Text', Arial, sans-serif",
-                    fontWeight: '300',
-                    maxWidth: '600px',
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
-                  }}
-                >
-                  Describe what you need help with, and we'll recommend the best agents for you
-                </p>
-              </div>
-
-              {/* Input Section - MD3 Flat Design matching ChatInput */}
-              <div
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+            <span>Start Chat</span>
+            {hiredAgents.length > 0 && (
+              <span
                 style={{
-                  position: 'relative',
-                  width: '100%',
-                  background: '#F5F5F5',
-                  borderRadius: '16px',
-                  padding: '0.8rem',
-                  boxShadow: 'none',
-                  border: 'none',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  borderRadius: '12px',
+                  padding: '2px 8px',
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
                 }}
               >
+                {hiredAgents.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Full-Width Hero Section */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(255, 183, 77, 0.12) 100%)',
+            padding: '64px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '320px',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Animated gradient orbs */}
+          <div
+            className="gradient-orb gradient-orb-1"
+            style={{
+              position: 'absolute',
+              width: '500px',
+              height: '500px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(30, 58, 138, 0.15) 0%, transparent 70%)',
+              top: '-250px',
+              left: '-100px',
+              pointerEvents: 'none',
+              filter: 'blur(60px)',
+            }}
+          />
+          <div
+            className="gradient-orb gradient-orb-2"
+            style={{
+              position: 'absolute',
+              width: '400px',
+              height: '400px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255, 183, 77, 0.18) 0%, transparent 70%)',
+              bottom: '-150px',
+              right: '-50px',
+              pointerEvents: 'none',
+              filter: 'blur(50px)',
+            }}
+          />
+
+          {/* Floating accent shapes */}
+          <div
+            className="accent-shape accent-shape-1"
+            style={{
+              position: 'absolute',
+              width: '120px',
+              height: '120px',
+              borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
+              background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.08), rgba(255, 183, 77, 0.08))',
+              top: '20%',
+              right: '15%',
+              pointerEvents: 'none',
+              filter: 'blur(2px)',
+            }}
+          />
+          <div
+            className="accent-shape accent-shape-2"
+            style={{
+              position: 'absolute',
+              width: '80px',
+              height: '80px',
+              borderRadius: '63% 37% 54% 46% / 55% 48% 52% 45%',
+              background: 'linear-gradient(225deg, rgba(255, 183, 77, 0.1), rgba(30, 58, 138, 0.06))',
+              bottom: '25%',
+              left: '12%',
+              pointerEvents: 'none',
+              filter: 'blur(1px)',
+            }}
+          />
+
+          {/* Subtle grid overlay */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: `
+                linear-gradient(rgba(30, 58, 138, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 58, 138, 0.03) 1px, transparent 1px)
+              `,
+              backgroundSize: '50px 50px',
+              pointerEvents: 'none',
+              opacity: 0.4,
+            }}
+          />
+          {/* Header */}
+          <div style={{ marginBottom: '32px', textAlign: 'center', maxWidth: '900px', position: 'relative', zIndex: 1 }}>
+            <h2
+              style={{
+                fontSize: '32px',
+                fontWeight: '500',
+                color: '#1e3a8a',
+                margin: '0 0 12px 0',
+                fontFamily: "'Inter', 'Roboto', 'Google Sans', Arial, sans-serif",
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {userName ? `Welcome, ${userName}` : 'Find Your Perfect AI Team'}
+            </h2>
+            <p
+              style={{
+                fontSize: '16px',
+                lineHeight: '24px',
+                color: '#64748b',
+                margin: '0',
+                fontFamily: "'Inter', 'Roboto', 'Google Sans Text', Arial, sans-serif",
+                fontWeight: '300',
+              }}
+            >
+              Describe what you need help with, and we'll recommend the best agents for you
+            </p>
+          </div>
+
+          {/* Input Section - Centered, Max Width with Glassmorphism */}
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '800px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              borderRadius: '28px',
+              padding: '8px',
+              boxShadow: '0 8px 32px rgba(30, 58, 138, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
+              position: 'relative',
+              zIndex: 2,
+            }}
+          >
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.75rem',
+                    gap: '8px',
                   }}
                 >
                   {/* Input Field */}
@@ -275,30 +426,30 @@ export default function AgentsPage() {
                       style={{
                         width: '100%',
                         height: '48px',
-                        padding: '0.875rem 1.125rem',
-                        fontSize: '0.9375rem',
-                        fontWeight: '300',
+                        padding: '0 20px',
+                        fontSize: '15px',
+                        fontWeight: '400',
                         letterSpacing: '-0.01em',
                         lineHeight: '1.5',
                         border: 'none',
-                        borderRadius: '12px',
+                        borderRadius: '24px',
                         outline: 'none',
-                        fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
-                        background: '#ffffff',
+                        fontFamily: "'Inter', 'Roboto', 'Google Sans Text', Arial, sans-serif",
+                        background: '#f8f9fa',
                         color: '#1e293b',
-                        transition: 'background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        transition: 'background-color 0.2s ease',
                         boxShadow: 'none',
                       }}
                       onFocus={(e) => {
-                        e.currentTarget.style.background = '#fafafa';
+                        e.currentTarget.style.background = '#f1f3f4';
                       }}
                       onBlur={(e) => {
-                        e.currentTarget.style.background = '#ffffff';
+                        e.currentTarget.style.background = '#f8f9fa';
                       }}
                     />
                   </div>
 
-                  {/* Recommend Button - MD3 Filled Button */}
+                  {/* Recommend Button - MD3 Filled Button, Always Visible */}
                   <button
                     onClick={async () => {
                       if (userQuery.trim() && !isRecommending) {
@@ -317,7 +468,47 @@ export default function AgentsPage() {
                           setRecommendedAgents(recommendedAgents);
 
                           if (recommendedAgents.length > 0) {
-                            showToast(`Found ${recommendedAgents.length} recommended agent${recommendedAgents.length > 1 ? 's' : ''} for you!`, 'success');
+                            // Automatically hire recommended agents that are not already hired
+                            const agentsToHire = recommendedAgents.filter(agent => !hiredAgents.includes(agent));
+
+                            if (agentsToHire.length > 0) {
+                              // Hire each recommended agent
+                              const hirePromises = agentsToHire.map(async (agentType) => {
+                                const agentMetadata = AGENT_METADATA[agentType];
+
+                                // Check if premium agent and user has free plan
+                                if (agentMetadata.premium && userPlan === 'free') {
+                                  console.warn(`Skipping auto-hire for premium agent ${agentType} - user has free plan`);
+                                  return null;
+                                }
+
+                                try {
+                                  await hireAgent(agentType);
+                                  console.log(`Auto-hired recommended agent: ${agentType}`);
+                                  return agentType;
+                                } catch (error) {
+                                  console.error(`Failed to auto-hire agent ${agentType}:`, error);
+                                  return null;
+                                }
+                              });
+
+                              const hiredResults = await Promise.all(hirePromises);
+                              const successfullyHired = hiredResults.filter((agent): agent is AgentType => agent !== null);
+
+                              // Update hired agents state
+                              if (successfullyHired.length > 0) {
+                                setHiredAgents((prev) => [...prev, ...successfullyHired]);
+                                showToast(
+                                  `Found and hired ${successfullyHired.length} recommended agent${successfullyHired.length > 1 ? 's' : ''} for you!`,
+                                  'success'
+                                );
+                              } else {
+                                showToast(`Found ${recommendedAgents.length} recommended agent${recommendedAgents.length > 1 ? 's' : ''} for you!`, 'success');
+                              }
+                            } else {
+                              // All recommended agents are already hired
+                              showToast(`Found ${recommendedAgents.length} recommended agent${recommendedAgents.length > 1 ? 's' : ''} (already in your team)!`, 'success');
+                            }
                           } else {
                             showToast('No specific agents recommended. Try refining your query.', 'error');
                           }
@@ -331,21 +522,21 @@ export default function AgentsPage() {
                     }}
                     disabled={!userQuery.trim() || isRecommending}
                     style={{
-                      background: (userQuery.trim() && !isRecommending) ? '#FFB74D' : '#f5f5f5',
-                      color: (userQuery.trim() && !isRecommending) ? '#1e293b' : '#9CA3AF',
+                      background: userQuery.trim() && !isRecommending ? '#1e3a8a' : '#e5e7eb',
+                      color: userQuery.trim() && !isRecommending ? '#FFFFFF' : '#9CA3AF',
                       border: 'none',
                       borderRadius: '9999px',
                       padding: '14px 32px',
                       fontSize: '15px',
                       lineHeight: '22px',
-                      fontWeight: '400',
-                      cursor: (userQuery.trim() && !isRecommending) ? 'pointer' : 'not-allowed',
-                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      fontWeight: '500',
+                      cursor: userQuery.trim() && !isRecommending ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.2s ease',
                       fontFamily: "'Inter', 'Roboto', 'Google Sans Text', Arial, sans-serif",
                       boxShadow: 'none',
                       minWidth: '140px',
                       whiteSpace: 'nowrap',
-                      letterSpacing: '0.1px',
+                      letterSpacing: '0.01em',
                       flexShrink: 0,
                       display: 'flex',
                       alignItems: 'center',
@@ -354,18 +545,17 @@ export default function AgentsPage() {
                     }}
                     onMouseEnter={(e) => {
                       if (userQuery.trim() && !isRecommending) {
-                        e.currentTarget.style.background = '#F5A73B';
+                        e.currentTarget.style.background = '#1e40af';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (userQuery.trim() && !isRecommending) {
-                        e.currentTarget.style.background = '#FFB74D';
+                        e.currentTarget.style.background = '#1e3a8a';
                       }
                     }}
                   >
                     {isRecommending ? (
                       <>
-                        {/* Modern Spinner */}
                         <svg
                           width="18"
                           height="18"
@@ -379,7 +569,7 @@ export default function AgentsPage() {
                             cx="12"
                             cy="12"
                             r="10"
-                            stroke="#9CA3AF"
+                            stroke="currentColor"
                             strokeWidth="3"
                             strokeLinecap="round"
                             strokeDasharray="60"
@@ -394,67 +584,73 @@ export default function AgentsPage() {
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
+        </div>
 
-        {/* Category Filters */}
+        {/* Content Area */}
         <div
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '8px',
-            marginBottom: '24px',
-            padding: '0',
+            padding: '24px',
           }}
         >
-          {[
-            { key: 'all' as FilterCategory, label: 'All Agents' },
-            { key: 'premium' as FilterCategory, label: 'Premium' },
-            { key: 'market' as FilterCategory, label: 'Market Analysis' },
-            { key: 'policy' as FilterCategory, label: 'Policy & Compliance' },
-            { key: 'financial' as FilterCategory, label: 'Financial Analysis' },
-          ].map(({ key, label }) => {
-            const isSelected = selectedFilter === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setSelectedFilter(key)}
-                style={{
-                  padding: '12px 24px',
-                  borderRadius: '9999px', // MD3 full rounded
-                  border: 'none',
-                  background: isSelected ? '#FFB74D' : '#f5f5f5', // Butterscotch when selected, gray when not
-                  color: isSelected ? '#1e293b' : '#64748b',
-                  fontSize: '14px', // MD3 Label L
-                  lineHeight: '20px',
-                  fontWeight: '500',
-                  fontFamily: "'Inter', 'Roboto', 'Google Sans Text', Arial, sans-serif",
-                  cursor: 'pointer',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: 'none',
-                  minHeight: '40px',
-                  letterSpacing: '0.1px',
-                }}
-                onMouseEnter={(e) => {
-                  if (isSelected) {
-                    e.currentTarget.style.background = '#F5A73B'; // Darker butterscotch on hover
-                  } else {
-                    e.currentTarget.style.background = '#eeeeee';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (isSelected) {
-                    e.currentTarget.style.background = '#FFB74D';
-                  } else {
-                    e.currentTarget.style.background = '#f5f5f5';
-                  }
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
+          {/* Category Filters */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+              marginBottom: '24px',
+              padding: '0',
+              justifyContent: 'center',
+            }}
+          >
+            {[
+              { key: 'all' as FilterCategory, label: 'All Agents' },
+              { key: 'premium' as FilterCategory, label: 'Premium' },
+              { key: 'market' as FilterCategory, label: 'Market Analysis' },
+              { key: 'policy' as FilterCategory, label: 'Policy & Compliance' },
+              { key: 'financial' as FilterCategory, label: 'Financial Analysis' },
+            ].map(({ key, label }) => {
+              const isSelected = selectedFilter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedFilter(key)}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '20px',
+                    border: 'none',
+                    background: isSelected ? '#1e3a8a' : '#f5f5f5',
+                    color: isSelected ? '#FFFFFF' : '#64748b',
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    fontWeight: '500',
+                    fontFamily: "'Inter', 'Roboto', 'Google Sans Text', Arial, sans-serif",
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: 'none',
+                    minHeight: '40px',
+                    letterSpacing: '0.01em',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (isSelected) {
+                      e.currentTarget.style.background = '#1e40af';
+                    } else {
+                      e.currentTarget.style.background = '#eeeeee';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (isSelected) {
+                      e.currentTarget.style.background = '#1e3a8a';
+                    } else {
+                      e.currentTarget.style.background = '#f5f5f5';
+                    }
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Agents Grid */}
           <div
@@ -464,6 +660,7 @@ export default function AgentsPage() {
               gap: '24px',
               width: '100%',
               paddingBottom: '2rem',
+              justifyContent: 'center',
             }}
           >
             {sortedAgents.map((agentType) => (
@@ -520,10 +717,83 @@ export default function AgentsPage() {
           }
         }
 
+        /* Hero Section Animations */
+        @keyframes float-orb-1 {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(30px, -20px) scale(1.05);
+          }
+          66% {
+            transform: translate(-20px, 30px) scale(0.95);
+          }
+        }
+
+        @keyframes float-orb-2 {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(-25px, 20px) scale(1.08);
+          }
+          66% {
+            transform: translate(35px, -15px) scale(0.92);
+          }
+        }
+
+        @keyframes float-shape-1 {
+          0%, 100% {
+            transform: translate(0, 0) rotate(0deg);
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+          }
+          50% {
+            transform: translate(15px, -15px) rotate(180deg);
+            border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%;
+          }
+        }
+
+        @keyframes float-shape-2 {
+          0%, 100% {
+            transform: translate(0, 0) rotate(0deg);
+            border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+          }
+          50% {
+            transform: translate(-20px, 20px) rotate(-180deg);
+            border-radius: 37% 63% 46% 54% / 48% 55% 45% 52%;
+          }
+        }
+
+        .gradient-orb-1 {
+          animation: float-orb-1 20s ease-in-out infinite;
+        }
+
+        .gradient-orb-2 {
+          animation: float-orb-2 18s ease-in-out infinite;
+        }
+
+        .accent-shape-1 {
+          animation: float-shape-1 15s ease-in-out infinite;
+        }
+
+        .accent-shape-2 {
+          animation: float-shape-2 12s ease-in-out infinite;
+        }
+
         /* Responsive layout */
         @media (max-width: 768px) {
           .agents-container {
             flex-direction: column;
+          }
+        }
+
+        /* Reduce motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          .gradient-orb-1,
+          .gradient-orb-2,
+          .accent-shape-1,
+          .accent-shape-2 {
+            animation: none;
           }
         }
       `}</style>

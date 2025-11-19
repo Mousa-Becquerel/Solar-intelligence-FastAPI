@@ -90,19 +90,8 @@ export default function AgentDetailsModal({
 
   if (!isOpen) return null;
 
-  // Get color mapping
-  const colorMap: Record<typeof color, { bg: string; text: string }> = {
-    'navy': { bg: '#010654', text: 'white' },
-    'gold': { bg: '#E89C43', text: 'white' },
-    'navy-light': { bg: '#5C6BC0', text: 'white' },
-    'gold-dark': { bg: '#E4C154', text: '#010654' },
-    'purple': { bg: '#9C27B0', text: 'white' },
-    'emerald': { bg: '#10B981', text: 'white' },
-    'indigo': { bg: '#6366F1', text: 'white' },
-    'teal': { bg: '#14B8A6', text: 'white' },
-  };
-
-  const badgeColors = colorMap[color];
+  // Unified color scheme: Yellow background with blue icon
+  const badgeColors = { bg: '#FFB74D', text: '#1e3a8a' };
   const sampleQuestions = SAMPLE_QUESTIONS[agentType] || [];
 
   return (
@@ -177,7 +166,7 @@ export default function AgentDetailsModal({
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
-                filter: 'brightness(0) invert(1)',
+                filter: 'brightness(0) saturate(100%) invert(18%) sepia(85%) saturate(2476%) hue-rotate(215deg) brightness(93%) contrast(98%)', // Blue icon (#1e3a8a)
               }}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -342,7 +331,7 @@ export default function AgentDetailsModal({
                       height="16"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke={badgeColors.bg}
+                      stroke="#1e3a8a"
                       strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -442,18 +431,12 @@ export default function AgentDetailsModal({
               background: !canHire
                 ? '#F3F4F6'
                 : isHired
-                  ? 'transparent'
-                  : '#010654',
+                  ? '#1e3a8a'  // Blue for hired state
+                  : '#FFB74D',  // Yellow for hire action
               color: !canHire
                 ? '#9CA3AF'
-                : isHired
-                  ? '#010654'
-                  : 'white',
-              border: !canHire
-                ? '1px solid #E5E7EB'
-                : isHired
-                  ? '1px solid #010654'
-                  : 'none',
+                : 'white',  // White text for both hired and hire states
+              border: 'none',
               borderRadius: '100px',
               fontSize: '0.875rem',
               fontWeight: '600',
@@ -468,17 +451,17 @@ export default function AgentDetailsModal({
             onMouseEnter={(e) => {
               if (!canHire) return;
               if (isHired) {
-                e.currentTarget.style.background = 'rgba(1, 6, 84, 0.08)';
+                e.currentTarget.style.background = '#1e40af';  // Lighter blue on hover
               } else {
-                e.currentTarget.style.background = '#1A1F6E';
+                e.currentTarget.style.background = '#F5A73B';  // Darker yellow on hover
               }
             }}
             onMouseLeave={(e) => {
               if (!canHire) return;
               if (isHired) {
-                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.background = '#1e3a8a';
               } else {
-                e.currentTarget.style.background = '#010654';
+                e.currentTarget.style.background = '#FFB74D';
               }
             }}
           >

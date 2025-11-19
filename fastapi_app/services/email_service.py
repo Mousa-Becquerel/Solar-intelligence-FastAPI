@@ -299,7 +299,7 @@ class EmailService:
     # ==================== EMAIL TEMPLATES ====================
 
     def _get_verification_email_template(self, full_name: str, verification_url: str) -> str:
-        """HTML template for email verification"""
+        """HTML template for email verification - Material Design styled"""
         return f"""
         <!DOCTYPE html>
         <html>
@@ -308,57 +308,63 @@ class EmailService:
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Verify Your Email</title>
         </head>
-        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
-            <div style="background-color: white; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <!-- Header -->
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #2563eb; margin: 0;">☀️ Solar Intelligence</h1>
+        <body style="font-family: 'Roboto', 'Segoe UI', Tahoma, sans-serif; line-height: 1.6; color: #212121; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f5f5f5;">
+            <!-- Outer container with Material Design elevation -->
+            <div style="background-color: #ffffff; margin: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.08); overflow: hidden;">
+
+                <!-- Header with brand colors -->
+                <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 48px 24px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 400; letter-spacing: 0.5px;">Solar Intelligence</h1>
+                    <p style="color: rgba(255, 255, 255, 0.9); margin: 12px 0 0; font-size: 15px; font-weight: 300;">AI-Powered Solar Market Intelligence</p>
                 </div>
 
                 <!-- Main Content -->
-                <h2 style="color: #1f2937; margin-bottom: 20px;">Welcome, {full_name}!</h2>
+                <div style="padding: 32px 24px;">
+                    <h2 style="color: #1e3a8a; margin: 0 0 16px; font-size: 20px; font-weight: 500;">Welcome, {full_name}!</h2>
 
-                <p style="font-size: 16px; margin-bottom: 20px;">
-                    Thank you for creating an account with Solar Intelligence. We're excited to have you on board!
-                </p>
+                    <p style="font-size: 16px; color: #424242; margin: 0 0 16px; line-height: 1.6;">
+                        Thank you for creating an account with Solar Intelligence. We're excited to have you on board!
+                    </p>
 
-                <p style="font-size: 16px; margin-bottom: 30px;">
-                    To get started, please verify your email address by clicking the button below:
-                </p>
+                    <p style="font-size: 16px; color: #424242; margin: 0 0 24px; line-height: 1.6;">
+                        To get started, please verify your email address by clicking the button below:
+                    </p>
 
-                <!-- CTA Button -->
-                <div style="text-align: center; margin: 40px 0;">
-                    <a href="{verification_url}"
-                       style="background-color: #2563eb; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
-                        Verify Email Address
-                    </a>
-                </div>
+                    <!-- Material Design Button -->
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="{verification_url}"
+                           style="background-color: #1e3a8a; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 4px; font-weight: 500; display: inline-block; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(30, 58, 138, 0.3), 0 4px 8px rgba(30, 58, 138, 0.2); transition: all 0.3s;">
+                            Verify Email Address
+                        </a>
+                    </div>
 
-                <!-- Alternative Link -->
-                <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
-                    Or copy and paste this link into your browser:<br>
-                    <a href="{verification_url}" style="color: #2563eb; word-break: break-all;">{verification_url}</a>
-                </p>
+                    <!-- Alternative Link -->
+                    <p style="font-size: 13px; color: #757575; margin: 24px 0; padding: 16px; background-color: #f5f5f5; border-radius: 4px;">
+                        Or copy and paste this link into your browser:<br>
+                        <a href="{verification_url}" style="color: #1e3a8a; word-break: break-all; text-decoration: underline;">{verification_url}</a>
+                    </p>
 
-                <!-- Expiry Notice -->
-                <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 30px 0; border-radius: 4px;">
-                    <p style="margin: 0; font-size: 14px; color: #92400e;">
-                        <strong>⏱️ This link expires in 24 hours.</strong>
+                    <!-- Expiry Notice - Material Card Style -->
+                    <div style="background-color: #FFF8E1; border-left: 4px solid #FFB74D; padding: 16px; margin: 24px 0; border-radius: 4px;">
+                        <p style="margin: 0; font-size: 14px; color: #F57C00;">
+                            <strong>⏱ This link expires in 24 hours.</strong>
+                        </p>
+                    </div>
+
+                    <!-- Security Note -->
+                    <p style="font-size: 13px; color: #757575; margin: 24px 0 0; padding-top: 24px; border-top: 1px solid #e0e0e0;">
+                        If you didn't create an account with Solar Intelligence, you can safely ignore this email.
                     </p>
                 </div>
 
-                <!-- Security Note -->
-                <p style="font-size: 13px; color: #6b7280; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                    If you didn't create an account with Solar Intelligence, you can safely ignore this email.
-                </p>
-
                 <!-- Footer -->
-                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
-                    <p style="margin: 5px 0;">Solar Intelligence</p>
-                    <p style="margin: 5px 0;">AI-Powered Solar Market Intelligence</p>
-                    <p style="margin: 15px 0;">
-                        <a href="{settings.FRONTEND_URL}" style="color: #2563eb; text-decoration: none;">Visit Website</a> |
-                        <a href="{settings.FRONTEND_URL}/support" style="color: #2563eb; text-decoration: none;">Contact Support</a>
+                <div style="background-color: #f5f5f5; padding: 24px; text-align: center; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 0 0 8px; color: #757575; font-size: 12px;">© 2025 Solar Intelligence</p>
+                    <p style="margin: 0 0 12px; color: #9e9e9e; font-size: 11px;">AI-Powered Solar Market Intelligence</p>
+                    <p style="margin: 0;">
+                        <a href="{settings.FRONTEND_URL}" style="color: #1e3a8a; text-decoration: none; font-size: 12px; margin: 0 8px;">Visit Website</a>
+                        <span style="color: #bdbdbd;">|</span>
+                        <a href="{settings.FRONTEND_URL}/support" style="color: #1e3a8a; text-decoration: none; font-size: 12px; margin: 0 8px;">Contact Support</a>
                     </p>
                 </div>
             </div>
@@ -367,7 +373,7 @@ class EmailService:
         """
 
     def _get_password_reset_email_template(self, full_name: str, reset_url: str) -> str:
-        """HTML template for password reset"""
+        """HTML template for password reset - Material Design styled"""
         return f"""
         <!DOCTYPE html>
         <html>
@@ -376,63 +382,69 @@ class EmailService:
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Reset Your Password</title>
         </head>
-        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
-            <div style="background-color: white; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <!-- Header -->
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #2563eb; margin: 0;">☀️ Solar Intelligence</h1>
+        <body style="font-family: 'Roboto', 'Segoe UI', Tahoma, sans-serif; line-height: 1.6; color: #212121; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f5f5f5;">
+            <!-- Outer container with Material Design elevation -->
+            <div style="background-color: #ffffff; margin: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.08); overflow: hidden;">
+
+                <!-- Header with brand colors -->
+                <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 48px 24px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 400; letter-spacing: 0.5px;">Solar Intelligence</h1>
+                    <p style="color: rgba(255, 255, 255, 0.9); margin: 12px 0 0; font-size: 15px; font-weight: 300;">AI-Powered Solar Market Intelligence</p>
                 </div>
 
                 <!-- Main Content -->
-                <h2 style="color: #1f2937; margin-bottom: 20px;">Password Reset Request</h2>
+                <div style="padding: 32px 24px;">
+                    <h2 style="color: #1e3a8a; margin: 0 0 16px; font-size: 20px; font-weight: 500;">Password Reset Request</h2>
 
-                <p style="font-size: 16px; margin-bottom: 20px;">
-                    Hi {full_name},
-                </p>
-
-                <p style="font-size: 16px; margin-bottom: 20px;">
-                    We received a request to reset your password for your Solar Intelligence account.
-                </p>
-
-                <p style="font-size: 16px; margin-bottom: 30px;">
-                    Click the button below to create a new password:
-                </p>
-
-                <!-- CTA Button -->
-                <div style="text-align: center; margin: 40px 0;">
-                    <a href="{reset_url}"
-                       style="background-color: #dc2626; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
-                        Reset Password
-                    </a>
-                </div>
-
-                <!-- Alternative Link -->
-                <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
-                    Or copy and paste this link into your browser:<br>
-                    <a href="{reset_url}" style="color: #2563eb; word-break: break-all;">{reset_url}</a>
-                </p>
-
-                <!-- Expiry Notice -->
-                <div style="background-color: #fee2e2; border-left: 4px solid #dc2626; padding: 15px; margin: 30px 0; border-radius: 4px;">
-                    <p style="margin: 0; font-size: 14px; color: #991b1b;">
-                        <strong>⏱️ This link expires in 1 hour for security reasons.</strong>
+                    <p style="font-size: 16px; color: #424242; margin: 0 0 16px; line-height: 1.6;">
+                        Hi {full_name},
                     </p>
-                </div>
 
-                <!-- Security Warning -->
-                <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 30px 0; border-radius: 4px;">
-                    <p style="margin: 0; font-size: 14px; color: #92400e;">
-                        <strong>🔒 Security tip:</strong> If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+                    <p style="font-size: 16px; color: #424242; margin: 0 0 16px; line-height: 1.6;">
+                        We received a request to reset your password for your Solar Intelligence account.
                     </p>
+
+                    <p style="font-size: 16px; color: #424242; margin: 0 0 24px; line-height: 1.6;">
+                        Click the button below to create a new password:
+                    </p>
+
+                    <!-- Material Design Button -->
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="{reset_url}"
+                           style="background-color: #d32f2f; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 4px; font-weight: 500; display: inline-block; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3), 0 4px 8px rgba(211, 47, 47, 0.2); transition: all 0.3s;">
+                            Reset Password
+                        </a>
+                    </div>
+
+                    <!-- Alternative Link -->
+                    <p style="font-size: 13px; color: #757575; margin: 24px 0; padding: 16px; background-color: #f5f5f5; border-radius: 4px;">
+                        Or copy and paste this link into your browser:<br>
+                        <a href="{reset_url}" style="color: #1e3a8a; word-break: break-all; text-decoration: underline;">{reset_url}</a>
+                    </p>
+
+                    <!-- Expiry Notice - Material Card Style -->
+                    <div style="background-color: #FFEBEE; border-left: 4px solid #d32f2f; padding: 16px; margin: 24px 0; border-radius: 4px;">
+                        <p style="margin: 0; font-size: 14px; color: #c62828;">
+                            <strong>⏱ This link expires in 1 hour for security reasons.</strong>
+                        </p>
+                    </div>
+
+                    <!-- Security Warning -->
+                    <div style="background-color: #FFF8E1; border-left: 4px solid #FFB74D; padding: 16px; margin: 24px 0; border-radius: 4px;">
+                        <p style="margin: 0; font-size: 14px; color: #F57C00;">
+                            <strong>🔒 Security tip:</strong> If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Footer -->
-                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
-                    <p style="margin: 5px 0;">Solar Intelligence</p>
-                    <p style="margin: 5px 0;">AI-Powered Solar Market Intelligence</p>
-                    <p style="margin: 15px 0;">
-                        <a href="{settings.FRONTEND_URL}" style="color: #2563eb; text-decoration: none;">Visit Website</a> |
-                        <a href="{settings.FRONTEND_URL}/support" style="color: #2563eb; text-decoration: none;">Contact Support</a>
+                <div style="background-color: #f5f5f5; padding: 24px; text-align: center; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 0 0 8px; color: #757575; font-size: 12px;">© 2025 Solar Intelligence</p>
+                    <p style="margin: 0 0 12px; color: #9e9e9e; font-size: 11px;">AI-Powered Solar Market Intelligence</p>
+                    <p style="margin: 0;">
+                        <a href="{settings.FRONTEND_URL}" style="color: #1e3a8a; text-decoration: none; font-size: 12px; margin: 0 8px;">Visit Website</a>
+                        <span style="color: #bdbdbd;">|</span>
+                        <a href="{settings.FRONTEND_URL}/support" style="color: #1e3a8a; text-decoration: none; font-size: 12px; margin: 0 8px;">Contact Support</a>
                     </p>
                 </div>
             </div>
@@ -441,7 +453,7 @@ class EmailService:
         """
 
     def _get_welcome_email_template(self, full_name: str) -> str:
-        """HTML template for welcome email"""
+        """HTML template for welcome email - Material Design styled"""
         return f"""
         <!DOCTYPE html>
         <html>
@@ -450,54 +462,69 @@ class EmailService:
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Welcome to Solar Intelligence</title>
         </head>
-        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
-            <div style="background-color: white; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <!-- Header -->
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #2563eb; margin: 0;">☀️ Solar Intelligence</h1>
+        <body style="font-family: 'Roboto', 'Segoe UI', Tahoma, sans-serif; line-height: 1.6; color: #212121; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f5f5f5;">
+            <!-- Outer container with Material Design elevation -->
+            <div style="background-color: #ffffff; margin: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.08); overflow: hidden;">
+
+                <!-- Header with brand colors -->
+                <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 48px 24px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 400; letter-spacing: 0.5px;">Solar Intelligence</h1>
+                    <p style="color: rgba(255, 255, 255, 0.9); margin: 12px 0 0; font-size: 15px; font-weight: 300;">AI-Powered Solar Market Intelligence</p>
                 </div>
 
                 <!-- Success Badge -->
-                <div style="text-align: center; margin: 30px 0;">
-                    <div style="display: inline-block; background-color: #dcfce7; color: #166534; padding: 10px 20px; border-radius: 20px; font-weight: bold;">
-                        ✅ Account Verified
+                <div style="text-align: center; margin: 32px 0 24px;">
+                    <div style="display: inline-block; background-color: #C8E6C9; color: #2E7D32; padding: 12px 24px; border-radius: 24px; font-weight: 500; font-size: 14px; box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);">
+                        ✓ Account Verified
                     </div>
                 </div>
 
                 <!-- Main Content -->
-                <h2 style="color: #1f2937; margin-bottom: 20px; text-align: center;">Welcome aboard, {full_name}!</h2>
+                <div style="padding: 0 24px 32px;">
+                    <h2 style="color: #1e3a8a; margin: 0 0 16px; text-align: center; font-size: 20px; font-weight: 500;">Welcome aboard, {full_name}!</h2>
 
-                <p style="font-size: 16px; margin-bottom: 20px;">
-                    Your account has been verified and you're ready to start exploring the future of solar market intelligence.
-                </p>
+                    <p style="font-size: 16px; color: #424242; margin: 0 0 24px; line-height: 1.6; text-align: center;">
+                        Your account has been verified and you're ready to start exploring the future of solar market intelligence.
+                    </p>
 
-                <!-- Features -->
-                <h3 style="color: #1f2937; margin-top: 30px;">What you can do:</h3>
-                <ul style="font-size: 15px; line-height: 1.8;">
-                    <li>🤖 Chat with specialized AI agents for solar market insights</li>
-                    <li>📊 Analyze global solar market trends and forecasts</li>
-                    <li>💡 Get expert insights on technologies and policies</li>
-                    <li>🌍 Explore regional market dynamics</li>
-                </ul>
+                    <!-- Features Cards -->
+                    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                        <h3 style="color: #1e3a8a; margin: 0 0 16px; font-size: 16px; font-weight: 500;">What you can do:</h3>
+                        <div style="margin: 0;">
+                            <div style="background-color: #ffffff; padding: 12px 16px; margin-bottom: 8px; border-radius: 4px; border-left: 3px solid #FFB74D;">
+                                <p style="margin: 0; font-size: 14px; color: #424242;"><strong>🤖 AI Agents</strong> — Chat with specialized agents for solar market insights</p>
+                            </div>
+                            <div style="background-color: #ffffff; padding: 12px 16px; margin-bottom: 8px; border-radius: 4px; border-left: 3px solid #FFB74D;">
+                                <p style="margin: 0; font-size: 14px; color: #424242;"><strong>📊 Market Analysis</strong> — Analyze global solar market trends and forecasts</p>
+                            </div>
+                            <div style="background-color: #ffffff; padding: 12px 16px; margin-bottom: 8px; border-radius: 4px; border-left: 3px solid #FFB74D;">
+                                <p style="margin: 0; font-size: 14px; color: #424242;"><strong>💡 Expert Insights</strong> — Get expert insights on technologies and policies</p>
+                            </div>
+                            <div style="background-color: #ffffff; padding: 12px 16px; border-radius: 4px; border-left: 3px solid #FFB74D;">
+                                <p style="margin: 0; font-size: 14px; color: #424242;"><strong>🌍 Regional Dynamics</strong> — Explore regional market dynamics</p>
+                            </div>
+                        </div>
+                    </div>
 
-                <!-- CTA Button -->
-                <div style="text-align: center; margin: 40px 0;">
-                    <a href="{settings.FRONTEND_URL}/agents"
-                       style="background-color: #2563eb; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
-                        Get Started
-                    </a>
+                    <!-- Material Design Button -->
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="{settings.FRONTEND_URL}/agents"
+                           style="background-color: #1e3a8a; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 4px; font-weight: 500; display: inline-block; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(30, 58, 138, 0.3), 0 4px 8px rgba(30, 58, 138, 0.2);">
+                            Get Started
+                        </a>
+                    </div>
+
+                    <!-- Support -->
+                    <p style="font-size: 13px; color: #757575; margin: 24px 0 0; text-align: center; padding-top: 24px; border-top: 1px solid #e0e0e0;">
+                        Need help? Check out our <a href="{settings.FRONTEND_URL}/help" style="color: #1e3a8a; text-decoration: underline;">Help Center</a> or
+                        <a href="mailto:{getattr(settings, 'SUPPORT_EMAIL', 'support@solarintelligence.com')}" style="color: #1e3a8a; text-decoration: underline;">contact support</a>.
+                    </p>
                 </div>
 
-                <!-- Support -->
-                <p style="font-size: 14px; color: #6b7280; margin-top: 30px; text-align: center;">
-                    Need help? Check out our <a href="{settings.FRONTEND_URL}/help" style="color: #2563eb;">Help Center</a> or
-                    <a href="mailto:{getattr(settings, 'SUPPORT_EMAIL', 'support@solarintelligence.com')}" style="color: #2563eb;">contact support</a>.
-                </p>
-
                 <!-- Footer -->
-                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
-                    <p style="margin: 5px 0;">Solar Intelligence</p>
-                    <p style="margin: 5px 0;">AI-Powered Solar Market Intelligence</p>
+                <div style="background-color: #f5f5f5; padding: 24px; text-align: center; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 0 0 8px; color: #757575; font-size: 12px;">© 2025 Solar Intelligence</p>
+                    <p style="margin: 0 0 12px; color: #9e9e9e; font-size: 11px;">AI-Powered Solar Market Intelligence</p>
                 </div>
             </div>
         </body>
@@ -505,7 +532,7 @@ class EmailService:
         """
 
     def _get_password_changed_template(self, full_name: str, support_email: str) -> str:
-        """HTML template for password change notification"""
+        """HTML template for password change notification - Material Design styled"""
         return f"""
         <!DOCTYPE html>
         <html>
@@ -514,44 +541,63 @@ class EmailService:
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Password Changed</title>
         </head>
-        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
-            <div style="background-color: white; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <!-- Header -->
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #2563eb; margin: 0;">☀️ Solar Intelligence</h1>
+        <body style="font-family: 'Roboto', 'Segoe UI', Tahoma, sans-serif; line-height: 1.6; color: #212121; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f5f5f5;">
+            <!-- Outer container with Material Design elevation -->
+            <div style="background-color: #ffffff; margin: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.08); overflow: hidden;">
+
+                <!-- Header with brand colors -->
+                <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 48px 24px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 400; letter-spacing: 0.5px;">Solar Intelligence</h1>
+                    <p style="color: rgba(255, 255, 255, 0.9); margin: 12px 0 0; font-size: 15px; font-weight: 300;">AI-Powered Solar Market Intelligence</p>
                 </div>
 
                 <!-- Main Content -->
-                <h2 style="color: #1f2937; margin-bottom: 20px;">Password Changed Successfully</h2>
+                <div style="padding: 32px 24px;">
+                    <h2 style="color: #1e3a8a; margin: 0 0 16px; font-size: 20px; font-weight: 500;">Password Changed Successfully</h2>
 
-                <p style="font-size: 16px; margin-bottom: 20px;">
-                    Hi {full_name},
-                </p>
-
-                <p style="font-size: 16px; margin-bottom: 20px;">
-                    This is to confirm that your Solar Intelligence password was successfully changed.
-                </p>
-
-                <!-- Timestamp -->
-                <div style="background-color: #f3f4f6; padding: 15px; margin: 20px 0; border-radius: 6px; border-left: 4px solid #10b981;">
-                    <p style="margin: 0; font-size: 14px;">
-                        <strong>Changed at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+                    <p style="font-size: 16px; color: #424242; margin: 0 0 16px; line-height: 1.6;">
+                        Hi {full_name},
                     </p>
-                </div>
 
-                <!-- Security Warning -->
-                <div style="background-color: #fee2e2; border-left: 4px solid #dc2626; padding: 15px; margin: 30px 0; border-radius: 4px;">
-                    <p style="margin: 0; font-size: 14px; color: #991b1b;">
-                        <strong>🔒 Didn't make this change?</strong><br>
-                        If you didn't change your password, please contact us immediately at
-                        <a href="mailto:{support_email}" style="color: #dc2626;">{support_email}</a>
+                    <p style="font-size: 16px; color: #424242; margin: 0 0 24px; line-height: 1.6;">
+                        This is to confirm that your Solar Intelligence password was successfully changed.
                     </p>
+
+                    <!-- Timestamp Card -->
+                    <div style="background-color: #E8F5E9; padding: 16px; margin: 24px 0; border-radius: 4px; border-left: 4px solid #4CAF50;">
+                        <p style="margin: 0; font-size: 14px; color: #2E7D32;">
+                            <strong>✓ Changed at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+                        </p>
+                    </div>
+
+                    <!-- Security Warning -->
+                    <div style="background-color: #FFEBEE; border-left: 4px solid #d32f2f; padding: 16px; margin: 24px 0; border-radius: 4px;">
+                        <p style="margin: 0 0 8px; font-size: 14px; color: #c62828;">
+                            <strong>🔒 Didn't make this change?</strong>
+                        </p>
+                        <p style="margin: 0; font-size: 14px; color: #c62828;">
+                            If you didn't change your password, please contact us immediately at
+                            <a href="mailto:{support_email}" style="color: #d32f2f; text-decoration: underline; font-weight: 500;">{support_email}</a>
+                        </p>
+                    </div>
+
+                    <!-- Additional Security Tips -->
+                    <div style="background-color: #f5f5f5; padding: 16px; margin: 24px 0; border-radius: 4px;">
+                        <p style="margin: 0 0 8px; font-size: 13px; color: #757575;">
+                            <strong>Security Tips:</strong>
+                        </p>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #757575; line-height: 1.6;">
+                            <li>Use a strong, unique password for your account</li>
+                            <li>Never share your password with anyone</li>
+                            <li>Enable two-factor authentication if available</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <!-- Footer -->
-                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
-                    <p style="margin: 5px 0;">Solar Intelligence</p>
-                    <p style="margin: 5px 0;">AI-Powered Solar Market Intelligence</p>
+                <div style="background-color: #f5f5f5; padding: 24px; text-align: center; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 0 0 8px; color: #757575; font-size: 12px;">© 2025 Solar Intelligence</p>
+                    <p style="margin: 0 0 12px; color: #9e9e9e; font-size: 11px;">AI-Powered Solar Market Intelligence</p>
                 </div>
             </div>
         </body>

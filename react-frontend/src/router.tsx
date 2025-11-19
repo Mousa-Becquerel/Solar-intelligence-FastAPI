@@ -16,6 +16,8 @@ import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
 import { CookiePolicyPage } from './pages/legal/CookiePolicyPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 
 // Helper to wrap lazy components with Suspense
 const lazyLoad = (Component: React.LazyExoticComponent<any>) => (
@@ -29,8 +31,6 @@ const ProtectedRoute = lazy(() => import('./components/auth/ProtectedRoute').the
 const MainLayout = lazy(() => import('./components/layout/MainLayout'));
 
 // Auth pages (lazy loaded)
-const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'));
 
 // Main app pages (lazy loaded)
@@ -58,11 +58,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/forgot-password',
-    element: lazyLoad(ForgotPasswordPage),
+    element: <ForgotPasswordPage />,
   },
   {
     path: '/reset-password',
-    element: lazyLoad(ResetPasswordPage),
+    element: <ResetPasswordPage />,
   },
   {
     path: '/verify-email',

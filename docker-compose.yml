@@ -1,0 +1,99 @@
+# Full Stack Docker Compose - Development/Testing
+# Solar Intelligence - FastAPI Backend + React Frontend + PostgreSQL
+
+services:
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  postgres-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: solar_intelligence_fastapi
+      POSTGRES_USER: solar_admin
+      POSTGRES_PASSWORD: datahub1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U solar_admin -d solar_intelligence_fastapi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # FastAPI Backend
+  # ===========================================
+  fastapi-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - FLASK_ENV=development
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - LOGFIRE_TOKEN=${LOGFIRE_TOKEN}
+      - FASTAPI_DATABASE_URL=postgresql+asyncpg://solar_admin:datahub1@postgres-db:5432/solar_intelligence_fastapi
+      - WEAVIATE_URL=${WEAVIATE_URL}
+      - WEAVIATE_API_KEY=${WEAVIATE_API_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - SES_SENDER_EMAIL=${SES_SENDER_EMAIL}
+      - SES_SENDER_NAME=${SES_SENDER_NAME}
+      - SUPPORT_EMAIL=${SUPPORT_EMAIL}
+    volumes:
+      - ./fastapi_app:/app/fastapi_app
+      - ./datasets:/app/datasets:ro
+      - fastapi_data:/app/data
+      - ./market_intelligence_agent.py:/app/market_intelligence_agent.py:ro
+      - ./news_agent.py:/app/news_agent.py:ro
+      - ./digitalization_trend_agent.py:/app/digitalization_trend_agent.py:ro
+      - ./nzia_policy_agent.py:/app/nzia_policy_agent.py:ro
+      - ./nzia_market_impact_agent.py:/app/nzia_market_impact_agent.py:ro
+      - ./manufacturer_financial_agent.py:/app/manufacturer_financial_agent.py:ro
+    restart: unless-stopped
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # React Frontend (Nginx)
+  # ===========================================
+  react-frontend:
+    build:
+      context: ./react-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - fastapi-app
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  fastapi_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

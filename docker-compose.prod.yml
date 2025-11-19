@@ -40,8 +40,8 @@ services:
   # ===========================================
   fastapi-app:
     build:
-      context: ./fastapi_app
-      dockerfile: Dockerfile.prod  # Production Dockerfile (to be created)
+      context: .  # Build from project root to access pyproject.toml
+      dockerfile: fastapi_app/Dockerfile.prod
     container_name: solar-intelligence-api-prod
     restart: unless-stopped
     environment:

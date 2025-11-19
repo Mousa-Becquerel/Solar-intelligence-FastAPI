@@ -35,19 +35,8 @@ export default function AgentCard({
   const canHire = !premium || userPlan === 'premium' || userPlan === 'max' || userPlan === 'admin';
   const requiresUpgrade = premium && !canHire;
 
-  // Get color mapping for circular badge
-  const colorMap: Record<typeof color, { bg: string; text: string }> = {
-    'navy': { bg: '#010654', text: 'white' },
-    'gold': { bg: '#E89C43', text: 'white' },
-    'navy-light': { bg: '#5C6BC0', text: 'white' },
-    'gold-dark': { bg: '#E4C154', text: '#010654' },
-    'purple': { bg: '#9C27B0', text: 'white' },
-    'emerald': { bg: '#10B981', text: 'white' },
-    'indigo': { bg: '#6366F1', text: 'white' },
-    'teal': { bg: '#14B8A6', text: 'white' },
-  };
-
-  const badgeColors = colorMap[color];
+  // Unified color scheme: Yellow background with blue icon
+  const badgeColors = { bg: '#FFB74D', text: '#1e3a8a' };
 
   return (
     <div
@@ -167,7 +156,7 @@ export default function AgentCard({
               width: '100%',
               height: '100%',
               objectFit: 'contain',
-              filter: 'brightness(0) invert(1)', // Make SVG white
+              filter: 'brightness(0) saturate(100%) invert(18%) sepia(85%) saturate(2476%) hue-rotate(215deg) brightness(93%) contrast(98%)', // Make SVG blue (#1e3a8a)
             }}
             onError={(e) => {
               // Hide image and show initial letter on error
@@ -271,9 +260,9 @@ export default function AgentCard({
             background: requiresUpgrade
               ? '#f5f5f5'
               : isHired
-                ? '#10B981'
-                : '#FFB74D', // Butterscotch - matching profile page
-            color: requiresUpgrade ? '#9ca3af' : isHired ? 'white' : '#1e293b', // Dark text on butterscotch
+                ? '#1e3a8a' // Blue for hired state
+                : '#FFB74D', // Yellow for hire action
+            color: requiresUpgrade ? '#9ca3af' : 'white', // White text for both hired and hire states
             border: 'none',
             borderRadius: '9999px', // Full rounded
             fontSize: '0.875rem',
@@ -296,9 +285,9 @@ export default function AgentCard({
               return;
             }
             if (isHired) {
-              e.currentTarget.style.background = '#059669';
+              e.currentTarget.style.background = '#1e40af'; // Lighter blue on hover
             } else {
-              e.currentTarget.style.background = '#F5A73B'; // Slightly darker butterscotch
+              e.currentTarget.style.background = '#F5A73B'; // Slightly darker yellow on hover
             }
           }}
           onMouseLeave={(e) => {
@@ -307,7 +296,7 @@ export default function AgentCard({
               return;
             }
             if (isHired) {
-              e.currentTarget.style.background = '#10B981';
+              e.currentTarget.style.background = '#1e3a8a';
             } else {
               e.currentTarget.style.background = '#FFB74D';
             }

@@ -324,9 +324,6 @@ export default function SidebarPanel() {
               Agents
             </a>
 
-            {/* Spacer */}
-            <div style={{ flex: 1 }} />
-
             {/* Recent Section Title */}
             <div
               className="sidebar-section-title"
@@ -345,6 +342,9 @@ export default function SidebarPanel() {
 
             {/* Conversation List */}
             <ConversationList isExpanded={true} />
+
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
           </>
         )}
       </div>

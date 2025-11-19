@@ -1,0 +1,70 @@
+/**
+ * AgentsCarousel Styles
+ * Infinite horizontal scrolling animation
+ */
+
+.carouselContainer {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  padding: 24px 0;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 95%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 95%,
+    transparent 100%
+  );
+}
+
+.scroller {
+  max-width: 100%;
+}
+
+.scrollerInner {
+  display: flex;
+  gap: 24px;
+  width: max-content;
+  flex-wrap: nowrap;
+  will-change: transform;
+}
+
+/* Enable animation */
+.scroller[data-animated="true"] .scrollerInner {
+  animation: scroll 50s linear infinite;
+}
+
+/* Pause on hover */
+.scroller[data-animated="true"]:hover .scrollerInner {
+  animation-play-state: paused;
+}
+
+.cardWrapper {
+  width: 320px;
+  flex-shrink: 0;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+@keyframes scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-50%));
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .scroller[data-animated="true"] .scrollerInner {
+    animation: none;
+  }
+}

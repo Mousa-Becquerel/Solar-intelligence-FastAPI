@@ -11,7 +11,8 @@
       "Bash(findstr:*)",
       "Bash(tasklist:*)",
       "Bash(docker logs:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

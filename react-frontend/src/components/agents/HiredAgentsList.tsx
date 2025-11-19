@@ -7,8 +7,7 @@
  */
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../stores';
+import { useAuthStore, useUIStore } from '../../stores';
 import type { AgentType } from '../../constants/agents';
 
 interface HiredAgentsListProps {
@@ -19,8 +18,8 @@ interface HiredAgentsListProps {
 export default function HiredAgentsList({
   hiredAgents,
 }: HiredAgentsListProps) {
-  const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { sidebarExpanded, toggleSidebar } = useUIStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Get user initials
@@ -34,13 +33,6 @@ export default function HiredAgentsList({
       .slice(0, 2);
   };
 
-  const handleStartChat = () => {
-    if (hiredAgents.length > 0) {
-      // Navigate to chat with first hired agent
-      navigate(`/chat?agent=${hiredAgents[0]}`);
-    }
-  };
-
   return (
     <div
       style={{
@@ -48,12 +40,13 @@ export default function HiredAgentsList({
         left: 0,
         top: 0,
         bottom: 0,
-        width: '220px',
+        width: sidebarExpanded ? '220px' : '72px',
         background: '#FAFAFA',
         borderRight: '1px solid #E5E7EB',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 10,
+        transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
       <div
@@ -61,24 +54,124 @@ export default function HiredAgentsList({
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          padding: '16px 16px 24px 16px', // Match top padding with top bar (16px)
+          padding: sidebarExpanded ? '16px 16px 24px 16px' : '16px 8px 24px 8px',
           gap: '8px',
           minHeight: 0,
+          transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {/* Logo */}
-        <div style={{ marginBottom: '32px', padding: '0', display: 'flex', alignItems: 'center', minHeight: '32px' }}>
-          <img
-            src="/new_logo.svg"
-            alt="Solar Intelligence"
-            style={{
-              height: '50px',
-              width: 'auto',
-              opacity: 1,
-              filter: 'none',
-            }}
-          />
+        <div style={{
+          marginBottom: sidebarExpanded ? '16px' : '16px',
+          padding: '0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: sidebarExpanded ? '50px' : '40px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}>
+          {sidebarExpanded ? (
+            <img
+              src="/new_logo.svg"
+              alt="Solar Intelligence"
+              style={{
+                height: '50px',
+                width: 'auto',
+                opacity: 1,
+                filter: 'none',
+              }}
+            />
+          ) : (
+            <button
+              onClick={toggleSidebar}
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+              style={{
+                width: '40px',
+                height: '40px',
+                border: 'none',
+                background: 'white',
+                color: '#1e3a8a',
+                cursor: 'pointer',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#E8EAF6';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'white';
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 18l6-6-6-6"></path>
+              </svg>
+            </button>
+          )}
         </div>
+
+        {/* Collapse Button - Only shown when expanded */}
+        {sidebarExpanded && (
+          <button
+            onClick={toggleSidebar}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              border: '1px solid #E5E7EB',
+              background: 'white',
+              color: '#1e3a8a',
+              cursor: 'pointer',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+              marginBottom: '16px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#F3F4F6';
+              e.currentTarget.style.borderColor = '#1e3a8a';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'white';
+              e.currentTarget.style.borderColor = '#E5E7EB';
+            }}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6"></path>
+            </svg>
+            <span>Collapse</span>
+          </button>
+        )}
 
         {/* Menu Items - Simple List */}
         <div
@@ -96,8 +189,9 @@ export default function HiredAgentsList({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              padding: '10px 12px',
+              justifyContent: sidebarExpanded ? 'flex-start' : 'center',
+              gap: sidebarExpanded ? '12px' : '0',
+              padding: sidebarExpanded ? '10px 12px' : '10px',
               borderRadius: '8px',
               background: 'white',
               cursor: 'pointer',
@@ -105,14 +199,16 @@ export default function HiredAgentsList({
               fontSize: '0.875rem',
               fontWeight: '500',
               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+              transition: 'all 0.2s ease',
             }}
+            title={!sidebarExpanded ? 'Agents' : undefined}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="18" height="18" rx="2"/>
               <path d="M3 9h18"/>
               <path d="M9 21V9"/>
             </svg>
-            Agents
+            {sidebarExpanded && <span>Agents</span>}
           </div>
 
           {/* Exports (formerly Documents) */}
@@ -120,15 +216,17 @@ export default function HiredAgentsList({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              padding: '10px 12px',
+              justifyContent: sidebarExpanded ? 'flex-start' : 'center',
+              gap: sidebarExpanded ? '12px' : '0',
+              padding: sidebarExpanded ? '10px 12px' : '10px',
               borderRadius: '8px',
               cursor: 'pointer',
-              transition: 'background-color 0.2s ease',
+              transition: 'all 0.2s ease',
               color: '#6B7280',
               fontSize: '0.875rem',
               fontWeight: '400',
             }}
+            title={!sidebarExpanded ? 'Exports' : undefined}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = '#F3F4F6';
             }}
@@ -140,7 +238,7 @@ export default function HiredAgentsList({
               <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
               <polyline points="13 2 13 9 20 9"/>
             </svg>
-            Exports
+            {sidebarExpanded && <span>Exports</span>}
           </div>
 
           {/* Requests (New) */}
@@ -148,15 +246,17 @@ export default function HiredAgentsList({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              padding: '10px 12px',
+              justifyContent: sidebarExpanded ? 'flex-start' : 'center',
+              gap: sidebarExpanded ? '12px' : '0',
+              padding: sidebarExpanded ? '10px 12px' : '10px',
               borderRadius: '8px',
               cursor: 'pointer',
-              transition: 'background-color 0.2s ease',
+              transition: 'all 0.2s ease',
               color: '#6B7280',
               fontSize: '0.875rem',
               fontWeight: '400',
             }}
+            title={!sidebarExpanded ? 'Requests' : undefined}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = '#F3F4F6';
             }}
@@ -167,54 +267,10 @@ export default function HiredAgentsList({
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
-            Requests
+            {sidebarExpanded && <span>Requests</span>}
           </div>
 
           <div style={{ flex: 1 }} />
-
-          {/* Chat Button - Only active when agents are hired */}
-          <button
-            onClick={handleStartChat}
-            disabled={hiredAgents.length === 0}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              background: hiredAgents.length > 0 ? '#FFB74D' : '#f5f5f5',
-              color: hiredAgents.length > 0 ? '#1e293b' : '#9ca3af',
-              border: 'none',
-              borderRadius: '9999px', // Full rounded button
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              cursor: hiredAgents.length > 0 ? 'pointer' : 'not-allowed',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
-              boxShadow: 'none',
-              marginTop: 'auto',
-            }}
-            onMouseEnter={(e) => {
-              if (hiredAgents.length > 0) {
-                e.currentTarget.style.background = '#F5A73B';
-              } else {
-                e.currentTarget.style.background = '#eeeeee';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (hiredAgents.length > 0) {
-                e.currentTarget.style.background = '#FFB74D';
-              } else {
-                e.currentTarget.style.background = '#f5f5f5';
-              }
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            <span>Chat {hiredAgents.length > 0 && `(${hiredAgents.length})`}</span>
-          </button>
         </div>
 
         {/* User Profile at Bottom */}
@@ -222,13 +278,15 @@ export default function HiredAgentsList({
           style={{
             borderTop: '1px solid #E5E7EB',
             marginTop: '16px',
-            padding: '12px 16px',
+            padding: sidebarExpanded ? '12px 16px' : '12px 8px',
             position: 'relative',
+            transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
             type="button"
+            title={!sidebarExpanded ? user?.full_name || 'User' : undefined}
             style={{
               width: '100%',
               border: 'none',
@@ -237,7 +295,8 @@ export default function HiredAgentsList({
               padding: '0',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
+              justifyContent: sidebarExpanded ? 'flex-start' : 'center',
+              gap: sidebarExpanded ? '12px' : '0',
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
@@ -258,31 +317,33 @@ export default function HiredAgentsList({
             >
               {getUserInitials()}
             </div>
-            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-              <div
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#111827',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {user?.full_name || 'User'}
+            {sidebarExpanded && (
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                <div
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    color: '#111827',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {user?.full_name || 'User'}
+                </div>
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#6B7280',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {user?.plan_type ? `${user.plan_type.charAt(0).toUpperCase() + user.plan_type.slice(1)} Plan` : 'Free Plan'}
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: '0.75rem',
-                  color: '#6B7280',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {user?.plan_type ? `${user.plan_type.charAt(0).toUpperCase() + user.plan_type.slice(1)} Plan` : 'Free Plan'}
-              </div>
-            </div>
+            )}
           </button>
 
           {/* Dropdown Menu */}

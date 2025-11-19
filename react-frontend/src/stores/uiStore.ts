@@ -36,7 +36,7 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       // Initial state
-      sidebarExpanded: true,
+      sidebarExpanded: false,
       artifactOpen: false,
       artifactContent: null,
       artifactType: null,

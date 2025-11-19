@@ -19,6 +19,15 @@ import ChatInput from './ChatInput';
 import QueryLimitMessage from './QueryLimitMessage';
 import { ArtifactContext } from '../../pages/ChatPage';
 
+// Agent-specific placeholders
+const AGENT_PLACEHOLDERS: Record<AgentType, string> = {
+  market: 'Ask about PV market data...',
+  news: 'Ask about solar industry news...',
+  digitalization: 'Ask about digital transformation...',
+  nzia_policy: 'Ask about NZIA policy and compliance...',
+  manufacturer_financial: 'Ask about PV manufacturer financials...',
+};
+
 // Helper to generate unique message IDs
 let messageIdCounter = 0;
 const generateMessageId = () => {
@@ -383,7 +392,8 @@ export default function ChatContainer() {
   }
 
   // Show welcome screen if no messages
-  const hasMessages = messages.length > 0 || streamingMessage;
+  // Hide welcome immediately when sending starts
+  const hasMessages = messages.length > 0 || streamingMessage || sending;
 
   return (
     <div
@@ -456,7 +466,7 @@ export default function ChatContainer() {
         placeholder={
           hasMessages
             ? 'Continue the conversation...'
-            : 'Ask about PV market data...'
+            : AGENT_PLACEHOLDERS[selectedAgent]
         }
       />
     </div>

@@ -367,15 +367,14 @@ async def test_query_count_increments(
     initial_count = test_user.monthly_query_count
 
     # Mock the agent processing to avoid actual AI calls
+    async def mock_stream(*args, **kwargs):
+        yield {'type': 'chunk', 'content': 'Test response'}
+        yield {'type': 'done'}
+
     with patch(
         'fastapi_app.services.chat_processing_service.ChatProcessingService.process_market_intelligence_agent_stream',
-        new_callable=AsyncMock
-    ) as mock_agent:
-        async def mock_stream():
-            yield {'type': 'chunk', 'content': 'Test response'}
-            yield {'type': 'done'}
-
-        mock_agent.return_value = mock_stream
+        side_effect=lambda *args, **kwargs: mock_stream()
+    ):
 
         response = await client.post(
             "/api/v1/chat/send",
@@ -537,16 +536,15 @@ async def test_conversation_agent_type_updates(
     initial_agent_type = test_conversation.agent_type
     assert initial_agent_type == "market"
 
+    # Mock the agent processing to avoid actual AI calls
+    async def mock_stream(*args, **kwargs):
+        yield {'type': 'chunk', 'content': 'Test'}
+        yield {'type': 'done'}
+
     with patch(
         'fastapi_app.services.chat_processing_service.ChatProcessingService.process_news_agent_stream',
-        new_callable=AsyncMock
-    ) as mock_agent:
-        async def mock_stream():
-            yield {'type': 'chunk', 'content': 'Test'}
-            yield {'type': 'done'}
-
-        mock_agent.return_value = mock_stream
-
+        side_effect=lambda *args, **kwargs: mock_stream()
+    ):
         response = await client.post(
             "/api/v1/chat/send",
             headers=auth_headers,
@@ -578,16 +576,15 @@ async def test_user_message_stored(
 
     user_message_text = "Test message for storage"
 
+    # Mock the agent processing to avoid actual AI calls
+    async def mock_stream(*args, **kwargs):
+        yield {'type': 'chunk', 'content': 'Response'}
+        yield {'type': 'done'}
+
     with patch(
         'fastapi_app.services.chat_processing_service.ChatProcessingService.process_digitalization_agent_stream',
-        new_callable=AsyncMock
-    ) as mock_agent:
-        async def mock_stream():
-            yield {'type': 'chunk', 'content': 'Response'}
-            yield {'type': 'done'}
-
-        mock_agent.return_value = mock_stream
-
+        side_effect=lambda *args, **kwargs: mock_stream()
+    ):
         response = await client.post(
             "/api/v1/chat/send",
             headers=auth_headers,
@@ -651,16 +648,15 @@ async def test_complete_chat_flow(
     """Test complete chat flow from message to response"""
     initial_query_count = test_user.monthly_query_count
 
+    # Mock the agent processing to avoid actual AI calls
+    async def mock_stream(*args, **kwargs):
+        yield {'type': 'chunk', 'content': 'Market analysis is...'}
+        yield {'type': 'done'}
+
     with patch(
         'fastapi_app.services.chat_processing_service.ChatProcessingService.process_market_intelligence_agent_stream',
-        new_callable=AsyncMock
-    ) as mock_agent:
-        async def mock_stream():
-            yield {'type': 'chunk', 'content': 'Market analysis is...'}
-            yield {'type': 'done'}
-
-        mock_agent.return_value = mock_stream
-
+        side_effect=lambda *args, **kwargs: mock_stream()
+    ):
         # Send message
         response = await client.post(
             "/api/v1/chat/send",
