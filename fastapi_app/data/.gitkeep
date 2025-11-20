@@ -1,0 +1,11 @@
+# This directory stores CSV data files for the Component Prices Agent
+#
+# Required file: component_prices_combined.csv
+#
+# CSV Structure:
+# - item: Component category (Module, Polysilicon, Wafer, Cell, PV Glass, Aluminium, Copper, EVA, Silver)
+# - description: Technical subtype or technology variant
+# - date: Price record date (YYYY-MM-DD format)
+# - base_price: Price value (numeric)
+# - unit: Measurement unit (US$/Wp, US$/kg, US$/pce, etc.)
+# - region: Geographic region (China, US, EU, India, Australia, Overseas)

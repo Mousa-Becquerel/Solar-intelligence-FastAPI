@@ -26,6 +26,8 @@ class AgentService:
         'nzia_policy': 'NZIA Policy Agent',
         'nzia_market_impact': 'NZIA Market Impact Agent',
         'manufacturer_financial': 'Manufacturer Financial Agent',
+        'component_prices': 'Component Prices Agent',
+        'seamless': 'SEAMLESS-PV & BIPV Agent',
         'weaviate': 'Database Query Agent'
     }
 

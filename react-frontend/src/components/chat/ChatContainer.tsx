@@ -59,16 +59,8 @@ export default function ChatContainer() {
     try {
       setLoading(true);
 
-      // Fetch conversation details to get agent_type
-      const conversation = await apiClient.getConversation(convId);
-
-      // Restore the agent selection from the conversation
-      if (conversation.agent_type) {
-        setSelectedAgent(conversation.agent_type as AgentType);
-        console.log(`🔄 [ChatContainer] Restored agent selection: ${conversation.agent_type}`);
-      }
-
-      // Then load messages
+      // Load messages directly - no need to restore agent selection
+      // Users can talk to multiple agents in the same conversation
       const data = await apiClient.getMessages(convId);
       setMessages(data);
     } catch (error) {
@@ -103,14 +95,31 @@ export default function ChatContainer() {
       }
       loadMessages(convId);
     } else {
-      // No conversation selected - clear artifacts
-      console.log('🧹 [ChatContainer] No conversation - clearing artifacts');
-      restoreArtifact(-1); // Pass invalid ID to clear
-      setMessages([]);
+      // No conversation selected - create one immediately to avoid URL change on first message
+      console.log('🆕 [ChatContainer] No conversation - creating new one');
+      const createInitialConversation = async () => {
+        try {
+          const newConv = await apiClient.createConversation(selectedAgent);
+          console.log(`✅ [ChatContainer] Created conversation ${newConv.conversation_id}`);
+          setSkipLoadMessages(true);
+          setSearchParams({ conversation: newConv.conversation_id.toString() }, { replace: true });
+        } catch (error) {
+          console.error('Failed to create initial conversation:', error);
+        }
+      };
+
+      // Only create if we haven't just switched from a conversation
+      if (prevConvId === null) {
+        createInitialConversation();
+      } else {
+        // Clear artifacts and messages when switching away from a conversation
+        restoreArtifact(-1);
+        setMessages([]);
+      }
     }
 
     setPrevConversationId(conversationId);
-  }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages]);
+  }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages, selectedAgent, setSearchParams]);
 
   const handleSendMessage = async (content: string) => {
     try {
@@ -176,9 +185,10 @@ export default function ChatContainer() {
           setMessages((prev) => [...prev, userMessage, limitMessage]);
 
           // Update URL if new conversation
+          // Use 'replace' to avoid triggering a full page reload/remount
           if (isNewConversation) {
             setSkipLoadMessages(true);
-            setSearchParams({ conversation: convId.toString() });
+            setSearchParams({ conversation: convId.toString() }, { replace: true });
           }
 
           return; // Don't send to backend
@@ -207,9 +217,10 @@ export default function ChatContainer() {
       setMessages((prev) => [...prev, userMessage]);
 
       // Update URL AFTER adding message, and skip loading messages since we already have them
+      // Use 'replace' to avoid triggering a full page reload/remount
       if (isNewConversation) {
         setSkipLoadMessages(true);
-        setSearchParams({ conversation: convId.toString() });
+        setSearchParams({ conversation: convId.toString() }, { replace: true });
       }
 
       // Start streaming response
@@ -392,8 +403,8 @@ export default function ChatContainer() {
   }
 
   // Show welcome screen if no messages
-  // Hide welcome immediately when sending starts
-  const hasMessages = messages.length > 0 || streamingMessage || sending;
+  // Only hide welcome after first message is added (not just when sending starts)
+  const hasMessages = messages.length > 0 || streamingMessage;
 
   return (
     <div
@@ -410,53 +421,101 @@ export default function ChatContainer() {
         onAgentChange={setSelectedAgent}
       />
 
-      {!hasMessages ? (
-        <WelcomeScreen
-          agentType={selectedAgent}
-          onPromptClick={handlePromptClick}
-        />
-      ) : (
-        <MessageList
-          messages={[
-            ...messages.map((msg) => {
-              // Check if this is a query limit message
-              if (msg.sender === 'bot' && msg.content === '__QUERY_LIMIT__') {
-                // Render query limit UI instead of normal content
-                return {
-                  ...msg,
-                  content: '', // Will be handled specially in MessageBubble
-                  isQueryLimitMessage: true,
-                };
-              }
-              return msg;
-            }),
-            // Show streaming message if active
-            ...(streamingMessage && streamingMessageId
-              ? [
-                  {
-                    id: streamingMessageId,
-                    conversation_id: Number(conversationId) || 0,
-                    sender: 'bot' as const,
-                    content: streamingMessage,
-                    agent_type: selectedAgent,  // Use current selected agent for streaming
-                    timestamp: new Date().toISOString(),
-                  },
-                ]
-              : []),
-          ]}
-          isStreaming={streaming && !streamingMessage}
-          queryLimitProps={{
-            onUpgrade: () => {
-              window.location.href = '/profile';
-            },
-            onTakeSurvey: () => {
-              artifactContext?.triggerSurvey(surveyStage);
-            },
-            surveyStage,
-            bothSurveysCompleted,
+      <div
+        style={{
+          position: 'relative',
+          flex: 1,
+          overflow: 'hidden', // Prevent scrollbars on the container itself
+          minHeight: 0, // Important for flex children
+          contain: 'layout style paint', // CSS containment for better performance
+        }}
+      >
+        {/* Welcome Screen Layer */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: hasMessages ? 0 : 1,
+            visibility: hasMessages ? 'hidden' : 'visible',
+            transform: hasMessages ? 'translateY(-10px)' : 'translateY(0)',
+            transition: 'opacity 0.25s ease-out, transform 0.25s ease-out, visibility 0s linear 0.25s',
+            pointerEvents: hasMessages ? 'none' : 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden', // Prevent scroll on welcome screen
+            willChange: hasMessages ? 'opacity, transform' : 'auto',
           }}
-        />
-      )}
+        >
+          <WelcomeScreen
+            agentType={selectedAgent}
+            onPromptClick={handlePromptClick}
+          />
+        </div>
+
+        {/* Message List Layer */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: hasMessages ? 1 : 0,
+            visibility: hasMessages ? 'visible' : 'hidden',
+            transform: hasMessages ? 'translateY(0)' : 'translateY(10px)',
+            transition: 'opacity 0.25s ease-out, transform 0.25s ease-out, visibility 0s linear 0s',
+            pointerEvents: hasMessages ? 'auto' : 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden', // Let MessageList handle its own scrolling
+            willChange: hasMessages ? 'auto' : 'opacity, transform',
+          }}
+        >
+          <MessageList
+            messages={[
+              ...messages.map((msg) => {
+                // Check if this is a query limit message
+                if (msg.sender === 'bot' && msg.content === '__QUERY_LIMIT__') {
+                  // Render query limit UI instead of normal content
+                  return {
+                    ...msg,
+                    content: '', // Will be handled specially in MessageBubble
+                    isQueryLimitMessage: true,
+                  };
+                }
+                return msg;
+              }),
+              // Show streaming message if active
+              ...(streamingMessage && streamingMessageId
+                ? [
+                    {
+                      id: streamingMessageId,
+                      conversation_id: Number(conversationId) || 0,
+                      sender: 'bot' as const,
+                      content: streamingMessage,
+                      agent_type: selectedAgent,  // Use current selected agent for streaming
+                      timestamp: new Date().toISOString(),
+                    },
+                  ]
+                : []),
+            ]}
+            isStreaming={streaming && !streamingMessage}
+            queryLimitProps={{
+              onUpgrade: () => {
+                window.location.href = '/profile';
+              },
+              onTakeSurvey: () => {
+                artifactContext?.triggerSurvey(surveyStage);
+              },
+              surveyStage,
+              bothSurveysCompleted,
+            }}
+          />
+        </div>
+      </div>
 
       <ChatInput
         agentType={selectedAgent}

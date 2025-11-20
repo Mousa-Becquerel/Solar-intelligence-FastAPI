@@ -54,6 +54,12 @@ AGENT_CONFIGURATIONS = [
         "required_plan": "free",
         "description": "Manufacturer Financial Agent - Financial analysis of PV manufacturers",
         "is_enabled": True
+    },
+    {
+        "agent_type": "component_prices",
+        "required_plan": "free",
+        "description": "Component Prices Agent - PV component and raw material price analysis",
+        "is_enabled": True
     }
 ]
 
@@ -107,7 +113,7 @@ async def seed_agent_access():
             logger.info(f"   - Updated: {updated_count} agents")
             logger.info(f"   - Total: {len(AGENT_CONFIGURATIONS)} agents configured")
             logger.info(f"   - Premium agents: nzia_market_impact")
-            logger.info(f"   - Free agents: market, news, digitalization, nzia_policy, manufacturer_financial")
+            logger.info(f"   - Free agents: market, news, digitalization, nzia_policy, manufacturer_financial, component_prices")
 
         except Exception as e:
             await db.rollback()

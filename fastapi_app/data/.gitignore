@@ -1,0 +1,5 @@
+# Ignore CSV data files (they can be large)
+*.csv
+
+# Keep the .gitkeep file to preserve the directory structure
+!.gitkeep

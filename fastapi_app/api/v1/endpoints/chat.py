@@ -299,6 +299,36 @@ async def send_chat_message(
                     }
                 )
 
+            elif agent_type == "component_prices":
+                return StreamingResponse(
+                    ChatProcessingService.process_component_prices_agent_stream(
+                        db, user_message, conv_id, agent_type
+                    ),
+                    media_type="text/event-stream",
+                    headers={
+                        'Cache-Control': 'no-cache, no-transform',
+                        'X-Accel-Buffering': 'no',
+                        'Connection': 'keep-alive',
+                        'Content-Type': 'text/event-stream; charset=utf-8',
+                        'X-Content-Type-Options': 'nosniff'
+                    }
+                )
+
+            elif agent_type == "seamless":
+                return StreamingResponse(
+                    ChatProcessingService.process_seamless_agent_stream(
+                        db, user_message, conv_id, agent_type
+                    ),
+                    media_type="text/event-stream",
+                    headers={
+                        'Cache-Control': 'no-cache, no-transform',
+                        'X-Accel-Buffering': 'no',
+                        'Connection': 'keep-alive',
+                        'Content-Type': 'text/event-stream; charset=utf-8',
+                        'X-Content-Type-Options': 'nosniff'
+                    }
+                )
+
             else:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,

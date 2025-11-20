@@ -23,14 +23,25 @@ interface MessageListProps {
 export default function MessageList({ messages, isStreaming = false, queryLimitProps }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef(0);
 
   // Auto-scroll to bottom when new messages arrive
+  // Only scroll if messages were actually added (not on initial render or transitions)
   useEffect(() => {
-    if (messagesEndRef.current) {
-      // Use instant scroll to prevent jarring smooth animation
-      messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
+    const currentMessageCount = messages.length;
+    const shouldScroll = currentMessageCount > prevMessageCountRef.current;
+
+    if (shouldScroll && messagesEndRef.current && containerRef.current) {
+      // Use requestAnimationFrame to ensure the DOM has updated
+      requestAnimationFrame(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+      });
     }
-  }, [messages.length]); // Only trigger on message count change, not content updates
+
+    prevMessageCountRef.current = currentMessageCount;
+  }, [messages.length]);
 
   return (
     <div
@@ -45,6 +56,8 @@ export default function MessageList({ messages, isStreaming = false, queryLimitP
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+        scrollBehavior: 'smooth',
       }}
     >
       <div

@@ -20,6 +20,8 @@ AGENT_NAME_MAPPING = {
     "NZIA_Policy_Expert": "nzia_policy",  # Aniza
     "NIZA_Market_Impact_Expert": "nzia_market_impact",  # Nina
     "Manufacturer_Financial_Analyst": "manufacturer_financial",  # Finn
+    "Component_Prices_Analyst": "component_prices",  # Priya
+    "IPV_Expert": "seamless",  # Sam
 }
 
 
@@ -37,6 +39,8 @@ Below are descriptions of the available agents and their capabilities, as well a
 - NZIA Policy Expert (Aniza): Expert in Net Zero Industry Act (NZIA) regulations, compliance requirements, and policy implications. Guides businesses through EU policy frameworks, incentive programs, and regulatory compliance strategies.
 - NZIA Market Impact Expert (Nina): Evaluates how NZIA policies affect market dynamics, competitive positioning, and business opportunities. Assesses policy-driven market changes, strategic implications, and emerging opportunities for solar companies.
 - Manufacturer Financial Analyst (Finn): Analyzes financial performance, investment opportunities, and economic viability of solar manufacturers. Provides insights on market valuations, profitability trends, cost structures, and financial forecasting.
+- Component Prices Analyst (Priya): Tracks and analyzes photovoltaic component pricing across the full PV value chain including modules, polysilicon, wafers, cells, and raw materials. Provides multi-region price comparisons, technology-specific pricing trends (PERC, TOPCon, HJT), and weekly price data updates covering China, EU, US, India, and Australia markets.
+- IPV Expert (Sam): Retrieval-bound expert with access to 6 comprehensive documents covering IPV market analysis, regulatory environment, manufacturing costs, and long-term deployment scenarios. Provides insights on all integrated photovoltaic segments: BIPV (building-integrated), IIPV (infrastructure-integrated), AgriPV (agriculture), and VIPV (vehicle-integrated). Covers market potential, cost-competitiveness, stakeholder needs, standards compliance, and SAM forecasts up to 2050.
 
 **Valid Agent Enum Names** (use exactly as provided below and never output any other string):
 
@@ -46,7 +50,9 @@ Below are descriptions of the available agents and their capabilities, as well a
   \"Digitalization_Expert\",
   \"NZIA_Policy_Expert\",
   \"NIZA_Market_Impact_Expert\",
-  \"Manufacturer_Financial_Analyst\"
+  \"Manufacturer_Financial_Analyst\",
+  \"Component_Prices_Analyst\",
+  \"IPV_Expert\"
 ]
 
 # Steps

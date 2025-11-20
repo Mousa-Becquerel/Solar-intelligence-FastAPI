@@ -23,6 +23,8 @@ _market_intelligence_agent = None
 _nzia_policy_agent = None
 _manufacturer_financial_agent = None
 _nzia_market_impact_agent = None
+_component_prices_agent = None
+_seamless_agent = None
 
 
 def get_news_agent_instance():
@@ -77,6 +79,24 @@ def get_nzia_market_impact_agent_instance():
         from nzia_market_impact_agent import NZIAMarketImpactAgent
         _nzia_market_impact_agent = NZIAMarketImpactAgent()
     return _nzia_market_impact_agent
+
+
+def get_component_prices_agent_instance():
+    """Get or create Component Prices agent instance"""
+    global _component_prices_agent
+    if _component_prices_agent is None:
+        from fastapi_app.component_prices_agent import ComponentPricesAgent
+        _component_prices_agent = ComponentPricesAgent()
+    return _component_prices_agent
+
+
+def get_seamless_agent_instance():
+    """Get or create Seamless agent instance"""
+    global _seamless_agent
+    if _seamless_agent is None:
+        from seamless_agent import SeamlessAgent
+        _seamless_agent = SeamlessAgent()
+    return _seamless_agent
 
 
 # ============================================
@@ -484,3 +504,136 @@ class ChatProcessingService:
             error_msg = f"Streaming error: {str(e)}"
             logger.error(error_msg)
             yield f"data: {json.dumps({'type': 'error', 'message': error_msg})}\n\n"
+
+    @staticmethod
+    async def process_component_prices_agent_stream(
+        db: AsyncSession,
+        user_message: str,
+        conv_id: int,
+        agent_type: str = 'component_prices'
+    ) -> AsyncGenerator[str, None]:
+        """
+        Process message with Component Prices agent (streaming workflow)
+        Handles both text responses and plot JSON
+
+        Yields:
+            SSE-formatted strings
+        """
+        component_prices_agent = get_component_prices_agent_instance()
+        full_response = ""
+        plot_data = None
+        response_type = "text"
+
+        try:
+            # Stream text chunks and plot data as they arrive
+            async for chunk in component_prices_agent.run_workflow_stream(user_message, conversation_id=str(conv_id)):
+                # Check if chunk is JSON (plot data)
+                try:
+                    response_json = json.loads(chunk)
+                    if isinstance(response_json, dict):
+                        event_type = response_json.get('type')
+
+                        # Handle plot data
+                        if event_type == 'plot':
+                            response_type = "plot"
+                            plot_data = response_json['content']
+                            full_response = f"Generated plot: {plot_data.get('title', 'Untitled')}"
+                            logger.info(f"Plot generated: {plot_data.get('plot_type')} - {plot_data.get('title')}")
+                            yield f"data: {json.dumps({'type': 'plot', 'content': plot_data})}\n\n"
+
+                        # Legacy format - direct plot JSON (backward compatibility)
+                        elif 'plot_type' in response_json:
+                            response_type = "plot"
+                            plot_data = response_json
+                            full_response = f"Generated plot: {plot_data.get('title', 'Untitled')}"
+                            logger.info(f"Plot generated (legacy): {plot_data.get('plot_type')}")
+                            yield f"data: {json.dumps({'type': 'plot', 'content': plot_data})}\n\n"
+
+                        else:
+                            # JSON but not a recognized type - treat as text
+                            full_response += str(response_json)
+                            yield f"data: {json.dumps({'type': 'chunk', 'content': str(response_json)})}\n\n"
+
+                except json.JSONDecodeError:
+                    # Not JSON - regular text chunk
+                    full_response += chunk
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+
+            # Save the complete response to database
+            try:
+                # Determine content type based on response type
+                if response_type == "plot":
+                    content_to_save = {
+                        'type': 'plot',
+                        'value': plot_data
+                    }
+                else:
+                    content_to_save = {
+                        'type': 'string',
+                        'value': full_response,
+                        'comment': None
+                    }
+
+                bot_msg = Message(
+                    conversation_id=conv_id,
+                    sender='bot',
+                    agent_type=agent_type,
+                    content=json.dumps(content_to_save)
+                )
+                db.add(bot_msg)
+                await db.commit()
+                logger.info(f"Component prices agent message saved: {response_type}, {len(full_response)} chars")
+            except Exception as db_error:
+                logger.error(f"Error saving component prices agent message: {db_error}")
+                await db.rollback()
+
+            # Send completion event
+            yield f"data: {json.dumps({'type': 'done', 'full_response': full_response})}\n\n"
+
+        except Exception as e:
+            error_msg = f"Streaming error: {str(e)}"
+            logger.error(error_msg)
+            yield f"data: {json.dumps({'type': 'error', 'message': error_msg})}\n\n"
+
+    @staticmethod
+    async def process_seamless_agent_stream(
+        db: AsyncSession,
+        user_message: str,
+        conv_id: int,
+        agent_type: str = 'seamless'
+    ) -> AsyncGenerator[str, None]:
+        """
+        Process message with Seamless agent (streaming via SSE)
+        Streams text chunks back to the client
+        """
+        # Get agent instance
+        seamless_agent = get_seamless_agent_instance()
+        full_response = ""
+
+        try:
+            # Stream chunks from the agent
+            async for chunk in seamless_agent.analyze_stream(user_message, conversation_id=str(conv_id)):
+                full_response += chunk
+                yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+
+            # Save message to database after streaming completes
+            bot_msg = Message(
+                conversation_id=conv_id,
+                sender='bot',
+                agent_type=agent_type,
+                content=json.dumps({
+                    'type': 'string',
+                    'value': full_response,
+                    'comment': None
+                })
+            )
+            db.add(bot_msg)
+            await db.commit()
+            logger.info(f"Seamless agent message saved: {len(full_response)} chars")
+
+            # Send completion event
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+        except Exception as e:
+            logger.error(f"Seamless agent streaming error: {str(e)}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"

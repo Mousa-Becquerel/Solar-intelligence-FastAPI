@@ -10,7 +10,9 @@ export type AgentType =
   | 'digitalization'
   | 'nzia_policy'
   | 'manufacturer_financial'
-  | 'nzia_market_impact';
+  | 'nzia_market_impact'
+  | 'component_prices'
+  | 'seamless';
 
 export const AGENT_TITLES: Record<AgentType, string> = {
   market: 'PV Capacity Analysis',
@@ -19,6 +21,8 @@ export const AGENT_TITLES: Record<AgentType, string> = {
   nzia_policy: 'NZIA Policy Expert',
   manufacturer_financial: 'Manufacturer Financial Analyst',
   nzia_market_impact: 'NZIA Market Impact Expert',
+  component_prices: 'Component Prices Analysis',
+  seamless: 'Seamless IPV Expert',
 };
 
 // Agent dropdown display names (shown in chat header)
@@ -29,6 +33,8 @@ export const AGENT_DROPDOWN_NAMES: Record<AgentType, string> = {
   nzia_policy: 'Aniza - NZIA Policy Expert',
   manufacturer_financial: 'Finn - Manufacturer Financial Analyst',
   nzia_market_impact: 'Nina - NZIA Market Impact Expert',
+  component_prices: 'Priya - Component Prices Analyst',
+  seamless: 'Sam - Seamless IPV Expert',
 };
 
 export interface SuggestedPrompt {
@@ -228,6 +234,70 @@ export const AGENT_PROMPTS: Record<AgentType, SuggestedPrompt[]> = {
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00897B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>',
       title: 'Recommendations',
       prompt: 'What strategic recommendations does the NZIA report provide for PV manufacturers and developers?',
+    },
+  ],
+  component_prices: [
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
+      title: 'Module Prices',
+      prompt: 'Show module prices in China',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>',
+      title: 'Cell Prices',
+      prompt: 'Compare cell prices across regions',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>',
+      title: 'Polysilicon Trends',
+      prompt: 'What are polysilicon price trends?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>',
+      title: 'Wafer Prices',
+      prompt: 'Plot wafer prices over time',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
+      title: 'US Pricing',
+      prompt: 'Show US module pricing trends',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>',
+      title: 'Module Types',
+      prompt: 'Compare N-type vs P-type module prices',
+    },
+  ],
+  seamless: [
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
+      title: 'BIPV Market',
+      prompt: 'What is the current state of the IPV market?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>',
+      title: 'IPV Potential',
+      prompt: 'What is the integrated photovoltaic market potential?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
+      title: 'Impact Scenarios',
+      prompt: 'What are the comparative long-term impact scenarios for SEAMLESS-PV?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>',
+      title: 'BIPV Technologies',
+      prompt: 'What IPV technologies are covered in the status report?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>',
+      title: 'Stakeholder Guide',
+      prompt: 'What practical guidance does the IPV handbook provide for stakeholders?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>',
+      title: 'SEAMLESS Project',
+      prompt: 'What are the main objectives and findings of the SEAMLESS-PV project?',
     },
   ],
 };

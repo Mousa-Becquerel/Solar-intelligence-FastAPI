@@ -54,10 +54,15 @@ const SAMPLE_QUESTIONS: Record<AgentType, string[]> = {
     'What are Trina Solar\'s recent quarterly results?',
     'Show me margin trends for top manufacturers',
   ],
-  weaviate: [
-    'Query custom data from the database',
-    'Perform complex analytics',
-    'Explore relationships in the data',
+  component_prices: [
+    'What are the current module prices in China?',
+    'Compare polysilicon prices across regions',
+    'Show me TOPCon vs PERC pricing trends',
+  ],
+  seamless: [
+    'What is the current state of the IPV market?',
+    'What are the main objectives of the SEAMLESS-PV project?',
+    'What IPV technologies are covered in the Seamless report?',
   ],
 };
 
@@ -139,8 +144,26 @@ export default function AgentDetailsModal({
             display: 'flex',
             alignItems: 'flex-start',
             gap: '16px',
+            position: 'relative',
           }}
         >
+          {/* Custom Badge Logo - Top Right Corner */}
+          {metadata.customBadge && (
+            <img
+              src={metadata.customBadge}
+              alt={`${name} badge`}
+              style={{
+                position: 'absolute',
+                top: '8px',
+                right: '70px',
+                width: '80px',
+                height: '80px',
+                objectFit: 'contain',
+                zIndex: 10,
+              }}
+              title={`${name} - Official Badge`}
+            />
+          )}
           {/* Agent Icon */}
           <div
             style={{

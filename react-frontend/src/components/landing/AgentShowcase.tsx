@@ -13,7 +13,7 @@ const agents = [
   {
     id: 1,
     agent: 'Alex - Market Agent',
-    userQuery: 'Show the Italian PV market data from 2020 to 2025',
+    userQuery: 'Show the Italian PV market data from 2020 to 2024',
     chartData: showcaseChartData[1],
     avatar: (
       <div className={styles.avatar} style={{ background: '#E9A544', color: '#040B59' }}>

@@ -70,6 +70,7 @@ class MessageResponse(BaseModel):
     conversation_id: int
     sender: str
     content: str
+    agent_type: Optional[str] = None  # Which agent sent this message (for bot messages)
     timestamp: datetime
 
     class Config:

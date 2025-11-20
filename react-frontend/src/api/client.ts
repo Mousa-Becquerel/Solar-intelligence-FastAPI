@@ -231,25 +231,30 @@ class APIClient {
     const rawMessages = await this.request<Record<string, unknown>[]>(`conversations/${conversationId}/messages`);
 
     // Transform backend format to frontend format
-    return rawMessages.map(msg => ({
-      id: msg.id,
-      conversation_id: msg.conversation_id,
-      // Use 'sender' field directly from database
-      // Database stores: 'user' | 'bot'
-      sender: msg.sender,
-      // Parse content if it's JSON string, otherwise use as-is
-      content: this.parseMessageContent(msg.content),
-      agent_type: msg.agent_type,  // Include agent_type for multi-agent conversations
-      timestamp: msg.timestamp,
-    }));
+    return rawMessages.map(msg => {
+      const parsedMessage = this.parseMessageWithPlotData(msg.content as string);
+
+      return {
+        id: msg.id as number,
+        conversation_id: msg.conversation_id as number,
+        // Use 'sender' field directly from database
+        // Database stores: 'user' | 'bot'
+        sender: msg.sender as 'user' | 'bot',
+        // Parse content if it's JSON string, otherwise use as-is
+        content: parsedMessage.content,
+        agent_type: msg.agent_type as string | undefined,  // Include agent_type for multi-agent conversations
+        timestamp: msg.timestamp as string,
+        plotData: parsedMessage.plotData,  // Include plot data if present
+      } as Message;
+    });
   }
 
-  // Helper to parse message content (may be JSON string or plain text)
-  private parseMessageContent(content: string): string {
+  // Helper to parse message with plot data support
+  private parseMessageWithPlotData(content: string): { content: string; plotData?: any } {
     // If content is empty or null, return placeholder
     if (!content) {
       console.warn('⚠️ Empty message content received');
-      return '[Empty message - no content]';
+      return { content: '[Empty message - no content]' };
     }
 
     try {
@@ -258,38 +263,60 @@ class APIClient {
 
       console.log('📝 Parsed message content:', parsed);
 
-      // If it's an object with a 'value' field, extract that
+      // If it's an object with a 'type' field
       if (typeof parsed === 'object' && parsed !== null) {
+        // Handle plot messages: { type: "plot", value: { ...plot data... } }
+        if (parsed.type === 'plot' && parsed.value) {
+          console.log('📊 Extracting plot data from message');
+          return {
+            content: parsed.value.title || 'Plot', // Use plot title as content
+            plotData: parsed.value, // Store the full plot data
+          };
+        }
+
+        // Handle regular messages: { type: "string", value: "...", comment: null }
+        if (parsed.type === 'string' && parsed.value !== undefined && parsed.value !== null) {
+          console.log('✅ Extracting string value field:', parsed.value);
+          return { content: String(parsed.value) };
+        }
+
+        // Legacy: If it has a 'value' field without type
         if (parsed.value !== undefined && parsed.value !== null) {
           console.log('✅ Extracting value field:', parsed.value);
-          return String(parsed.value);
+          return { content: String(parsed.value) };
         }
 
         // If it has a 'content' field instead
         if (parsed.content !== undefined && parsed.content !== null) {
           console.log('✅ Extracting content field:', parsed.content);
-          return String(parsed.content);
+          return { content: String(parsed.content) };
         }
 
-        // If it's an object without value/content, show it as formatted JSON for debugging
-        console.warn('⚠️ Message object without value/content field:', parsed);
-        return '```json\n' + JSON.stringify(parsed, null, 2) + '\n```';
+        // If it's an object without recognized fields, show it as formatted JSON for debugging
+        console.warn('⚠️ Message object without recognized fields:', parsed);
+        return { content: '```json\n' + JSON.stringify(parsed, null, 2) + '\n```' };
       }
 
       // If it's already a string, return it
       if (typeof parsed === 'string') {
         console.log('✅ Content is already a string');
-        return parsed;
+        return { content: parsed };
       }
 
       // Otherwise return original content
       console.warn('⚠️ Unexpected parsed type:', typeof parsed, parsed);
-      return content;
+      return { content: content };
     } catch (_error) {
       // Not JSON, return as-is
       console.log('✅ Content is not JSON, using as plain text');
-      return content;
+      return { content: content };
     }
+  }
+
+  // Helper to parse message content (may be JSON string or plain text)
+  // Deprecated: Use parseMessageWithPlotData instead
+  private parseMessageContent(content: string): string {
+    return this.parseMessageWithPlotData(content).content;
   }
 
   // ========================================

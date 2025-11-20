@@ -13,12 +13,25 @@ interface WelcomeScreenProps {
   onPromptClick?: (prompt: string) => void;
 }
 
+// Agent-specific subtitles
+const AGENT_SUBTITLES: Record<AgentType, string> = {
+  market: 'Your AI-powered assistant for global PV capacity analysis, installation trends, and market forecasts',
+  news: 'Your AI-powered assistant for real-time solar industry news, policy updates, and market developments',
+  digitalization: 'Your AI-powered assistant for digital transformation, automation trends, and AI applications in solar',
+  nzia_policy: 'Your AI-powered assistant for NZIA compliance, FERX framework analysis, and EU policy guidance',
+  manufacturer_financial: 'Your AI-powered assistant for manufacturer financial analysis, profitability trends, and investment insights',
+  nzia_market_impact: 'Your AI-powered assistant for NZIA market impact assessment and EU manufacturing targets',
+  component_prices: 'Your AI-powered assistant for PV component pricing across modules, polysilicon, wafers, cells, and raw materials',
+  seamless: 'Your AI-powered assistant for integrated PV market analysis across BIPV, IIPV, AgriPV, and VIPV segments',
+};
+
 export default function WelcomeScreen({
   agentType = 'market',
   onPromptClick,
 }: WelcomeScreenProps) {
-  // Get agent-specific title
+  // Get agent-specific title and subtitle
   const title = AGENT_TITLES[agentType] || 'Solar Intelligence';
+  const subtitle = AGENT_SUBTITLES[agentType] || 'Your AI-powered assistant for photovoltaic market insights, price analysis, and industry intelligence';
 
   return (
     <div
@@ -31,8 +44,21 @@ export default function WelcomeScreen({
         textAlign: 'center',
         padding: '2rem',
         background: '#ffffff',
+        animation: 'fadeIn 0.3s ease-in',
       }}
     >
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
       <div
         style={{
           width: '100%',
@@ -65,8 +91,7 @@ export default function WelcomeScreen({
             fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
           }}
         >
-          Your AI-powered assistant for photovoltaic market insights, price
-          analysis, and industry intelligence
+          {subtitle}
         </p>
       </div>
     </div>

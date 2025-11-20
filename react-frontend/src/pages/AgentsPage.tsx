@@ -24,7 +24,7 @@ interface ToastState {
   type: 'success' | 'error';
 }
 
-type FilterCategory = 'all' | 'premium' | 'market' | 'policy' | 'financial';
+type FilterCategory = 'all' | 'premium' | 'market' | 'policy' | 'financial' | 'eu_projects';
 
 export default function AgentsPage() {
   const navigate = useNavigate();
@@ -125,9 +125,10 @@ export default function AgentsPage() {
   const filteredAgents = AVAILABLE_AGENTS.filter((agentType) => {
     if (selectedFilter === 'all') return true;
     if (selectedFilter === 'premium') return AGENT_METADATA[agentType].premium;
-    if (selectedFilter === 'market') return agentType === 'market';
+    if (selectedFilter === 'market') return agentType === 'market' || agentType === 'component_prices';
     if (selectedFilter === 'policy') return agentType === 'nzia_policy' || agentType === 'nzia_market_impact';
     if (selectedFilter === 'financial') return agentType === 'manufacturer_financial';
+    if (selectedFilter === 'eu_projects') return agentType === 'seamless';
     return true;
   });
 
@@ -609,6 +610,7 @@ export default function AgentsPage() {
               { key: 'market' as FilterCategory, label: 'Market Analysis' },
               { key: 'policy' as FilterCategory, label: 'Policy & Compliance' },
               { key: 'financial' as FilterCategory, label: 'Financial Analysis' },
+              { key: 'eu_projects' as FilterCategory, label: 'EU Projects' },
             ].map(({ key, label }) => {
               const isSelected = selectedFilter === key;
               return (

@@ -71,6 +71,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./fastapi_app/data:/app/fastapi_app/data:ro  # Mount component prices CSV (read-only)
     ports:
       - "8000:8000"
     healthcheck:
