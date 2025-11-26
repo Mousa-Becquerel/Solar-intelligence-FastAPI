@@ -37,7 +37,9 @@ services:
       - FLASK_ENV=development
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
       - LOGFIRE_TOKEN=${LOGFIRE_TOKEN}
-      - FASTAPI_DATABASE_URL=postgresql+asyncpg://solar_admin:datahub1@postgres-db:5432/solar_intelligence_fastapi
+      # OLD LOCAL DB: postgresql+asyncpg://solar_admin:datahub1@postgres-db:5432/solar_intelligence_fastapi
+      # NEW AWS RDS:
+      - FASTAPI_DATABASE_URL=postgresql+asyncpg://solar_admin_v2:Datahub1_@solar-intelligence-v2.cp6wsmk62efj.eu-north-1.rds.amazonaws.com:5432/solar_intelligence_v2
       - WEAVIATE_URL=${WEAVIATE_URL}
       - WEAVIATE_API_KEY=${WEAVIATE_API_KEY}
       - AWS_REGION=${AWS_REGION}

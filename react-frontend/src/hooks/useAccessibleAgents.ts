@@ -18,11 +18,9 @@ export function useAccessibleAgents() {
       try {
         setLoading(true);
         const agents = await apiClient.getUserAccessibleAgents();
-        console.log('📊 [useAccessibleAgents] Received agents from API:', agents);
 
         // Filter to only agents with access
         const accessible = agents.filter(agent => agent.can_access && agent.is_enabled);
-        console.log('✅ [useAccessibleAgents] Filtered accessible agents:', accessible);
 
         setAccessibleAgents(accessible);
       } catch (err) {

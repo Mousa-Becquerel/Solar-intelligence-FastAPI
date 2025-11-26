@@ -550,9 +550,14 @@ class ChatProcessingService:
                             yield f"data: {json.dumps({'type': 'plot', 'content': plot_data})}\n\n"
 
                         else:
-                            # JSON but not a recognized type - treat as text
+                            # Dict JSON but not a recognized type - treat as text
                             full_response += str(response_json)
                             yield f"data: {json.dumps({'type': 'chunk', 'content': str(response_json)})}\n\n"
+
+                    else:
+                        # JSON parsed but not a dict (e.g., integers, strings, arrays) - treat as text
+                        full_response += str(response_json)
+                        yield f"data: {json.dumps({'type': 'chunk', 'content': str(response_json)})}\n\n"
 
                 except json.JSONDecodeError:
                     # Not JSON - regular text chunk

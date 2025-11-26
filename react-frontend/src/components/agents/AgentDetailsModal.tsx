@@ -147,7 +147,7 @@ export default function AgentDetailsModal({
             position: 'relative',
           }}
         >
-          {/* Custom Badge Logo - Top Right Corner */}
+          {/* Custom Badge Logo - Top Right Corner - Bigger for Sam */}
           {metadata.customBadge && (
             <img
               src={metadata.customBadge}
@@ -156,8 +156,8 @@ export default function AgentDetailsModal({
                 position: 'absolute',
                 top: '8px',
                 right: '70px',
-                width: '80px',
-                height: '80px',
+                width: agentType === 'seamless' ? '120px' : '80px',
+                height: agentType === 'seamless' ? '120px' : '80px',
                 objectFit: 'contain',
                 zIndex: 10,
               }}
@@ -402,6 +402,79 @@ export default function AgentDetailsModal({
                     "{question}"
                   </div>
                 ))}
+              </div>
+            </section>
+          )}
+
+          {/* Funding Acknowledgment - Only for Sam/Seamless */}
+          {agentType === 'seamless' && (
+            <section style={{ marginBottom: '8px' }}>
+              <h3
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '12px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+                }}
+              >
+                Funding Acknowledgment
+              </h3>
+              <p
+                style={{
+                  fontSize: '0.875rem',
+                  color: '#374151',
+                  lineHeight: '1.6',
+                  marginBottom: '12px',
+                  fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+                }}
+              >
+                This project has received funding from the European Union's Horizon Europe research and innovation programme under Grant N°101096126.
+              </p>
+              <p
+                style={{
+                  fontSize: '0.8125rem',
+                  color: '#6B7280',
+                  lineHeight: '1.6',
+                  marginBottom: '16px',
+                  fontStyle: 'italic',
+                  fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+                }}
+              >
+                Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or CINEA. Neither the European Union nor the granting authority can be held responsible for them.
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '24px',
+                  padding: '16px',
+                  background: '#F9FAFB',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                }}
+              >
+                <img
+                  src="/badges/Funding_buddy_Seamless.png"
+                  alt="EU Funding Logo"
+                  style={{
+                    height: '60px',
+                    width: 'auto',
+                    objectFit: 'contain',
+                  }}
+                />
+                <img
+                  src="/badges/Funding_buddy_Seamless_2.png"
+                  alt="Horizon 2020 Logo"
+                  style={{
+                    height: '60px',
+                    width: 'auto',
+                    objectFit: 'contain',
+                  }}
+                />
               </div>
             </section>
           )}

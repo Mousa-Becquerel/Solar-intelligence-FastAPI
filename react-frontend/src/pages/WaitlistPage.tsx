@@ -202,7 +202,6 @@ export function WaitlistPage() {
         </div>
         <div className={styles.headerActions}>
           <a href="#waitlist-form" className={styles.getAccessBtn}>Get Early Access</a>
-          <Link to="/" className={styles.adminAccessLink}>Admin Access</Link>
         </div>
       </header>
 

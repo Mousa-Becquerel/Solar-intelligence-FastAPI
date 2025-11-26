@@ -17,6 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from fastapi_app.core.config import settings
 from fastapi_app.db.session import init_db, close_db
 from fastapi_app.api.v1.router import api_router
+from fastapi_app.db.seed_agents import seed_agent_access
 
 # Configure logging
 logging.basicConfig(
@@ -49,6 +50,13 @@ async def lifespan(app: FastAPI):
 
     # Initialize database
     await init_db()
+
+    # Seed agent access configuration
+    try:
+        await seed_agent_access()
+        logger.info("✅ Agent access seeded")
+    except Exception as e:
+        logger.warning(f"⚠️  Agent access seeding failed: {e}")
 
     # Configure Logfire if available
     if settings.LOGFIRE_TOKEN:

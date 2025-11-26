@@ -1,0 +1,53 @@
+================================================================================
+RAW STREAMING RESPONSE FROM DATA ANALYSIS AGENT
+================================================================================
+## Executive summary
+
+According to the Becquerel Institute Database, polysilicon prices (unit: US$/kg) have shown mixed movements across grades and regions. Some high-purity grades rose substantially from their earliest records, while other grades — including several 9N/9N+ and China-based series — have declined toward recent dates. Trends vary by purity class and region rather than showing a single uniform direction.
+
+## Overall polysilicon price snapshot
+
+Based on the Becquerel Institute Database (unit: US$/kg):
+
+| Metric | Value |
+|---|---:|
+| Minimum observed price | **$2.80/kg** |
+| Maximum observed price | **$41.69/kg** |
+| Average price (all records) | **$15.52/kg** |
+| Mean price on latest reporting date (2025-03-26) | **$8.89/kg** |
+
+## Polysilicon trends by description (earliest → latest)
+
+Based on the Becquerel Institute Database. Comparison uses earliest and latest recorded prices per description; percent change = (latest − earliest) / earliest.
+
+| Description | Earliest date | Earliest price (US$/kg) | Latest date | Latest price (US$/kg) | % change | Trend |
+|---|---:|---:|---:|---:|---:|---:|
+| Average purity - 6N to 8N | 2019-01-02 | 4.88 | 2021-08-11 | 17.00 | **+248.36%** | ↑ increasing |
+| High purity - 9N/9N+ | 2019-01-02 | 7.15 | 2025-03-26 | 5.23 | **−26.81%** | ↓ decreasing |
+| Very high purity (12N/12N+, outside China) | 2020-03-25 | 9.35 | 2025-03-26 | 20.00 | **+113.90%** | ↑ increasing |
+| Very high purity (12N/12N+, in China) | 2023-07-05 | 10.38 | 2025-03-26 | 5.23 | **−49.58%** | ↓ decreasing |
+| Very high purity - 11N/11N+ | 2019-01-02 | 8.57 | 2021-12-29 | 36.45 | **+325.32%** | ↑ increasing |
+
+(Only descriptions present in the dataset are shown. All values and dates are from the Becquerel Institute Database.)
+
+## Key regional observations (selected examples)
+
+- China: Some China-listed high-purity series show declines toward the latest dates (e.g., a China 9N/9N+ series falls substantially to recent levels → **↓ decreasing**).
+- Overseas/Non-China: Several non-China very-high-purity entries increased from early values to higher recent prices (→ **↑ increasing**).
+- Unit for all polysilicon entries in the database is **US$/kg**.
+
+(Full per-region, per-description detail is available in the database. If you want a specific description-region table, I can provide that filtered view.)
+
+## Interpretation of trends
+
+- Price movement is heterogeneous by purity grade: lower-purity averages and certain very-high-purity series recorded strong percentage increases from their earliest entries, while other high-purity series declined.
+- Recent mean price (2025-03-26) is **$8.89/kg**, which is below the dataset average (**$15.52/kg**), reflecting the declines in some series alongside rises in others.
+
+## Key takeaways
+
+1. Multiple polysilicon grades exhibit divergent trends — some strongly rising (↑) and others decreasing (↓).
+2. The dataset’s most recent mean price is **$8.89/kg** (2025-03-26), below the long-run average of **$15.52/kg**.
+3. Regional behavior matters: China vs. Overseas series can move in opposite directions in this dataset.
+
+All figures above come from the Becquerel Institute Database. If you want, I can produce a detailed table filtered to a specific description (e.g., "High purity - 9N/9N+") or region (e.g., China) showing every reporting date and price.
+================================================================================

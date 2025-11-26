@@ -14,7 +14,7 @@ import type { AgentType } from './agents';
 export interface AgentMetadata {
   name: string;
   role: string;
-  provider: string; // Provider name (e.g., "Bequerel Institute")
+  provider: string; // Provider name (e.g., "Becquerel Institute")
   color: 'navy' | 'gold' | 'navy-light' | 'gold-dark' | 'purple' | 'emerald' | 'indigo' | 'teal';
   initial: string;
   badges: Array<'datahub' | 'charts' | 'news' | 'ai report' | 'code' | 'digitalization' | 'ferx' | 'ipv' | 'nzia'>;
@@ -29,7 +29,7 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
   market: {
     name: 'Alex',
     role: 'PV Capacity',
-    provider: 'Bequerel Institute',
+    provider: 'Becquerel Institute',
     color: 'gold-dark',
     initial: 'A',
     badges: ['datahub', 'charts'],
@@ -45,7 +45,7 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
   news: {
     name: 'Emma',
     role: 'News Analyst',
-    provider: 'Bequerel Institute',
+    provider: 'Becquerel Institute',
     color: 'navy-light',
     initial: 'E',
     badges: ['news'],
@@ -61,7 +61,7 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
   digitalization: {
     name: 'Nova',
     role: 'Digitalization Expert',
-    provider: 'Bequerel Institute',
+    provider: 'Becquerel Institute',
     color: 'navy',
     initial: 'N',
     badges: ['ai report', 'digitalization'],
@@ -76,12 +76,12 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
   },
   nzia_policy: {
     name: 'Aniza',
-    role: 'NZIA Policy Expert',
-    provider: 'Bequerel Institute',
+    role: 'NZIA policy expert in italian framework',
+    provider: 'Becquerel Institute',
     color: 'purple',
     initial: 'A',
     badges: ['ferx','nzia'],
-    description: 'Expert on the Net-Zero Industry Act (NZIA) auction mechanisms, compliance requirements, and regulatory frameworks for photovoltaic projects.',
+    description: 'NZIA policy expert in italian framework - Expert on the Net-Zero Industry Act (NZIA) auction mechanisms, compliance requirements, and regulatory frameworks for photovoltaic projects in Italy.',
     capabilities: [
       'FERX framework analysis',
       'NZIA compliance guidance',
@@ -94,7 +94,7 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
   manufacturer_financial: {
     name: 'Finn',
     role: 'Manufacturer Financial Analyst',
-    provider: 'Bequerel Institute',
+    provider: 'Becquerel Institute',
     color: 'emerald',
     initial: 'F',
     badges: ['datahub'],
@@ -111,7 +111,7 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
   nzia_market_impact: {
     name: 'Nina',
     role: 'NZIA Market Impact Expert',
-    provider: 'Bequerel Institute',
+    provider: 'Becquerel Institute',
     color: 'teal',
     initial: 'N',
     badges: ['datahub','nzia'],
@@ -129,7 +129,7 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
   component_prices: {
     name: 'Priya',
     role: 'Component Prices Analyst',
-    provider: 'Bequerel Institute',
+    provider: 'Becquerel Institute',
     color: 'indigo',
     initial: 'P',
     badges: ['datahub', 'charts'],
@@ -147,7 +147,7 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
   seamless: {
     name: 'Sam',
     role: 'IPV Expert',
-    provider: 'Bequerel Institute',
+    provider: 'Becquerel Institute',
     color: 'navy',
     initial: 'S',
     badges: ['ipv'],

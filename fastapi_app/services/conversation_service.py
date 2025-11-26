@@ -129,13 +129,36 @@ class ConversationService:
             List of conversation dictionaries with preview of last message
         """
         try:
-            # Build query
-            query = select(Conversation).where(Conversation.user_id == user_id)
+            # Subquery to get the latest message timestamp for each conversation
+            latest_message_subq = (
+                select(
+                    Message.conversation_id,
+                    func.max(Message.timestamp).label('last_message_time')
+                )
+                .group_by(Message.conversation_id)
+                .subquery()
+            )
+
+            # Build query - join with subquery to order by last message time
+            query = (
+                select(Conversation)
+                .outerjoin(
+                    latest_message_subq,
+                    Conversation.id == latest_message_subq.c.conversation_id
+                )
+                .where(Conversation.user_id == user_id)
+            )
 
             if agent_type:
                 query = query.where(Conversation.agent_type == agent_type)
 
-            query = query.order_by(Conversation.created_at.desc()).limit(limit)
+            # Order by last message time (nulls last) then by created_at
+            query = (
+                query
+                .order_by(latest_message_subq.c.last_message_time.desc().nullslast())
+                .order_by(Conversation.created_at.desc())
+                .limit(limit)
+            )
 
             result = await db.execute(query)
             conversations = result.scalars().all()
@@ -178,14 +201,16 @@ class ConversationService:
                     count_result = await db.execute(count_query)
                     message_count = count_result.scalar() or 0
 
-                result_list.append({
-                    'id': conv.id,
-                    'title': conv.title,
-                    'preview': preview or conv.title or '',
-                    'agent_type': conv.agent_type,
-                    'created_at': conv.created_at,
-                    'message_count': message_count
-                })
+                # Only include conversations that have messages
+                if message_count > 0:
+                    result_list.append({
+                        'id': conv.id,
+                        'title': conv.title,
+                        'preview': preview or conv.title or '',
+                        'agent_type': conv.agent_type,
+                        'created_at': conv.created_at,
+                        'message_count': message_count
+                    })
 
             return result_list
 
@@ -414,6 +439,8 @@ class ConversationService:
             Tuple of (list of Message objects, error message)
         """
         try:
+            logger.info(f"[get_conversation_messages] Loading messages for conversation {conversation_id}, user={user_id}")
+
             # Verify conversation ownership if user_id provided
             if user_id:
                 result = await db.execute(
@@ -425,7 +452,10 @@ class ConversationService:
                 conversation = result.scalar_one_or_none()
 
                 if not conversation:
+                    logger.warning(f"[get_conversation_messages] Conversation {conversation_id} not found for user {user_id}")
                     return [], "Conversation not found"
+
+                logger.info(f"[get_conversation_messages] Conversation {conversation_id} verified for user {user_id}")
 
             # Get messages
             query = select(Message).where(
@@ -435,10 +465,14 @@ class ConversationService:
             result = await db.execute(query)
             messages = result.scalars().all()
 
+            logger.info(f"[get_conversation_messages] Found {len(messages)} messages for conversation {conversation_id}")
+            for msg in messages:
+                logger.debug(f"  Message {msg.id}: sender={msg.sender}, timestamp={msg.timestamp}")
+
             return list(messages), None
 
         except Exception as e:
-            logger.error(f"Error getting messages for conversation {conversation_id}: {e}")
+            logger.error(f"Error getting messages for conversation {conversation_id}: {e}", exc_info=True)
             return [], "Failed to load messages"
 
     @staticmethod

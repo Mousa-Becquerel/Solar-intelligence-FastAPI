@@ -13,7 +13,7 @@ import ConversationList from './ConversationList';
 
 export default function SidebarPanel() {
   const navigate = useNavigate();
-  const { sidebarExpanded, toggleSidebar } = useUIStore();
+  const { sidebarExpanded, toggleSidebar, setSidebarExpanded } = useUIStore();
   const { user, logout } = useAuthStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -26,6 +26,17 @@ export default function SidebarPanel() {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  // Handle profile click - expand sidebar first if collapsed
+  const handleProfileClick = () => {
+    if (!sidebarExpanded) {
+      // Sidebar is collapsed, expand it first
+      setSidebarExpanded(true);
+    } else {
+      // Sidebar is expanded, toggle dropdown
+      setDropdownOpen(!dropdownOpen);
+    }
   };
 
   return (
@@ -55,7 +66,20 @@ export default function SidebarPanel() {
       >
         {/* Logo - visible when expanded */}
         {sidebarExpanded && (
-          <div style={{ marginBottom: '0', flex: 1 }}>
+          <button
+            onClick={() => navigate('/agents')}
+            style={{
+              marginBottom: '0',
+              flex: 1,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+            aria-label="Go to Agents"
+          >
             <img
               src="/new_logo.svg"
               alt="Solar Intelligence"
@@ -66,7 +90,7 @@ export default function SidebarPanel() {
                 filter: 'none',
               }}
             />
-          </div>
+          </button>
         )}
 
         {/* Collapse button (visible when expanded) */}
@@ -215,13 +239,12 @@ export default function SidebarPanel() {
               </svg>
             </button>
 
-            {/* PV Data Hub Link */}
-            <a
-              href="https://datahub.becquerelinstitute.eu/Home"
-              target="_blank"
-              rel="noopener"
+            {/* Navigate to Agents */}
+            <button
+              onClick={() => navigate('/agents')}
               className="sidebar-icon-btn"
-              title="PV Data Hub"
+              title="Agents"
+              aria-label="Go to Agents"
               style={{
                 width: '40px',
                 height: '40px',
@@ -250,7 +273,7 @@ export default function SidebarPanel() {
                 <rect x="7" y="4" width="10" height="7" rx="2" fill="#fff" stroke="#2563eb" />
                 <path d="M12 11V4" stroke="#2563eb" />
               </svg>
-            </a>
+            </button>
           </>
         )}
 
@@ -362,7 +385,7 @@ export default function SidebarPanel() {
       >
         <button
           className="sidebar-user-profile"
-          onClick={() => setDropdownOpen(!dropdownOpen)}
+          onClick={handleProfileClick}
           type="button"
           style={{
             width: sidebarExpanded ? '100%' : '40px',
@@ -496,7 +519,7 @@ export default function SidebarPanel() {
             {/* Admin Link - Only visible for admin users */}
             {user?.role === 'admin' && (
               <a
-                href="/admin/users"
+                href="/admin"
                 className="dropdown-menu-item"
                 style={{
                   display: 'flex',

@@ -80,7 +80,7 @@ class WebSearchFilters(BaseModel):
 class NewsAgentConfig:
     """Configuration for the news agent"""
     model: str = "gpt-4.1"
-    intent_model: str = "gpt-4.1"  # Using gpt-4o for intent classification (gpt-5 not widely available yet)
+    intent_model: str = "gpt-4.1-mini"  # Using gpt-4o for intent classification (gpt-5 not widely available yet)
     vector_store_id: str = "vs_68eac39b41248191be25c41a212c58a2"
     agent_name: str = "News Analyst"
     verbose: bool = True
@@ -98,25 +98,41 @@ class NewsAgent:
 - User asks for news on a specific topic for the first time
 - User asks general questions about news, trends, or developments
 - User wants to search for articles or news items
-- This is the DEFAULT for most news-related queries
+- User asks for more details about any article (even if previously mentioned)
+- This is the DEFAULT for ALL news-related queries
 
-**"more_detailed_news_query"**: ONLY use this when:
-- A specific news article with a URL was already mentioned in previous messages
-- User explicitly asks for MORE details about THAT SPECIFIC article (e.g., "Tell me more about that article", "What are the exact numbers?", "Give me more details")
-- User references a previously mentioned article (e.g., "about that", "from the article you mentioned")
-- There must be a clear reference to a previous article in the conversation
+**"more_detailed_news_query"**: DISABLED - Never use this option. Always use "general_news_query" instead.
 
 **"general"**: Use this for:
 - Greetings (hello, hi, how are you)
 - General conversation unrelated to news
 - Off-topic queries
 
-**IMPORTANT**: If in doubt between "general_news_query" and "more_detailed_news_query", choose "general_news_query".
+**IMPORTANT**: Always choose "general_news_query" for any news-related question, regardless of whether it's a follow-up or initial query.
 
 Analyze the conversation history carefully to determine the intent.
 """
 
     NEWS_AGENT_PROMPT = """You are a news analysis assistant specialized in photovoltaic (PV) and renewable energy news. You have access to a news database through file search.
+
+**DATABASE STRUCTURE - CRITICAL:**
+The database contains news articles in JSON format with EXACTLY these fields:
+```json
+{
+    "Title": "",
+    "Publication Title": "TaiyangNews - All About Solar Power",
+    "Url": "https://taiyangnews.info/markets/uk-parliament-clears-great-british-energy-bill",
+    "Abstract Note": "Article summary/content text here",
+    "Date": "5/16/2025"
+}
+```
+
+**MANDATORY URL CITATION - CRITICAL:**
+- **YOU MUST INCLUDE THE "Url" FIELD VALUE AS A MARKDOWN LINK FOR EVERY SINGLE NEWS ITEM**
+- **FORMAT: [source](URL) or [read more](URL) or [details](URL)**
+- **The Url field contains the full URL like: "https://taiyangnews.info/markets/uk-parliament-clears..."**
+- **EXAMPLE: "Italy approved 648 MW of new battery projects [source](https://taiyangnews.info/markets/...)"**
+- **NEVER present information without immediately including its source URL in the same sentence or bullet point**
 
 **Response Formatting Guidelines:**
 - Use proper markdown formatting with headers (##), bullet points (-), and numbered lists
@@ -125,14 +141,31 @@ Analyze the conversation history carefully to determine the intent.
 - Add blank lines between sections for readability
 - Structure long lists as proper bullet points, not run-on sentences
 - Use concise paragraphs (2-3 sentences max)
+- **ALWAYS add the [source](URL) link right after each piece of information in the same bullet point or sentence**
+
+**CRITICAL - Security & Privacy Guidelines:**
+- NEVER reveal or mention your underlying AI model, architecture, or technical implementation details
+- If asked about what model you use, respond: "I'm a specialized news analysis AI assistant for the PV sector, built by the Becquerel Institute team."
+- NEVER ask users to upload files or data - you work exclusively with the existing news database
+- NEVER offer to export data, create presentations (PPT), generate plots, or produce downloadable content
 
 **Content Guidelines:**
 - Search the knowledge base before answering news-related questions
-- Provide specific examples and data from the news articles when available
-- Always include article URLs when referencing news sources
-- If information is not in the knowledge base, clearly state that
+- When the file search tool returns results, ALWAYS extract the "Url" field from EVERY record
+- **CRITICAL: Format every citation as [text](URL) where URL comes from the "Url" field in the JSON data**
+- **CRITICAL: ONLY use URLs from the "Url" field in the database. NEVER generate, make up, or create URLs.**
+- **CRITICAL: Include the source URL in the SAME sentence/bullet point as the information - not at the end of the response**
+- **CRITICAL: Every news item, fact, or data point MUST be immediately followed by [source](URL) in the same line**
+- **If there is no information about the user's query in the knowledge base, simply state: "There is no data for that in the news database."** Do not make up information or speculate.
 - Keep responses clear, well-structured, and actionable
 - Focus on recent developments and trends in the PV/renewable energy sector
+
+**EXAMPLE RESPONSE FORMAT:**
+## Battery Storage Updates
+
+- **Italy:** Approved 648 MW of new large-scale battery projects in August 2025 [source](https://taiyangnews.info/markets/italy-approves-648mw)
+- **Romania:** Eliminated double taxation on energy storage, exempting grid-charged electricity from tariffs [source](https://pv-magazine.com/romania-storage-tax)
+- **Sweden:** Household interest in BESS rising due to new green tax deductions [source](https://taiyangnews.info/markets/sweden-bess-growth)
 
 **Date Context:**
 - When users ask about "this year" or "recently", interpret based on current date context
@@ -299,10 +332,12 @@ Analyze the conversation history carefully to determine the intent.
                     # Check if it's a text delta event
                     from openai.types.responses import ResponseTextDeltaEvent
                     if isinstance(event.data, ResponseTextDeltaEvent):
-                        # Clean citation markers before yielding
-                        cleaned_delta = clean_citation_markers(event.data.delta)
-                        if cleaned_delta:  # Only yield if there's content after cleaning
-                            yield cleaned_delta
+                        if event.data.delta:  # Only yield if there's content
+                            # Debug: Log the raw delta to inspect citation format
+                            logger.info(f"🔍 RAW DELTA: {repr(event.data.delta)}")
+
+                            # NO CLEANING - Pass through raw delta to let model citations show
+                            yield event.data.delta
 
         except Exception as e:
             error_msg = f"Failed to stream news query: {str(e)}"
@@ -360,8 +395,9 @@ Analyze the conversation history carefully to determine the intent.
                 # Extract the final response
                 response_text = result.final_output if hasattr(result, 'final_output') else str(result)
 
-                # Clean citation markers from the response
-                response_text = clean_citation_markers(response_text)
+                # TEMPORARILY DISABLED: Clean citation markers from the response
+                # Testing if citations contain URLs
+                # response_text = clean_citation_markers(response_text)
 
                 # Track the response
                 agent_span.set_attribute("assistant_response", response_text)

@@ -5,7 +5,7 @@
  * Handles message loading, sending, and streaming responses
  */
 
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useCallback, useContext, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '../../api';
@@ -14,6 +14,7 @@ import type { Message } from '../../types/api';
 import type { AgentType } from '../../constants/agents';
 import ChatHeader from './ChatHeader';
 import WelcomeScreen from './WelcomeScreen';
+import LoadingSkeleton from './LoadingSkeleton';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import QueryLimitMessage from './QueryLimitMessage';
@@ -26,6 +27,9 @@ const AGENT_PLACEHOLDERS: Record<AgentType, string> = {
   digitalization: 'Ask about digital transformation...',
   nzia_policy: 'Ask about NZIA policy and compliance...',
   manufacturer_financial: 'Ask about PV manufacturer financials...',
+  nzia_market_impact: 'Ask about NZIA market impact...',
+  component_prices: 'Ask about component prices...',
+  seamless: 'Ask about seamless IPV...',
 };
 
 // Helper to generate unique message IDs
@@ -48,11 +52,42 @@ export default function ChatContainer() {
   const [streamingMessage, setStreamingMessage] = useState('');
   const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AgentType>('market');
+  const [agentInitialized, setAgentInitialized] = useState(false);
   const [skipLoadMessages, setSkipLoadMessages] = useState(false);
   const [prevConversationId, setPrevConversationId] = useState<string | null>(null);
   const [showQueryLimitMessage, setShowQueryLimitMessage] = useState(false);
   const [surveyStage, setSurveyStage] = useState<1 | 2>(1);
   const [bothSurveysCompleted, setBothSurveysCompleted] = useState(false);
+
+  // AbortController for canceling ongoing requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Function to cancel ongoing request
+  const cancelRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+
+      // Clean up streaming state
+      setStreaming(false);
+      setSending(false);
+      setStreamingMessage('');
+      setStreamingMessageId(null);
+
+      toast.info('Request canceled');
+    }
+  }, []);
+
+  // Cancel request when navigating to new chat
+  useEffect(() => {
+    const convId = conversationId ? Number(conversationId) : null;
+    const prevConvId = prevConversationId ? Number(prevConversationId) : null;
+
+    // If conversation changed and we had an ongoing request, cancel it
+    if (prevConvId !== convId && abortControllerRef.current) {
+      cancelRequest();
+    }
+  }, [conversationId, prevConversationId, cancelRequest]);
 
   // Define loadMessages function before useEffect that uses it
   const loadMessages = useCallback(async (convId: number) => {
@@ -64,7 +99,7 @@ export default function ChatContainer() {
       const data = await apiClient.getMessages(convId);
       setMessages(data);
     } catch (error) {
-      console.error('Failed to load messages:', error);
+      console.error('❌ [loadMessages] Failed to load messages:', error);
       toast.error('Failed to load messages');
     } finally {
       setLoading(false);
@@ -76,15 +111,14 @@ export default function ChatContainer() {
     const convId = conversationId ? Number(conversationId) : null;
     const prevConvId = prevConversationId ? Number(prevConversationId) : null;
 
+
     // Save artifact for previous conversation before switching
     if (prevConvId && !isNaN(prevConvId) && prevConvId !== convId) {
-      console.log(`💾 [ChatContainer] Saving artifact for conversation ${prevConvId} before switching`);
       saveArtifact(prevConvId);
     }
 
     // Restore artifact for new conversation
     if (convId && !isNaN(convId)) {
-      console.log(`📂 [ChatContainer] Restoring artifact for conversation ${convId}`);
       restoreArtifact(convId);
 
       // Skip loading if we just created a new conversation and already have messages
@@ -96,22 +130,21 @@ export default function ChatContainer() {
       loadMessages(convId);
     } else {
       // No conversation selected - create one immediately to avoid URL change on first message
-      console.log('🆕 [ChatContainer] No conversation - creating new one');
+      // But only if agent has been properly initialized by ChatHeader
       const createInitialConversation = async () => {
         try {
           const newConv = await apiClient.createConversation(selectedAgent);
-          console.log(`✅ [ChatContainer] Created conversation ${newConv.conversation_id}`);
           setSkipLoadMessages(true);
           setSearchParams({ conversation: newConv.conversation_id.toString() }, { replace: true });
         } catch (error) {
-          console.error('Failed to create initial conversation:', error);
+          console.error('❌ [useEffect] Failed to create initial conversation:', error);
         }
       };
 
-      // Only create if we haven't just switched from a conversation
-      if (prevConvId === null) {
+      // Only create if we haven't just switched from a conversation AND agent is initialized
+      if (prevConvId === null && agentInitialized) {
         createInitialConversation();
-      } else {
+      } else if (prevConvId !== null) {
         // Clear artifacts and messages when switching away from a conversation
         restoreArtifact(-1);
         setMessages([]);
@@ -119,7 +152,7 @@ export default function ChatContainer() {
     }
 
     setPrevConversationId(conversationId);
-  }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages, selectedAgent, setSearchParams]);
+  }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages, selectedAgent, setSearchParams, agentInitialized]);
 
   const handleSendMessage = async (content: string) => {
     try {
@@ -138,11 +171,9 @@ export default function ChatContainer() {
           currentLimit += 5; // +5 for Stage 2
         }
 
-        console.log(`🔒 [ChatContainer] Query check: ${queryCount}/${currentLimit}`, surveyStatus);
 
         // If at or over limit, add messages showing the limit
         if (queryCount >= currentLimit) {
-          console.log('🚫 [ChatContainer] Query limit reached, showing limit message');
 
           // Check if both surveys are completed
           const bothCompleted = surveyStatus?.stage1_completed && surveyStatus?.stage2_completed;
@@ -234,6 +265,10 @@ export default function ChatContainer() {
   };
 
   const streamResponse = async (convId: number, userMessage: string) => {
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     try {
       setStreaming(true);
       setStreamingMessage('');
@@ -241,11 +276,12 @@ export default function ChatContainer() {
       const msgId = Date.now();
       setStreamingMessageId(msgId);
 
-      // Use the API client's sendChatMessage method
+      // Use the API client's sendChatMessage method with abort signal
       const response = await apiClient.sendChatMessage(
         convId,
         userMessage,
-        selectedAgent
+        selectedAgent,
+        abortController.signal
       );
 
       if (!response.ok) {
@@ -271,6 +307,9 @@ export default function ChatContainer() {
         throw new Error('No reader available');
       }
 
+      // Buffer for accumulating incomplete data across chunks
+      let lineBuffer = '';
+
       while (true) {
         const { done, value } = await reader.read();
 
@@ -279,7 +318,13 @@ export default function ChatContainer() {
         }
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+
+        // Append chunk to line buffer
+        lineBuffer += chunk;
+
+        // Split into lines, but keep the last incomplete line in the buffer
+        const lines = lineBuffer.split('\n');
+        lineBuffer = lines.pop() || ''; // Keep incomplete line for next chunk
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -303,14 +348,12 @@ export default function ChatContainer() {
 
                 case 'plot':
                   // Handle plot data - store it for rendering
-                  console.log('📊 Plot data received:', parsed.content);
                   plotData = parsed.content;
                   // Don't add to accumulated text - plot will be rendered separately
                   break;
 
                 case 'approval_request':
                   // Handle approval request - combine with accumulated message
-                  console.log('📋 Approval request received:', parsed);
 
                   // Combine accumulated message with approval request in a single bubble
                   const combinedMessage: Message & { approvalData?: any } = {
@@ -333,7 +376,6 @@ export default function ChatContainer() {
 
                 case 'done':
                   // Streaming complete
-                  console.log('Stream complete');
                   break;
 
                 case 'error':
@@ -341,11 +383,10 @@ export default function ChatContainer() {
 
                 case 'status':
                 case 'processing':
-                  console.log('Status:', parsed.message);
                   break;
               }
             } catch (e) {
-              console.warn('Failed to parse SSE data:', data, e);
+              console.error('Failed to parse SSE data:', data, e);
             }
           }
         }
@@ -367,15 +408,23 @@ export default function ChatContainer() {
 
       setStreamingMessage('');
       setStreamingMessageId(null);
+      abortControllerRef.current = null; // Clear the ref after successful completion
     } catch (error) {
+      // Check if error is due to abort
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Don't show error toast for user-initiated cancellations
+        return;
+      }
+
       console.error('Streaming error:', error);
 
-      // Show specific error message to user
+      // Show specific error message to user for non-abort errors
       const errorMessage = error instanceof Error ? error.message : 'Failed to get response';
       toast.error(errorMessage);
 
       setStreamingMessage('');
       setStreamingMessageId(null);
+      abortControllerRef.current = null;
     } finally {
       setStreaming(false);
     }
@@ -419,6 +468,7 @@ export default function ChatContainer() {
       <ChatHeader
         selectedAgent={selectedAgent}
         onAgentChange={setSelectedAgent}
+        onAgentInitialized={setAgentInitialized}
       />
 
       <div
@@ -449,10 +499,24 @@ export default function ChatContainer() {
             willChange: hasMessages ? 'opacity, transform' : 'auto',
           }}
         >
-          <WelcomeScreen
-            agentType={selectedAgent}
-            onPromptClick={handlePromptClick}
-          />
+          {!agentInitialized ? (
+            <LoadingSkeleton />
+          ) : (
+            <div
+              className="fade-in-up"
+              style={{
+                animation: 'fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+              }}
+            >
+              <WelcomeScreen
+                agentType={selectedAgent}
+                onPromptClick={handlePromptClick}
+              />
+            </div>
+          )}
         </div>
 
         {/* Message List Layer */}
@@ -520,14 +584,30 @@ export default function ChatContainer() {
       <ChatInput
         agentType={selectedAgent}
         onSend={handleSendMessage}
+        onStop={cancelRequest}
         disabled={sending || streaming}
-        showSuggestions={!hasMessages}
+        isStreaming={streaming}
+        showSuggestions={!hasMessages && agentInitialized}
         placeholder={
           hasMessages
             ? 'Continue the conversation...'
             : AGENT_PLACEHOLDERS[selectedAgent]
         }
       />
+
+      {/* Animation styles */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

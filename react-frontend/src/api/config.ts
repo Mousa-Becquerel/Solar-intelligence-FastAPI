@@ -5,8 +5,10 @@
  */
 
 export const API_CONFIG = {
-  // FastAPI backend URL (running in Docker on port 8000)
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  // FastAPI backend URL - empty string uses current domain (nginx proxies /api to backend)
+  // In production: '' -> nginx proxies /api/v1 to backend:8000
+  // In development: 'http://localhost:8000' for direct backend access
+  BASE_URL: import.meta.env.VITE_API_BASE_URL || '',
   API_PREFIX: '/api/v1',
 
   // Get full API URL

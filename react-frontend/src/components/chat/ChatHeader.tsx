@@ -8,7 +8,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUIStore } from '../../stores';
+import { useUIStore, useAuthStore } from '../../stores';
 import { useAccessibleAgents } from '../../hooks/useAccessibleAgents';
 import { AGENT_DROPDOWN_NAMES } from '../../constants/agents';
 import type { AgentType } from '../../constants/agents';
@@ -16,11 +16,13 @@ import type { AgentType } from '../../constants/agents';
 interface ChatHeaderProps {
   selectedAgent: AgentType;
   onAgentChange: (agent: AgentType) => void;
+  onAgentInitialized?: (initialized: boolean) => void;
 }
 
 export default function ChatHeader({
   selectedAgent,
   onAgentChange,
+  onAgentInitialized,
 }: ChatHeaderProps) {
   const navigate = useNavigate();
   const { artifactOpen, artifactContent, artifactType, openArtifact } = useUIStore();
@@ -30,6 +32,26 @@ export default function ChatHeader({
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Auto-select first accessible agent if current selection is not accessible
+  useEffect(() => {
+    if (!loading && accessibleAgents.length > 0) {
+      const isSelectedAgentAccessible = accessibleAgents.some(
+        agent => agent.agent_type === selectedAgent
+      );
+
+      if (!isSelectedAgentAccessible) {
+        // Current agent not accessible - select first accessible agent
+        const firstAgent = accessibleAgents[0].agent_type as AgentType;
+        onAgentChange(firstAgent);
+      }
+
+      // Mark agent as initialized once we've loaded and checked accessible agents
+      if (onAgentInitialized) {
+        onAgentInitialized(true);
+      }
+    }
+  }, [accessibleAgents, loading, selectedAgent, onAgentChange, onAgentInitialized]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

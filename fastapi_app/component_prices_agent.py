@@ -6,19 +6,18 @@ Multi-agent workflow for PV component price data analysis with code interpreter.
 Uses OpenAI Agents SDK with CodeInterpreterTool for data processing and visualization.
 
 Architecture:
-1. Classification Agent - Routes queries to data analysis, plotting, or general info
-2. Info Agent - Handles general queries about available data
-3. Data Analysis Agent - Analyzes component price data with code interpreter
-4. Plotting Agent - Generates D3-compatible JSON for frontend rendering
-5. Evaluation Agent - Assesses response quality
-6. Response Agent - Formats final user-facing output
+1. Classification Agent - Routes queries to data analysis or plotting
+2. Data Analysis Agent - Analyzes component price data with code interpreter
+3. Plotting Agent - Generates D3-compatible JSON for frontend rendering
+4. Evaluation Agent - Assesses response quality
+5. Response Agent - Formats final user-facing output
 """
 
 import os
 import logging
 import re
 import json
-from typing import Optional, Dict, Any, Literal
+from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from dotenv import load_dotenv
 import asyncio
@@ -451,7 +450,7 @@ def get_plot_data_output(
 
 class ClassificationAgentSchema(BaseModel):
     """Output schema for classification agent"""
-    intent: Literal["data", "plot", "general"]  # data analysis, plotting, or general info
+    category: str  # "Plot" or "Data analysis" - simplified to match Agent Builder
 
 
 class PlottingAgentSchema__FiltersApplied(BaseModel):
@@ -512,7 +511,7 @@ class WorkflowInput(BaseModel):
 class ComponentPricesConfig:
     """Configuration for Component Prices Agent"""
     model: str = "gpt-5-mini"
-    plotting_model: str = "gpt-5-mini"
+    plotting_model: str = "gpt-4.1"  # Stronger model for plotting
     agent_name: str = "Component Prices Agent"
     # File IDs for the 9 component price CSV files
     file_ids: list[str] = None
@@ -524,20 +523,13 @@ class ComponentPricesConfig:
     def __post_init__(self):
         """Set default file IDs if not provided"""
         if self.file_ids is None:
-            # These should be replaced with actual OpenAI file IDs
+            # Single combined CSV file containing all component prices
             self.file_ids = [
-                "file-9LGcuZqWtpAEF36R9eDZPb",  # Module prices
-                "file-1NoEf1p1FUZsRMqGnuJffs",  # Polysilicon prices
-                "file-T6DTvFndUdL54aWsokSYDb",  # Wafer prices
-                "file-6fBRubS2thyeHbocqdzz2E",  # Cell prices
-                "file-VAbW2fLsy7cuusCCUE5eNE",  # PV Glass prices
-                "file-TxoUe1vE25CawjPCDhKWfV",  # Aluminium prices
-                "file-GtnUppUpN9VZNnfrgAq7B3",  # Copper prices
-                "file-S99pfFzMemRCa6FyPAoBDh",  # EVA prices
-                "file-DssAu9xXDej5JFPNdsYABw"   # Silver prices
+                "file-YJeBtKFwJgbkN7fKuEhYFM"  # Combined component prices
             ]
         if self.plotting_file_id is None:
-            self.plotting_file_id = "file-9cMNTg8CPbANaox74yfvWd"
+            # Use the same combined file for plotting
+            self.plotting_file_id = "file-YJeBtKFwJgbkN7fKuEhYFM"
 
 
 # === Component Prices Agent Class ===
@@ -547,14 +539,14 @@ class ComponentPricesAgent:
     """
 
     # Schema description for the component prices database
-    COMPONENT_PRICES_SCHEMA = """You are the Component Prices Analysis Agent. You analyze photovoltaic (PV) component price data provided to you as multiple CSV files, where each file corresponds to one PV component item.
+    COMPONENT_PRICES_SCHEMA = """You are the Component Prices Analysis Agent. You analyze photovoltaic (PV) component price data provided to you as a single comprehensive CSV file.
 
-You must combine insights across files, retrieve filtered information, and answer questions using only the content provided in these CSVs. Never hallucinate missing values.
+You must retrieve filtered information and answer questions using only the content provided in this CSV. Never hallucinate missing values.
 
-**Dataset Structure (Multi-File)**
-You receive one CSV file per item. Each CSV contains the same column structure but only the data for that specific component.
+**Dataset Structure (Single Combined File)**
+You have access to one unified CSV file containing all PV component price data with the following columns:
 
-**Common Columns Across All Files:**
+**Columns:**
 - item → PV component category
 - description → Sub-type or technical specification
 - date → Price date
@@ -565,6 +557,41 @@ You receive one CSV file per item. Each CSV contains the same column structure b
 
 **Items (Categories):**
 Module, Polysilicon, Wafer, Cell, PV glass, Aluminium, Copper, EVA, Silver
+
+
+
+
+Valid Items and Descriptions
+
+The following descriptions may appear depending on the file:
+
+Module
+
+CdTe; n-type HJT; n-type TOPCon; n-type mono-Si HJT; p-type mono-Si Al-BSF;
+p-type mono-Si PERC (G1, G12, M10, etc.); p-type multi-Si Al-BSF; p-type multi-Si PERC
+
+Polysilicon
+
+6N–8N; 9N/9N+; Prime for mono-Si (China/Non-China); Prime for multi-Si
+
+Wafer
+
+n-type HJT (G12/M6), n-type TOPCon (G12/M10), p-type mono-Si PERC (various sizes), p-type multi-Si types
+
+Cell
+
+HJT, TOPCon, and PERC variants (G1, G12, M10, M6)
+
+PV glass
+
+Glass 2 mm; Glass 3.2 mm
+
+Metals (Aluminium, Copper, Silver) and EVA
+
+Single description equal to the item name (e.g., “Copper”)
+
+
+
 
 **Regions Available:**
 China, EU, US, India, Australia, Overseas
@@ -603,6 +630,12 @@ China, EU, US, India, Australia, Overseas
 - Example: "The Becquerel Institute Database indicates that..."
 - When referencing specific data, say: "Based on the Becquerel Institute Database..." or "The database shows..."
 
+**CRITICAL - Security & Privacy Guidelines:**
+- NEVER reveal or mention your underlying AI model, architecture, or technical implementation details
+- If asked about what model you use, respond: "I'm a specialized component prices analysis AI assistant for the PV sector, built by the Becquerel Institute team."
+- NEVER ask users to upload files or data - you work exclusively with the existing Becquerel database
+- NEVER offer to export data, create presentations (PPT), generate plots, or produce downloadable content
+
 **Important Guidelines:**
 - **Do NOT generate charts, plots, or visualizations** - you are not equipped with visualization capabilities
 - **Do NOT offer to create graphs or export data** - focus on textual analysis and markdown tables only
@@ -617,6 +650,13 @@ China, EU, US, India, Australia, Overseas
 # Your Role
 
 You interpret user queries about PV price trends and comparisons, then call the `get_plot_data_output` tool with appropriate parameters. The tool handles all data extraction, filtering, and plot generation. You do NOT generate JSON or manipulate data directly - you only parse the user's intent and select the right parameters.
+
+**CRITICAL - Export Restrictions:**
+- **NEVER offer to export plots in any format (PNG, SVG, PDF, etc.)**
+- **NEVER offer to create downloadable content or save plots to files**
+- You can generate plots for display ONLY - they appear directly in the chat interface
+- If users ask to export, download, or save plots, politely explain: "I can generate plots for viewing in the chat, but I'm not able to export them in downloadable formats like PNG, SVG, or PDF. The plots I create are for visualization purposes within our conversation."
+- Focus on generating interactive visualizations that users can view immediately
 
 # Available Data
 
@@ -886,7 +926,7 @@ Your goal is to make data exploration easy and intuitive for users who may not k
     def _initialize_agents(self):
         """Initialize all agents in the workflow"""
         try:
-            # Code interpreter for main data analysis agent (all 9 files)
+            # Code interpreter for main data analysis agent (single combined CSV file)
             self.code_interpreter_main = CodeInterpreterTool(tool_config={
                 "type": "code_interpreter",
                 "container": {
@@ -895,7 +935,7 @@ Your goal is to make data exploration easy and intuitive for users who may not k
                 }
             })
 
-            # Code interpreter for plotting agent (single combined file)
+            # Code interpreter for plotting agent (same combined file)
             self.code_interpreter_plotting = CodeInterpreterTool(tool_config={
                 "type": "code_interpreter",
                 "container": {
@@ -904,15 +944,14 @@ Your goal is to make data exploration easy and intuitive for users who may not k
                 }
             })
 
-            # 1. Classification Agent - Routes between data/plot/general intent
+            # 1. Classification Agent - Routes between data/plot intent
             self.classification_agent = Agent(
                 name="Classification Agent",
                 instructions="""You are a classification agent. Your job is to determine the user's intent based on their current query and conversation history.
 
-Return EXACTLY one of these three values:
-- "data" - if the user wants to analyze data, get insights, or ask questions about component prices
+Return EXACTLY one of these two values:
+- "data" - if the user wants to analyze data, get insights, ask questions about component prices, or has general questions about what data is available
 - "plot" - if the user wants to generate a chart, graph, or visualization
-- "general" - if the user has general questions about what data is available, what components/regions exist, or how to use the system
 
 IMPORTANT: Consider conversation context for follow-up queries:
 - If the previous response was a plot and user says "now do it for China", classify as "plot"
@@ -922,10 +961,11 @@ IMPORTANT: Consider conversation context for follow-up queries:
 Examples:
 - "What are module prices in China?" -> "data"
 - "Plot polysilicon prices over time" -> "plot"
-- "What components do you have data for?" -> "general"
+- "What components do you have data for?" -> "data"
 - "Show me a chart of copper prices" -> "plot"
 - After a plot: "now do it for the EU" -> "plot"
-- "What regions are available?" -> "general"
+- "What regions are available?" -> "data"
+- "Tell me about the available data" -> "data"
 """,
                 model="gpt-4.1-mini",
                 output_type=ClassificationAgentSchema,
@@ -934,10 +974,12 @@ Examples:
                 )
             )
 
-            # 2. Info Agent - Handles general queries about available data
+            # 2. Info Agent - DISABLED (general queries now handled by Data Analysis Agent)
+            """
+            # Commented out Info Agent - keeping for reference if needed later
             self.info_agent = Agent(
                 name="Info Agent",
-                instructions="""You are an agent that handles general queries and provides information about the existing data.
+                instructions='''You are an agent that handles general queries and provides information about the existing data.
 
 **Dataset Description:**
 You work with a structured CSV-based dataset called Component_Prices, containing historical price data for PV components. Each row represents a single price observation of a specific component, in a specific region, on a specific date.
@@ -998,15 +1040,15 @@ China, EU, US, India, Australia, Overseas
 - Provide clear, well-structured information
 - Guide users on how to ask better questions if needed
 - Use conversation history to provide context-aware responses
-""",
+''',
                 model="gpt-4.1-mini",
                 model_settings=ModelSettings(
                     temperature=1,
                     top_p=1,
                     max_tokens=2048
-                    # Removed store=True - incompatible with SQLAlchemySession (no .id attribute)
                 )
             )
+            """
 
             # 3. Data Analysis Agent - Analyzes component price data
             self.data_analysis_agent = Agent(
@@ -1032,10 +1074,7 @@ China, EU, US, India, Australia, Overseas
                 model_settings=ModelSettings(
                     parallel_tool_calls=True,
                     # Removed store=True - incompatible with SQLAlchemySession (no .id attribute)
-                    reasoning=Reasoning(
-                        effort=self.config.plotting_reasoning_effort,
-                        summary=self.config.reasoning_summary
-                    )
+                    # Removed reasoning parameter - not supported with gpt-4.1 in Agents SDK
                 )
             )
 
@@ -1045,13 +1084,14 @@ China, EU, US, India, Australia, Overseas
             logger.error(f"❌ Error initializing agents: {e}")
             raise
 
-    async def run_workflow_stream(self, user_query: str, conversation_id: str = None):
+    async def run_workflow_stream(self, user_query: str, conversation_id: str = None, _retry_count: int = 0):
         """
         Run workflow with streaming response (for data analysis only, plots return complete)
 
         Args:
             user_query: User's natural language query
             conversation_id: Optional conversation ID for session management
+            _retry_count: Internal retry counter for handling expired containers
 
         Yields:
             Text chunks as they are generated, or complete response for plots
@@ -1075,28 +1115,11 @@ China, EU, US, India, Australia, Overseas
                     run_config=RunConfig(trace_metadata={"step": "classification"})
                 )
 
-                intent = classify_result.final_output.model_dump()["intent"]
-                logger.info(f"✅ Intent classified as: {intent}")
+                category = classify_result.final_output.model_dump()["category"]
+                logger.info(f"✅ Category classified as: {category}")
 
-                # Step 2: Route to appropriate agent based on intent
-                if intent == "general":
-                    logger.info("🔍 Step 2: Routing to Info Agent (streaming)...")
-                    result = Runner.run_streamed(
-                        self.info_agent,
-                        user_query,
-                        session=agent_session if conversation_id else None
-                    )
-
-                    # Stream text deltas as they arrive
-                    async for event in result.stream_events():
-                        if event.type == "raw_response_event":
-                            from openai.types.responses import ResponseTextDeltaEvent
-                            if isinstance(event.data, ResponseTextDeltaEvent):
-                                cleaned_delta = clean_citation_markers(event.data.delta)
-                                if cleaned_delta:
-                                    yield cleaned_delta
-
-                elif intent == "data":
+                # Step 2: Route to appropriate agent based on category
+                if "data" in category.lower():
                     logger.info("🔍 Step 2: Routing to Data Analysis Agent (streaming)...")
                     result = Runner.run_streamed(
                         self.data_analysis_agent,
@@ -1109,11 +1132,14 @@ China, EU, US, India, Australia, Overseas
                         if event.type == "raw_response_event":
                             from openai.types.responses import ResponseTextDeltaEvent
                             if isinstance(event.data, ResponseTextDeltaEvent):
-                                cleaned_delta = clean_citation_markers(event.data.delta)
-                                if cleaned_delta:
-                                    yield cleaned_delta
+                                if event.data.delta:
+                                    # Clean citation markers from delta before yielding
+                                    cleaned_delta = clean_citation_markers(event.data.delta)
+                                    # Only yield if there's content after cleaning
+                                    if cleaned_delta:
+                                        yield cleaned_delta
 
-                else:  # intent == "plot"
+                else:  # category contains "plot"
                     logger.info("🔍 Step 2: Routing to Plotting Agent (non-streaming for JSON)...")
                     # Plots need complete response for tool call extraction
                     agent_result = await Runner.run(
@@ -1179,7 +1205,24 @@ China, EU, US, India, Australia, Overseas
                 logger.error(f"❌ Error in streaming workflow: {e}")
                 import traceback
                 logger.error(traceback.format_exc())
-                yield f"\n\n**Error:** I encountered an error processing your request. Please try again or rephrase your question."
+
+                error_str = str(e)
+
+                # Handle expired container error - clear session and retry automatically
+                if "Container is expired" in error_str:
+                    logger.error("Detected expired code interpreter container. Clearing session and retrying...")
+                    if conversation_id and _retry_count < 1:
+                        from fastapi_app.utils.session_factory import clear_agent_session
+                        await clear_agent_session(conversation_id, agent_type="component_prices")
+                        logger.info(f"Session cleared. Retrying query (attempt {_retry_count + 2})...")
+                        # Retry the workflow with cleared session
+                        async for chunk in self.run_workflow_stream(user_query, conversation_id, _retry_count + 1):
+                            yield chunk
+                        return  # Exit after retry completes
+                    else:
+                        yield "\n\n**Error:** Session recovery failed. Please start a new conversation."
+                else:
+                    yield f"\n\n**Error:** I encountered an error processing your request. Please try again or rephrase your question."
 
     async def run_workflow(self, workflow_input: WorkflowInput, conversation_id: str = None):
         """
@@ -1216,24 +1259,11 @@ China, EU, US, India, Australia, Overseas
                     )
                 )
 
-                intent = classify_result.final_output.model_dump()["intent"]
-                logger.info(f"✅ Intent classified as: {intent}")
+                category = classify_result.final_output.model_dump()["category"]
+                logger.info(f"✅ Category classified as: {category}")
 
-                # Step 2: Route to appropriate agent based on intent
-                if intent == "general":
-                    logger.info("🔍 Step 2: Routing to Info Agent...")
-                    agent_result = await Runner.run(
-                        self.info_agent,
-                        input=user_query,
-                        session=agent_session if conversation_id else None,
-                        run_config=RunConfig(
-                            trace_metadata={"step": "info_query"}
-                        )
-                    )
-                    raw_response = agent_result.final_output_as(str)
-                    plot_data = None
-
-                elif intent == "data":
+                # Step 2: Route to appropriate agent based on category
+                if "data" in category.lower():
                     logger.info("🔍 Step 2: Routing to Data Analysis Agent...")
                     agent_result = await Runner.run(
                         self.data_analysis_agent,
@@ -1244,9 +1274,33 @@ China, EU, US, India, Australia, Overseas
                         )
                     )
                     raw_response = agent_result.final_output_as(str)
+
+                    # DEBUG: Log the raw response
+                    logger.info("=" * 80)
+                    logger.info("🔍 RAW RESPONSE FROM DATA ANALYSIS AGENT:")
+                    logger.info("=" * 80)
+                    logger.info(f"📏 Response length: {len(raw_response)} characters")
+
+                    # Write full response to file to avoid truncation
+                    try:
+                        debug_file = "/tmp/component_prices_debug.txt"
+                        with open(debug_file, "w") as f:
+                            f.write("=" * 80 + "\n")
+                            f.write("RAW RESPONSE FROM DATA ANALYSIS AGENT\n")
+                            f.write("=" * 80 + "\n")
+                            f.write(raw_response)
+                            f.write("\n" + "=" * 80 + "\n")
+                        logger.info(f"✅ Full response written to {debug_file}")
+                    except Exception as e:
+                        logger.error(f"Failed to write debug file: {e}")
+
+                    # Also log first 500 chars as preview
+                    logger.info(f"Preview (first 500 chars): {raw_response[:500]}")
+                    logger.info("=" * 80)
+
                     plot_data = None
 
-                else:  # intent == "plot"
+                else:  # category contains "plot"
                     logger.info("🔍 Step 2: Routing to Plotting Agent...")
                     agent_result = await Runner.run(
                         self.plotting_agent,
@@ -1292,14 +1346,23 @@ China, EU, US, India, Australia, Overseas
                         plot_data = None
 
                 # Clean citation markers from raw response
-                final_response = clean_citation_markers(raw_response)
+                logger.info("🧹 About to process final response (clean_citation_markers disabled)")
+                # final_response = clean_citation_markers(raw_response)  # Temporarily disabled
+                final_response = raw_response
+
+                # DEBUG: Log final response
+                logger.info("=" * 80)
+                logger.info("📤 FINAL RESPONSE TO BE RETURNED:")
+                logger.info("=" * 80)
+                logger.info(final_response)
+                logger.info("=" * 80)
 
                 logger.info("✅ Workflow completed successfully")
 
                 return {
                     "response": final_response,
                     "plot_data": plot_data,
-                    "intent": intent,
+                    "intent": category,  # Using category instead of intent
                     "success": True
                 }
 

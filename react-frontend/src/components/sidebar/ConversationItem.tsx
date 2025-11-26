@@ -27,6 +27,11 @@ export default function ConversationItem({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleClick = () => {
+    console.log(`🖱️  [ConversationItem] Clicked conversation ${conversation.id}:`, {
+      title: conversation.title,
+      preview: conversation.preview,
+      agent_type: conversation.agent_type,
+    });
     navigate(`/app?conversation=${conversation.id}`);
   };
 

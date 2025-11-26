@@ -55,11 +55,33 @@ class User(Base):
     deletion_requested_at = Column(DateTime, nullable=True)
     deletion_reason = Column(Text, nullable=True)
 
+    # GDPR Article 18 - Right to Restriction of Processing
+    processing_restricted = Column(Boolean, default=False, nullable=False)
+    restriction_requested_at = Column(DateTime, nullable=True)
+    restriction_reason = Column(Text, nullable=True)
+    restriction_grounds = Column(String(50), nullable=True)  # 'accuracy', 'unlawful', 'no_longer_needed', 'objection'
+
     def verify_password(self, password: str) -> bool:
-        """Verify password using bcrypt"""
-        # Convert password to bytes, truncate to 72 bytes for bcrypt
-        password_bytes = password.encode('utf-8')[:72]
-        return bcrypt.checkpw(password_bytes, self.password_hash.encode('utf-8'))
+        """Verify password - supports both Werkzeug (pbkdf2) and bcrypt formats
+
+        This allows migrated users from Flask to login with their existing passwords
+        """
+        # Check if it's a Werkzeug hash (from Flask migration)
+        if self.password_hash.startswith('pbkdf2:sha256:') or self.password_hash.startswith('scrypt:'):
+            from werkzeug.security import check_password_hash
+            return check_password_hash(self.password_hash, password)
+
+        # Otherwise, use bcrypt (new format)
+        try:
+            password_bytes = password.encode('utf-8')[:72]
+            return bcrypt.checkpw(password_bytes, self.password_hash.encode('utf-8'))
+        except ValueError:
+            # If bcrypt fails, try werkzeug as fallback
+            try:
+                from werkzeug.security import check_password_hash
+                return check_password_hash(self.password_hash, password)
+            except:
+                return False
 
     def set_password(self, password: str):
         """Hash and set password using bcrypt"""
@@ -223,3 +245,86 @@ class UserSurveyStage2(Base):
     weekly_insight = Column(Text, nullable=True)  # Open text response
     created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
     bonus_queries_granted = Column(Integer, default=5)
+
+
+class DataProcessingLog(Base):
+    """
+    Log all data processing activities for GDPR Article 30 compliance
+    Records when and why personal data is accessed or modified
+    """
+    __tablename__ = "fastapi_data_processing_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)  # User whose data was processed
+    activity_type = Column(String(50), nullable=False, index=True)  # e.g., "data_access", "data_export", "data_modification", "data_deletion"
+    endpoint = Column(String(255), nullable=True)  # API endpoint called
+    method = Column(String(10), nullable=True)  # HTTP method (GET, POST, etc.)
+    ip_address = Column(String(45), nullable=True)  # IPv4 or IPv6
+    user_agent = Column(String(255), nullable=True)  # Browser/client info
+    purpose = Column(Text, nullable=True)  # Why data was processed
+    data_categories = Column(Text, nullable=True)  # What categories of data (JSON array)
+    legal_basis = Column(String(50), nullable=True)  # e.g., "consent", "contract", "legitimate_interest"
+    timestamp = Column(DateTime, default=datetime.utcnow, server_default=func.now(), index=True, nullable=False)
+
+    # Optional: Track the admin/user who performed the action
+    performed_by_user_id = Column(Integer, nullable=True)  # If admin accessed user data
+
+
+class DataBreachLog(Base):
+    """
+    Log data breaches for GDPR Article 33-34 compliance
+    Records when data breaches occur and tracks notification status
+    """
+    __tablename__ = "fastapi_data_breach_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # Breach Details
+    breach_type = Column(String(50), nullable=False)  # e.g., "unauthorized_access", "data_leak", "system_compromise", "accidental_disclosure"
+    severity = Column(String(20), nullable=False, index=True)  # "low", "medium", "high", "critical"
+    description = Column(Text, nullable=False)  # What happened
+    affected_data_categories = Column(Text, nullable=True)  # JSON array of affected data types
+    estimated_affected_users = Column(Integer, nullable=True)  # Number of users affected
+
+    # Discovery & Timeline
+    discovered_at = Column(DateTime, nullable=False, server_default=func.now())
+    breach_occurred_at = Column(DateTime, nullable=True)  # When the breach actually happened (if known)
+    contained_at = Column(DateTime, nullable=True)  # When breach was contained
+    resolved_at = Column(DateTime, nullable=True)  # When breach was fully resolved
+
+    # Discovery Details
+    discovered_by = Column(String(100), nullable=True)  # Who discovered it
+    discovery_method = Column(String(100), nullable=True)  # How it was discovered (e.g., "monitoring", "user_report", "audit")
+
+    # Impact Assessment
+    risk_level = Column(String(20), nullable=False)  # "low", "moderate", "high"
+    likely_consequences = Column(Text, nullable=True)  # Assessment of potential harm to users
+    technical_measures = Column(Text, nullable=True)  # Technical safeguards that were in place
+    organizational_measures = Column(Text, nullable=True)  # Organizational safeguards in place
+
+    # Notification Status
+    internal_team_notified = Column(Boolean, default=False)
+    internal_notification_date = Column(DateTime, nullable=True)
+
+    dpa_notified = Column(Boolean, default=False)  # Data Protection Authority
+    dpa_notification_date = Column(DateTime, nullable=True)
+    dpa_notification_required = Column(Boolean, default=True)  # Whether DPA notification is required
+
+    users_notified = Column(Boolean, default=False)
+    users_notification_date = Column(DateTime, nullable=True)
+    users_notification_required = Column(Boolean, default=False)  # Whether user notification is required
+
+    # Remediation
+    remediation_steps = Column(Text, nullable=True)  # What steps were taken
+    prevention_measures = Column(Text, nullable=True)  # What was done to prevent future breaches
+
+    # Status
+    status = Column(String(20), nullable=False, default="open", index=True)  # "open", "investigating", "contained", "resolved", "closed"
+
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now(), index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by_user_id = Column(Integer, nullable=True)  # Admin who logged the breach
+
+    # Notes
+    notes = Column(Text, nullable=True)  # Additional notes or updates

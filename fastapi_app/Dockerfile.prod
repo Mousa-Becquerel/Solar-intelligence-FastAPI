@@ -31,7 +31,7 @@ RUN poetry config virtualenvs.create false
 # Install dependencies (including FastAPI extras)
 RUN poetry install --no-root --no-interaction --no-ansi && \
     poetry add fastapi uvicorn[standard] sqlalchemy[asyncio] asyncpg aiosqlite \
-    python-jose[cryptography] passlib[bcrypt] python-multipart email-validator slowapi --no-interaction && \
+    python-jose[cryptography] passlib[bcrypt] python-multipart email-validator slowapi werkzeug --no-interaction && \
     poetry add "openai-agents[sqlalchemy]" --no-interaction
 
 # ===========================================
@@ -57,6 +57,16 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code (from fastapi_app directory)
 COPY fastapi_app/ ./fastapi_app/
+
+# Copy agent modules from project root to /app directory
+COPY digitalization_trend_agent.py ./
+COPY manufacturer_financial_agent.py ./
+COPY market_intelligence_agent.py ./
+COPY news_agent.py ./
+COPY nzia_market_impact_agent.py ./
+COPY nzia_policy_agent.py ./
+COPY seamless_agent.py ./
+COPY recomend_agent.py ./
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app

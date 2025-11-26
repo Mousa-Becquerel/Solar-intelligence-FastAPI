@@ -108,6 +108,18 @@ async def send_chat_message(
                 detail="Empty message"
             )
 
+        # GDPR Article 18 - Check if processing is restricted
+        if current_user.processing_restricted:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "Data processing is currently restricted",
+                    "message": f"Your data processing has been restricted due to: {current_user.restriction_grounds}",
+                    "note": "To resume using the chat service, please cancel the restriction in your profile settings.",
+                    "restricted_at": current_user.restriction_requested_at.isoformat() if current_user.restriction_requested_at else None
+                }
+            )
+
         # Get conversation and validate user access
         result = await db.execute(
             select(Conversation).where(Conversation.id == conv_id)

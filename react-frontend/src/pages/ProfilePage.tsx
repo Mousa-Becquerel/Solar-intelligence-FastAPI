@@ -98,6 +98,7 @@ export default function ProfilePage() {
     }
   };
 
+
   const handleEditProfile = () => {
     setIsEditing(true);
   };
@@ -140,6 +141,48 @@ export default function ProfilePage() {
       toast.error(message);
     }
   };
+
+  const handleExportData = async () => {
+    try {
+      toast.info('Preparing your data export...');
+
+      // Get the access token for authentication
+      const token = localStorage.getItem('access_token');
+
+      // Call the export endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/profile/export-data`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export data');
+      }
+
+      // Get the JSON data
+      const data = await response.json();
+
+      // Create a blob and download it
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `solar_intelligence_data_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Data exported successfully! Check your downloads folder.');
+    } catch (error) {
+      console.error('Failed to export data:', error);
+      toast.error('Failed to export data. Please try again.');
+    }
+  };
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -206,8 +249,11 @@ export default function ProfilePage() {
               />
             </a>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button onClick={() => navigate('/chat')} className="header-btn">
+              <button onClick={() => navigate('/agents')} className="header-btn">
                 Dashboard
+              </button>
+              <button onClick={() => navigate('/chat')} className="header-btn">
+                Chat
               </button>
               <button onClick={() => { apiClient.logout(); navigate('/login'); }} className="header-btn">
                 Logout
@@ -347,10 +393,11 @@ export default function ProfilePage() {
             <div className="glass-card">
               <h2 className="section-title">Data & Privacy</h2>
               <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '24px', fontWeight: 400 }}>
-                Download a copy of your data or request account deletion.
+                Download a copy of your data, or request account deletion.
               </p>
+
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button className="btn-primary" disabled title="Feature coming soon" style={{ opacity: 0.38, cursor: 'not-allowed' }}>
+                <button className="btn-primary" onClick={handleExportData} title="Export all your data (GDPR Art. 20)">
                   Export My Data
                 </button>
                 <button className="btn-danger" onClick={() => navigate('/request-deletion')}>

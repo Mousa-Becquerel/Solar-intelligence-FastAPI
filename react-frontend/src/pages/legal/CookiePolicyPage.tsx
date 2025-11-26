@@ -5,10 +5,12 @@
 
 import { useState } from 'react';
 import { ContactWidget } from '../../components/landing/ContactWidget';
+import { CookieSettingsModal } from '../../components/common/CookieSettingsModal';
 import styles from './LegalPage.module.css';
 
 export function CookiePolicyPage() {
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [showCookieSettings, setShowCookieSettings] = useState(false);
 
   return (
     <div className={styles.page}>

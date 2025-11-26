@@ -43,9 +43,11 @@ const WaitlistPage = lazy(() => import('./pages/WaitlistPage'));
 const RequestDeletionPage = lazy(() => import('./pages/RequestDeletionPage'));
 
 // Admin pages (lazy loaded)
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
 const AdminPendingUsersPage = lazy(() => import('./pages/admin/AdminPendingUsersPage'));
 const AdminCreateUserPage = lazy(() => import('./pages/admin/AdminCreateUserPage'));
+const AdminBreachesPage = lazy(() => import('./pages/admin/AdminBreachesPage'));
 
 export const router = createBrowserRouter([
   {
@@ -110,7 +112,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <LandingPage />,
+    element: <Navigate to="/waitlist" replace />,
   },
   {
     path: '/terms',
@@ -127,6 +129,16 @@ export const router = createBrowserRouter([
   {
     path: '/waitlist',
     element: lazyLoad(WaitlistPage),
+  },
+  {
+    path: '/admin',
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute requireAdmin>
+          <AdminDashboard />
+        </ProtectedRoute>
+      </Suspense>
+    ),
   },
   {
     path: '/admin/users',
@@ -154,6 +166,16 @@ export const router = createBrowserRouter([
       <Suspense fallback={<LoadingFallback />}>
         <ProtectedRoute requireAdmin>
           <AdminCreateUserPage />
+        </ProtectedRoute>
+      </Suspense>
+    ),
+  },
+  {
+    path: '/admin/breaches',
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute requireAdmin>
+          <AdminBreachesPage />
         </ProtectedRoute>
       </Suspense>
     ),

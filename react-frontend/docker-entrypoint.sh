@@ -7,8 +7,11 @@ set -e
 # Environment variables that can be set at runtime
 ENV_VARS="VITE_API_BASE_URL"
 
-# Default values if not provided
-: ${VITE_API_BASE_URL:=http://localhost:8000}
+# Set default only if VITE_API_BASE_URL is not set at all (not even as empty string)
+# Note: Empty string is valid and means "use relative URLs"
+if [ -z "${VITE_API_BASE_URL+x}" ]; then
+    export VITE_API_BASE_URL="http://localhost:8000"
+fi
 
 echo "🔧 Injecting runtime environment variables..."
 

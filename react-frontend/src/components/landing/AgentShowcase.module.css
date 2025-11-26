@@ -26,9 +26,10 @@
   box-shadow: 0 4px 16px rgba(233, 165, 68, 0.3);
 }
 
-.avatar svg {
-  width: 28px;
-  height: 28px;
+.avatar svg,
+.avatar img {
+  width: 22px;
+  height: 22px;
 }
 
 /* Click Hint */

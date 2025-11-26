@@ -1,0 +1,61 @@
+================================================================================
+RAW STREAMING RESPONSE FROM DATA ANALYSIS AGENT
+================================================================================
+## Executive summary
+
+According to the Becquerel Institute Database, polysilicon prices have generally declined for most purity grades and regions over the most recent year where data exists. Latest quoted prices range from about **US$2.80/kg** to **US$41.69/kg** depending on purity and region, with many high-purity series showing substantial year-on-year decreases.
+
+## Polysilicon dataset overview
+
+- Frequency: Weekly (as reported in the Becquerel Institute Database).  
+- Units reported: US$/kg.  
+- Descriptions present include: Average purity (6N–8N), High purity (9N/9N+), Very high purity (11N/11N+, 12N/12N+ in/outside China).  
+
+## Overall summary statistics (all polysilicon entries)
+
+| Metric | Value |
+|---|---:|
+| Minimum price | **US$2.80/kg** |
+| Maximum price | **US$41.69/kg** |
+| Average price (all records) | **US$15.52/kg** |
+| Most recent price date in dataset | 2025-03-26 (Becquerel Institute Database) |
+| Most recent quoted example price | **US$5.233/kg** (one latest record on 2025-03-26) |
+
+## Latest prices and 12‑month change by region & description
+
+Based on the Becquerel Institute Database, the table below shows the latest available price for each region × polysilicon description and the percent change versus the price approximately 12 months earlier when a comparable earlier datapoint exists.
+
+| Region | Description | Latest date | Latest price (US$/kg) | 12‑month % change | Trend |
+|---|---|---:|---:|---:|---|
+| China | High purity - 9N/9N+ | 2025-03-26 | **US$5.509/kg** | **-34.98%** | ↓ decreasing |
+| China | Very high purity (12N, outside of China) | 2025-03-26 | **US$20.000/kg** | **-6.98%** | ↓ decreasing |
+| China | Very high purity (12N, in China) | 2025-03-26 | **US$5.647/kg** | **-40.21%** | ↓ decreasing |
+| China | Very high purity - 11N/11N+ | 2021-08-04 | **US$27.000/kg** | Not available | → no recent comparison |
+| Overseas | Average purity - 6N to 8N | 2021-08-11 | **US$17.000/kg** | Not available | → no recent comparison |
+| Overseas | High purity - 9N/9N+ | 2025-03-26 | **US$5.010/kg** | **-34.25%** | ↓ decreasing |
+| Overseas | Very high purity (12N, outside of China) | 2025-03-26 | **US$19.000/kg** | **-6.17%** | ↓ decreasing |
+| Overseas | Very high purity - 11N/11N+ | 2021-12-29 | **US$36.450/kg** | Not available | → no recent comparison |
+
+Notes:
+- Percent change is calculated using the most recent price vs the closest observation on or before 365 days earlier. If no such prior datapoint exists in the dataset, the change is "Not available".
+- Trend classification: decreasing (↓) for declines larger than ~5%, increasing (↑) for rises larger than ~5%, stable (→) for small changes within ±5%.
+
+## Key insights and interpretation
+
+- Multiple high- and very-high-purity polysilicon prices (notably 9N/9N+ and some 12N series) show pronounced declines over the past year where comparable data exists (e.g., **~-35%** for 9N/9N+ in China and Overseas).
+- Very high purity 12N series exhibit mixed magnitudes by region but generally lower than prior-year levels (e.g., **US$19–20/kg** latest with modest declines).
+- Some records are older (2021) and do not allow recent trend calculation; these should be treated as historical snapshots rather than current trend indicators.
+
+## Limitations
+
+- This analysis uses only the data present in the Becquerel Institute Database. If a region × description has no recent prior-year datapoint, a 12‑month percent change cannot be computed from the dataset.
+- All values and trends reported above are directly from the Becquerel Institute Database. No external data were used.
+
+## Key takeaways
+
+1. Polysilicon prices in the dataset span **US$2.80–US$41.69/kg**, with an overall mean ~**US$15.52/kg** (Becquerel Institute Database).  
+2. Where recent comparisons are available, most common purity grades (9N/9N+, 12N variants) show year-on-year declines (often substantial, e.g., **~-35%** for 9N/9N+).  
+3. Some data points are dated (2021) and lack recent comparators; interpret trends only where sufficient temporal coverage exists.
+
+If you want, I can provide a filtered table for a specific region and purity grade (e.g., China 9N/9N+) showing all weekly prices over time from the Becquerel Institute Database.
+================================================================================

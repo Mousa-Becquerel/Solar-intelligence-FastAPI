@@ -34,7 +34,6 @@ class APIClient {
 
   constructor() {
     this.baseUrl = API_CONFIG.apiUrl;
-    console.log(`🔧 API Client initialized with FastAPI backend: ${this.baseUrl}`);
   }
 
   // ========================================
@@ -166,7 +165,6 @@ class APIClient {
       // Fetch user info after login
       const user = await this.getCurrentUser();
       this.setUser(user);
-      console.log('✅ Login successful, token stored');
     }
 
     return {
@@ -192,7 +190,6 @@ class APIClient {
 
   logout(): void {
     this.clearToken();
-    console.log('✅ Logged out, token cleared');
   }
 
   async getCurrentUser(): Promise<User> {
@@ -261,13 +258,11 @@ class APIClient {
       // Try to parse as JSON
       const parsed = JSON.parse(content);
 
-      console.log('📝 Parsed message content:', parsed);
 
       // If it's an object with a 'type' field
       if (typeof parsed === 'object' && parsed !== null) {
         // Handle plot messages: { type: "plot", value: { ...plot data... } }
         if (parsed.type === 'plot' && parsed.value) {
-          console.log('📊 Extracting plot data from message');
           return {
             content: parsed.value.title || 'Plot', // Use plot title as content
             plotData: parsed.value, // Store the full plot data
@@ -276,19 +271,16 @@ class APIClient {
 
         // Handle regular messages: { type: "string", value: "...", comment: null }
         if (parsed.type === 'string' && parsed.value !== undefined && parsed.value !== null) {
-          console.log('✅ Extracting string value field:', parsed.value);
           return { content: String(parsed.value) };
         }
 
         // Legacy: If it has a 'value' field without type
         if (parsed.value !== undefined && parsed.value !== null) {
-          console.log('✅ Extracting value field:', parsed.value);
           return { content: String(parsed.value) };
         }
 
         // If it has a 'content' field instead
         if (parsed.content !== undefined && parsed.content !== null) {
-          console.log('✅ Extracting content field:', parsed.content);
           return { content: String(parsed.content) };
         }
 
@@ -299,7 +291,6 @@ class APIClient {
 
       // If it's already a string, return it
       if (typeof parsed === 'string') {
-        console.log('✅ Content is already a string');
         return { content: parsed };
       }
 
@@ -308,7 +299,6 @@ class APIClient {
       return { content: content };
     } catch (_error) {
       // Not JSON, return as-is
-      console.log('✅ Content is not JSON, using as plain text');
       return { content: content };
     }
   }
@@ -326,7 +316,8 @@ class APIClient {
   async sendChatMessage(
     conversationId: number,
     message: string,
-    agentType: string
+    agentType: string,
+    signal?: AbortSignal
   ): Promise<Response> {
     const url = `${this.baseUrl}/chat/send`;
 
@@ -336,7 +327,6 @@ class APIClient {
       agent_type: agentType,
     };
 
-    console.log('Sending chat message:', payload);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -345,6 +335,7 @@ class APIClient {
         ...this.getAuthHeader(),
       },
       body: JSON.stringify(payload),
+      signal, // Add abort signal support
     });
 
     // Don't try to parse JSON for streaming responses

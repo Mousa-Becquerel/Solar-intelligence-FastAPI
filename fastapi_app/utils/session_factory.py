@@ -71,17 +71,20 @@ def create_agent_session(conversation_id: str, agent_type: Optional[str] = None,
         raise
 
 
-def clear_agent_session(conversation_id: str, agent_type: Optional[str] = None):
+async def clear_agent_session(conversation_id: str, agent_type: Optional[str] = None):
     """
-    Clear a corrupted agent session
+    Clear a corrupted agent session (async)
 
-    This is useful when a session has corrupted state (e.g., missing reasoning items
-    from OpenAI's extended reasoning models). Clearing the session allows the agent
+    This is useful when a session has corrupted state (e.g., expired code interpreter
+    containers or missing reasoning items). Clearing the session allows the agent
     to start fresh.
 
     Args:
         conversation_id: Unique conversation identifier
         agent_type: Agent type for session isolation
+
+    Returns:
+        True if session was cleared successfully, False otherwise
     """
     scoped_conversation_id = f"{conversation_id}_{agent_type}" if agent_type else conversation_id
 
@@ -92,8 +95,8 @@ def clear_agent_session(conversation_id: str, agent_type: Optional[str] = None):
             url=DATABASE_URL,
             create_tables=True
         )
-        # Clear the session by deleting all items
-        session.clear()
+        # Clear the session by deleting all items (async method)
+        await session.clear_session()
         logger.warning(f"Cleared corrupted session for conversation {scoped_conversation_id}")
         return True
     except Exception as e:

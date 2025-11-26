@@ -1,8 +1,8 @@
 """
-Seamless Agent
-===============
+NZIA Policy Agent
+=================
 
-Single-agent workflow for SEAMLESS-PV and BIPV analysis.
+Single-agent workflow for NZIA policy analysis (Italy's FERX framework).
 Uses OpenAI Agents SDK with file search tool.
 """
 
@@ -16,8 +16,7 @@ import asyncio
 from pydantic import BaseModel
 
 # Import from openai-agents library
-from agents import Agent, Runner, FileSearchTool, ModelSettings, RunConfig, trace, TResponseInputItem
-from fastapi_app.utils.session_factory import create_agent_session
+from agents import Agent, Runner, FileSearchTool, SQLiteSession, ModelSettings, RunConfig, trace, TResponseInputItem
 
 # Logfire imports
 import logfire
@@ -32,7 +31,7 @@ def clean_citation_markers(text: str) -> str:
     Remove OpenAI citation markers from text.
 
     Citation format: 【citation_number:citation_index†source_file$content】
-    Example: 【7:3†SEAMLESS-PV_D2.4.pdf$Section 3】
+    Example: 【7:3†FERX_1.pdf$Article 15】
 
     Args:
         text: Text containing citation markers
@@ -66,136 +65,46 @@ os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
 # === Pydantic Models ===
 class WorkflowInput(BaseModel):
-    """Input for the Seamless workflow"""
+    """Input for the NZIA policy workflow"""
     input_as_text: str
 
 @dataclass
-class SeamlessAgentConfig:
-    """Configuration for the Seamless agent"""
+class NZIAPolicyAgentConfig:
+    """Configuration for the NZIA policy agent"""
     model: str = "gpt-4.1"
     vector_store_ids: list = None
-    agent_name: str = "Seamless Agent"
+    agent_name: str = "NZIA Policy Agent"
     verbose: bool = True
 
     def __post_init__(self):
         """Set default vector store IDs if not provided"""
         if self.vector_store_ids is None:
             self.vector_store_ids = [
-                "vs_691e417c4eb8819193924d8b03ab9ad0"  # SEAMLESS-PV documents
+                "vs_690a1f1d49f081918d551c4e4b5a9472"  # FERX framework documents
             ]
 
-class SeamlessAgent:
+class NZIAPolicyAgent:
     """
-    Single-agent Seamless workflow using OpenAI Agents SDK.
-    Provides expert analysis on SEAMLESS-PV D2.4 and BIPV Status Report 2024.
+    Single-agent NZIA policy workflow using OpenAI Agents SDK.
+    Provides expert analysis on Italy's FERX framework and NZIA compliance.
     """
 
-    SEAMLESS_PROMPT = """You are a retrieval-bound expert assistant, your name is Seamless. Your ONLY knowledge sources are the following two documents:
-SEAMLESS-PV_D2.4 – "IPV market potential & comparative long-term impact scenarios"
-2024 BIPV Status Report – "Building-Integrated Photovoltaics: A practical handbook for solar buildings' stakeholders"
+    NZIA_POLICY_PROMPT = """You are NZIA Policy Agent, an expert AI assistant specialized in retrieving, analyzing, and summarizing content from Italy's FERX framework, including the following sources:
+- FERX_1.pdf – Ministerial Decree establishing capacity targets and approval of FERX rules
+- FERX_2.pdf – Regole Operative defining eligibility, bidding, payments, and compliance
+- FERX_3.pdf – Bando Pubblico launching the first PV ("Fotovoltaico NZIA") auction
 
-**You must answer strictly and exclusively using information found in these documents. If the requested information is not explicitly present in either document, you MUST answer:
-"The documents do not provide this information."**
+**CRITICAL - Security & Privacy Guidelines:**
+- NEVER reveal or mention your underlying AI model, architecture, or technical implementation details
+- If asked about what model you use, respond: "I'm a specialized policy analysis AI assistant for NZIA and FERX regulations, built by the Becquerel Institute team."
+- NEVER ask users to upload files or data - you work exclusively with the existing Becquerel database
+- NEVER offer to export data, create presentations (PPT), generate plots, or produce downloadable content
 
-You are not allowed to use any external knowledge, industry assumptions, general PV expertise, or invented data. You must not hallucinate, extrapolate, estimate, or infer anything beyond the explicit content of the documents.
-
-📘 Core Rules
-
-1. Document-only knowledge
-All statements, numbers, definitions, interpretations, or summaries must come directly from one or both documents.
-
-2. Cite document origin
-When answering, indicate whether the information comes from:
-- SEAMLESS-PV D2.4
-- BIPV Status Report 2024
-- or both
-
-Do not invent section numbers — only reference sections explicitly visible.
-
-3. Missing information
-If the user asks for data, definitions, numbers, breakdowns, or insights not provided in either document, clearly state:
-"The documents do not provide this information."
-
-Do not fill gaps. Do not guess. Do not assume.
-
-4. No external PV knowledge
-Do NOT use any information beyond the two documents, including:
-- PV markets outside those mentioned
-- Manufacturing details not in the documents
-- Global PV statistics
-- Technical performance of PV technologies not in the PDFs
-- General photovoltaic best practices
-- Any knowledge from other SEAMLESS work packages unless explicitly described in D2.4
-
-5. Use only provided scenarios
-When discussing projections, use ONLY the scenarios found in the documents, such as:
-- Renovation Wave / No Renovation Wave
-- High / Low regulatory scenarios
-- Loose / Medium / Strict AgriPV scenarios
-- Short-term BIPV forecasts (2023–2028)
-
-No new scenarios may be invented.
-
-6. Request clarification when ambiguous
-If the question could refer to multiple segments, years, or definitions, ask the user to specify.
-
-🔍 Allowed Knowledge (Strict)
-
-You may retrieve from SEAMLESS-PV D2.4:
-- Definitions of IPV, BIPV, IIPV, AgriPV, VIPV
-- Technical potential, realistic potential, economic potential
-- TAM, SAM calculations
-- S-curve adoption methodology
-- Long-term projections (2030, 2050)
-- Market quantifications for BIPV, carports, PVNB, AgriPV, VIPV
-- Sectoral contributions to EU climate goals
-- Constraints and regulatory factors influencing each segment
-- Descriptions of required assumptions
-
-You may retrieve from BIPV Status Report 2024:
-- European BIPV market history (2015–2023)
-- Country-level BIPV market breakdown (France, Austria, Switzerland, etc.)
-- Short-term BIPV forecasts to 2028
-- End-user price of cladding and technological systems
-- Technological system definitions (rainscreen, discontinuous roof, skylight, etc.)
-- Requirements for BIPV products
-- Requirements for BIPV providers
-- Key drivers for BIPV adoption
-- European manufacturers database (98 companies)
-- Case studies with technical details and surfaces
-- Market barriers and non-technical challenges
-
-🧩 Answer Format
-
-All answers must follow this structure:
-
-1. Direct answer
-Strictly using document content.
-
-2. Source attribution
-State:
-- "According to SEAMLESS-PV D2.4…"
-- "According to the BIPV Status Report 2024…"
-- Or "Both documents indicate…"
-
-3. Missing content statement (if needed)
-If part of the answer is not covered, say:
-"The documents do not provide this information."
-
-No speculation. No invented values. No external elaboration.
-
-🚫 Prohibited behaviors
-
-You MUST NOT:
-- Invent numerical values
-- Use domain expertise not present in the documents
-- Combine knowledge from outside sources
-- Infer performance, costs, forecasts, or technologies not described
-- Generate explanations about global PV trends
-- Produce engineering-level analysis not in the PDFs
-- Answer using general BIPV, AgriPV, PV market knowledge
-
-If it is not in the documents → you cannot use it.
+Your primary objectives:
+- Retrieve precise data (articles, clauses, dates, MW/€ values, deadlines)
+- Summarize procedures, eligibility, guarantees, and timelines
+- Compare and explain relationships between decree ↔ rules ↔ tender
+- Generate concise policy or market insights relevant to the Net-Zero Industry Act (NZIA) context
 
 **Response Formatting Guidelines:**
 - Use proper markdown formatting with headers (##), bullet points (-), and numbered lists
@@ -206,7 +115,7 @@ If it is not in the documents → you cannot use it.
 - Use concise paragraphs (2-3 sentences max)
 
 **Content Guidelines:**
-- Search the knowledge base before answering questions about SEAMLESS-PV or BIPV
+- Search the knowledge base before answering questions about FERX/NZIA policy
 - Provide specific examples and data from the documents when available
 - Cite relevant information from the documents
 - If information is not in the knowledge base, clearly state that
@@ -216,39 +125,52 @@ If it is not in the documents → you cannot use it.
 - You MUST ALWAYS respond in English, regardless of the language used in the user's query
 - Even if the user writes in Italian or any other language, your response must be in English only
 
+**Citation Guidelines - CRITICAL:**
+- ALWAYS refer to information as coming from the "Becquerel database"
+- NEVER mention the actual filename or file extension (e.g., never say "according to FERX_1.pdf" or "as stated in the PDF")
+- Use phrases like: "According to the Becquerel database..."
+- Example: "The Becquerel database indicates that..."
+- When referencing specific data, say: "Based on the Becquerel database..." or "The database shows..."
+
+**Italian Regulatory Terms:**
+- Use Italian regulatory terms (e.g., Prezzo di Esercizio, Manifestazione di Interesse, Graduatoria)
+- When helpful, briefly gloss them in English (but keep all text in the query language)
+
 **Important Guidelines:**
 - Never search the knowledge base for greetings and general conversation
-- Output must always be fully and precisely in English
+- Output must always be fully and precisely in the language of the user's query—including headings, tables, glosses, and any explanatory notes
 - Remain factual, structured, and concise—do not speculate or introduce external interpretations"""
 
-    def __init__(self, config: Optional[SeamlessAgentConfig] = None):
+    def __init__(self, config: Optional[NZIAPolicyAgentConfig] = None):
         """
-        Initialize the Seamless Agent
+        Initialize the NZIA Policy Agent
 
         Args:
             config: Configuration object for the agent
         """
-        self.config = config or SeamlessAgentConfig()
-        self.seamless_expert = None
-        # Removed conversation_sessions dict - using stateless PostgreSQL sessions now
+        self.config = config or NZIAPolicyAgentConfig()
+        self.nzia_policy_expert = None
+        self.conversation_sessions: Dict[str, Any] = {}  # conversation_id -> session
+
+        logger.info("Using SQLite for session storage (simple and reliable)")
 
         # Initialize agent
         self._initialize_agent()
 
-        logger.info(f"✅ Seamless Agent initialized (Memory: Stateless PostgreSQL)")
+        logger.info(f"✅ NZIA Policy Agent initialized (Memory: SQLite)")
 
     def _initialize_agent(self):
-        """Create the Seamless expert agent"""
+        """Create the NZIA policy expert agent"""
         try:
             # Create file search tool with vector stores
             file_search = FileSearchTool(
                 vector_store_ids=self.config.vector_store_ids
             )
 
-            # Create Seamless expert agent with file search
-            self.seamless_expert = Agent(
-                name="Seamless Agent",
-                instructions=self.SEAMLESS_PROMPT,
+            # Create NZIA policy expert agent with file search
+            self.nzia_policy_expert = Agent(
+                name="NZIA Policy Agent",
+                instructions=self.NZIA_POLICY_PROMPT,
                 model=self.config.model,
                 tools=[file_search],
                 model_settings=ModelSettings(
@@ -258,7 +180,7 @@ If it is not in the documents → you cannot use it.
                     store=True
                 )
             )
-            logger.info(f"✅ Created Seamless expert with {len(self.config.vector_store_ids)} vector stores: {', '.join(self.config.vector_store_ids)}")
+            logger.info(f"✅ Created NZIA policy expert with {len(self.config.vector_store_ids)} vector stores: {', '.join(self.config.vector_store_ids)}")
 
         except Exception as e:
             logger.error(f"❌ Failed to initialize agent: {e}")
@@ -266,7 +188,7 @@ If it is not in the documents → you cannot use it.
 
     async def run_workflow(self, workflow_input: WorkflowInput, conversation_id: str = None):
         """
-        Run the Seamless workflow
+        Run the NZIA policy workflow
 
         Args:
             workflow_input: Input containing the user query
@@ -276,11 +198,17 @@ If it is not in the documents → you cannot use it.
             Dictionary with output_text containing the response
         """
         with trace("New workflow"):
-            # Get or create stateless session for this conversation
+            # Get or create session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id, agent_type='seamless')
-                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (seamless agent)")
+                if conversation_id not in self.conversation_sessions:
+                    session_id = f"nzia_policy_{conversation_id}"
+                    self.conversation_sessions[conversation_id] = SQLiteSession(
+                        session_id=session_id
+                    )
+                    logger.info(f"Created SQLite session for conversation {conversation_id}")
+
+                session = self.conversation_sessions[conversation_id]
 
             # Prepare conversation history
             workflow = workflow_input.model_dump()
@@ -296,31 +224,31 @@ If it is not in the documents → you cannot use it.
                 }
             ]
 
-            # Run Seamless expert
-            seamless_result_temp = await Runner.run(
-                self.seamless_expert,
+            # Run NZIA policy expert
+            nzia_policy_result_temp = await Runner.run(
+                self.nzia_policy_expert,
                 input=[*conversation_history],
                 session=session,
                 run_config=RunConfig(trace_metadata={
                     "__trace_source__": "agent-builder",
-                    "workflow_id": "wf_691e40c77c44819084d28a0eea00c8610d612dbb17f6c221"
+                    "workflow_id": "wf_690a1dd23554819086449af2969f3816069e73514b61ce9e"
                 })
             )
 
             # Update conversation history
-            conversation_history.extend([item.to_input_item() for item in seamless_result_temp.new_items])
+            conversation_history.extend([item.to_input_item() for item in nzia_policy_result_temp.new_items])
 
             # Extract final output
-            output_text = seamless_result_temp.final_output_as(str)
+            output_text = nzia_policy_result_temp.final_output_as(str)
 
             # Clean citation markers
             output_text = clean_citation_markers(output_text)
 
-            seamless_result = {
+            nzia_policy_result = {
                 "output_text": output_text
             }
 
-            return seamless_result
+            return nzia_policy_result
 
     async def analyze_stream(self, query: str, conversation_id: str = None):
         """
@@ -336,14 +264,20 @@ If it is not in the documents → you cannot use it.
         try:
             logger.info(f"Processing query (streaming): {query}")
 
-            # Get or create stateless session for this conversation
+            # Get or create session for this conversation
             session = None
             if conversation_id:
-                session = create_agent_session(conversation_id, agent_type='seamless')
-                logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (seamless agent)")
+                if conversation_id not in self.conversation_sessions:
+                    session_id = f"nzia_policy_{conversation_id}"
+                    self.conversation_sessions[conversation_id] = SQLiteSession(
+                        session_id=session_id
+                    )
+                    logger.info(f"Created SQLite session for conversation {conversation_id}")
+
+                session = self.conversation_sessions[conversation_id]
 
             # Run with streaming
-            result = Runner.run_streamed(self.seamless_expert, query, session=session)
+            result = Runner.run_streamed(self.nzia_policy_expert, query, session=session)
 
             # Stream text deltas as they arrive
             async for event in result.stream_events():
@@ -365,39 +299,134 @@ If it is not in the documents → you cannot use it.
 
     async def analyze(self, query: str, conversation_id: str = None) -> Dict[str, Any]:
         """
-        Analyze SEAMLESS query
+        Analyze NZIA policy query
 
         Args:
-            query: Natural language query about SEAMLESS-PV or BIPV
+            query: Natural language query about NZIA/FERX policy
             conversation_id: Optional conversation ID for maintaining context
 
         Returns:
-            Dictionary with output_text containing the response
+            Dictionary with analysis results and metadata
         """
-        workflow_input = WorkflowInput(input_as_text=query)
-        return await self.run_workflow(workflow_input, conversation_id)
+        # Logfire span for NZIA policy agent
+        with logfire.span("nzia_policy_agent_call") as agent_span:
+            agent_span.set_attribute("agent_type", "nzia_policy")
+            agent_span.set_attribute("conversation_id", str(conversation_id))
+            agent_span.set_attribute("message_length", len(query))
+            agent_span.set_attribute("user_message", query)
 
+            try:
+                logger.info(f"Processing NZIA policy query: {query}")
 
-# === Main entrypoint for testing ===
-async def main():
-    """Main function for testing the agent"""
-    agent = SeamlessAgent()
+                # Create workflow input
+                workflow_input = WorkflowInput(input_as_text=query)
 
-    # Test query
-    test_query = "What is the definition of BIPV according to the documents?"
+                # Run workflow
+                result = await self.run_workflow(workflow_input, conversation_id)
 
-    print(f"\n{'='*60}")
-    print(f"Testing Seamless Agent")
-    print(f"{'='*60}\n")
-    print(f"Query: {test_query}\n")
+                # Extract response
+                response_text = result.get("output_text", "")
 
-    # Test streaming
-    print("Streaming response:")
-    print("-" * 60)
-    async for chunk in agent.analyze_stream(test_query):
-        print(chunk, end='', flush=True)
-    print("\n" + "-" * 60)
+                # Track the response
+                agent_span.set_attribute("assistant_response", response_text)
+                agent_span.set_attribute("response_length", len(response_text))
+                agent_span.set_attribute("success", True)
 
+                logger.info(f"✅ NZIA policy agent response: {response_text[:100]}...")
+
+                return {
+                    "success": True,
+                    "analysis": response_text,
+                    "usage": None,  # Usage info not directly available in this architecture
+                    "query": query
+                }
+
+            except Exception as e:
+                error_msg = f"Failed to analyze NZIA policy query: {str(e)}"
+                logger.error(error_msg)
+                agent_span.set_attribute("success", False)
+                agent_span.set_attribute("error", str(e))
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "analysis": None,
+                    "usage": None,
+                    "query": query
+                }
+
+    def clear_conversation_memory(self, conversation_id: str = None):
+        """Clear conversation memory by removing session"""
+        if conversation_id:
+            if conversation_id in self.conversation_sessions:
+                del self.conversation_sessions[conversation_id]
+                logger.info(f"Cleared conversation session for {conversation_id}")
+        else:
+            # Clear all sessions
+            self.conversation_sessions.clear()
+            logger.info("Cleared all conversation sessions")
+
+    def get_conversation_memory_info(self) -> Dict[str, Any]:
+        """Get information about conversation memory usage"""
+        return {
+            "total_conversations": len(self.conversation_sessions),
+            "conversation_ids": list(self.conversation_sessions.keys()),
+        }
+
+    def cleanup(self):
+        """Cleanup resources"""
+        try:
+            logger.info("NZIA policy agent ready for cleanup if needed")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+
+# Global agent instance
+_nzia_policy_agent = None
+
+def get_nzia_policy_agent() -> Optional[NZIAPolicyAgent]:
+    """Get or create the global NZIA policy agent instance"""
+    global _nzia_policy_agent
+    if _nzia_policy_agent is None:
+        try:
+            config = NZIAPolicyAgentConfig()
+            _nzia_policy_agent = NZIAPolicyAgent(config)
+            logger.info("✅ Global NZIA policy agent created")
+        except Exception as e:
+            logger.error(f"❌ Failed to create NZIA policy agent: {e}")
+            return None
+    return _nzia_policy_agent
+
+def close_nzia_policy_agent():
+    """Close the global NZIA policy agent"""
+    global _nzia_policy_agent
+    if _nzia_policy_agent:
+        _nzia_policy_agent.cleanup()
+        _nzia_policy_agent = None
+        logger.info("✅ Global NZIA policy agent closed")
+
+# Test function
+async def test_nzia_policy_agent():
+    """Test the NZIA policy agent"""
+    try:
+        agent = get_nzia_policy_agent()
+        if agent:
+            result = await agent.analyze(
+                "What are the main eligibility requirements for FERX PV auctions?",
+                conversation_id="test-1"
+            )
+            print("NZIA Policy Agent response received successfully")
+            print(f"Response length: {len(result.get('analysis', ''))}")
+            print(f"\nResponse:\n{result.get('analysis', '')}")
+            return result
+        else:
+            print("NZIA Policy Agent not available")
+            return None
+    except Exception as e:
+        print(f"NZIA Policy Agent error: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        close_nzia_policy_agent()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(test_nzia_policy_agent())

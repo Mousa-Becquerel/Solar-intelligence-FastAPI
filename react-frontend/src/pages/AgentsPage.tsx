@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import AgentCard from '../components/agents/AgentCard';
 import AgentDetailsModal from '../components/agents/AgentDetailsModal';
 import HiredAgentsList from '../components/agents/HiredAgentsList';
+import AgentsPageSkeleton from '../components/agents/AgentsPageSkeleton';
 import Toast from '../components/common/Toast';
 import type { AgentType } from '../constants/agents';
 import { AGENT_METADATA, AVAILABLE_AGENTS } from '../constants/agentMetadata';
@@ -44,7 +45,6 @@ export default function AgentsPage() {
     try {
       // Load user plan and name
       const user = await apiClient.getCurrentUser();
-      console.log('User data received:', user);
       setUserPlan(user.plan_type || 'free');
 
       // Extract first name from full_name (e.g., "John Doe" -> "John")
@@ -56,7 +56,6 @@ export default function AgentsPage() {
         // Fallback to username if full_name is not available
         firstName = user.username;
       }
-      console.log('Extracted first name:', firstName);
       setUserName(firstName);
 
       // Load hired agents
@@ -125,7 +124,7 @@ export default function AgentsPage() {
   const filteredAgents = AVAILABLE_AGENTS.filter((agentType) => {
     if (selectedFilter === 'all') return true;
     if (selectedFilter === 'premium') return AGENT_METADATA[agentType].premium;
-    if (selectedFilter === 'market') return agentType === 'market' || agentType === 'component_prices';
+    if (selectedFilter === 'market') return agentType === 'market';
     if (selectedFilter === 'policy') return agentType === 'nzia_policy' || agentType === 'nzia_market_impact';
     if (selectedFilter === 'financial') return agentType === 'manufacturer_financial';
     if (selectedFilter === 'eu_projects') return agentType === 'seamless';
@@ -143,19 +142,7 @@ export default function AgentsPage() {
   });
 
   if (loading) {
-    return (
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'white',
-        }}
-      >
-        <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Loading...</p>
-      </div>
-    );
+    return <AgentsPageSkeleton />;
   }
 
   return (
@@ -210,8 +197,72 @@ export default function AgentsPage() {
             Agents Gallery
           </h1>
 
-          {/* Start Chat Button - Material Design Style */}
-          <button
+          {/* Right Section - Action Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Unhire All Button - MD3 Destructive Style */}
+            {hiredAgents.length > 0 && (
+              <button
+                onClick={async () => {
+                  try {
+                    // Unhire all agents in parallel
+                    await Promise.all(hiredAgents.map(agentType => unhireAgent(agentType)));
+                    setHiredAgents([]);
+                    showToast('All agents have been removed from your team', 'success');
+                  } catch (error: any) {
+                    console.error('Error unhiring all agents:', error);
+                    showToast(error.message || 'Failed to remove all agents', 'error');
+                  }
+                }}
+                style={{
+                  padding: '10px 20px',
+                  background: 'transparent',
+                  color: '#dc2626',
+                  border: '1.5px solid #fecaca',
+                  borderRadius: '100px',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+                  boxShadow: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#fef2f2';
+                  e.currentTarget.style.borderColor = '#fca5a5';
+                  e.currentTarget.style.color = '#b91c1c';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = '#fecaca';
+                  e.currentTarget.style.color = '#dc2626';
+                }}
+              >
+                {/* Remove/Trash icon */}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                <span>Unhire All</span>
+              </button>
+            )}
+
+            {/* Start Chat Button - Material Design Style */}
+            <button
             onClick={() => navigate('/chat')}
             disabled={hiredAgents.length === 0}
             style={{
@@ -276,6 +327,7 @@ export default function AgentsPage() {
               </span>
             )}
           </button>
+          </div>
         </div>
 
         {/* Full-Width Hero Section */}
@@ -304,7 +356,7 @@ export default function AgentsPage() {
               top: '-250px',
               left: '-100px',
               pointerEvents: 'none',
-              filter: 'blur(60px)',
+              willChange: 'transform',
             }}
           />
           <div
@@ -318,7 +370,7 @@ export default function AgentsPage() {
               bottom: '-150px',
               right: '-50px',
               pointerEvents: 'none',
-              filter: 'blur(50px)',
+              willChange: 'transform',
             }}
           />
 
@@ -334,7 +386,7 @@ export default function AgentsPage() {
               top: '20%',
               right: '15%',
               pointerEvents: 'none',
-              filter: 'blur(2px)',
+              willChange: 'transform, border-radius',
             }}
           />
           <div
@@ -348,7 +400,7 @@ export default function AgentsPage() {
               bottom: '25%',
               left: '12%',
               pointerEvents: 'none',
-              filter: 'blur(1px)',
+              willChange: 'transform, border-radius',
             }}
           />
 
@@ -485,7 +537,6 @@ export default function AgentsPage() {
 
                                 try {
                                   await hireAgent(agentType);
-                                  console.log(`Auto-hired recommended agent: ${agentType}`);
                                   return agentType;
                                 } catch (error) {
                                   console.error(`Failed to auto-hire agent ${agentType}:`, error);

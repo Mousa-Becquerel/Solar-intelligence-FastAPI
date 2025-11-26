@@ -198,6 +198,17 @@ class AgentAccessService:
                     db, user, agent_type
                 )
 
+                # Filter agents based on user plan type
+                if user.plan_type == 'premium':
+                    # Premium users: ONLY show hired or whitelisted agents
+                    if agent_type not in hired_agents and agent_type not in whitelisted_agents:
+                        continue
+                elif user.plan_type == 'free':
+                    # Free users: show free tier agents OR hired/whitelisted agents
+                    if agent_config.required_plan != 'free':
+                        if agent_type not in hired_agents and agent_type not in whitelisted_agents:
+                            continue
+
                 # Check if grandfathered
                 is_grandfathered = False
                 if agent_type in hired_agents:
@@ -529,6 +540,10 @@ class AgentAccessService:
 
             if not agent_config:
                 return False, f"Agent '{agent_type}' not found"
+
+            # Check if agent is enabled globally
+            if not agent_config.is_enabled:
+                return False, f"Agent '{agent_type}' is currently unavailable"
 
             # Check if user's plan allows hiring this agent
             user_plan = user.plan_type or 'free'

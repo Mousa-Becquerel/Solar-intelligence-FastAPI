@@ -13,7 +13,6 @@ import SidebarPanel from '../sidebar/SidebarPanel';
 export default function MainLayout() {
   const { sidebarExpanded, artifactOpen, artifactContent, closeArtifact } = useUIStore();
 
-  console.log('🏗️ [MainLayout] Render:', { artifactOpen, hasContent: !!artifactContent });
 
   // Cleanup on unmount to prevent memory leaks
   useEffect(() => {
@@ -40,7 +39,6 @@ export default function MainLayout() {
         // Clear inline grid styles when artifact closes
         // This allows CSS to take over with default grid layout
         mainLayout.style.gridTemplateColumns = '';
-        console.log('🏗️ [MainLayout] Cleared inline grid styles - artifact closed');
       }
     }
   }, [artifactOpen]);
@@ -48,7 +46,6 @@ export default function MainLayout() {
   // Handle artifact panel resizing
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('🎯 [MainLayout] Resize start', { clientX: e.clientX });
 
     const artifactPanel = document.querySelector('.artifact-panel');
     const mainLayout = document.querySelector('.main-layout');
@@ -88,7 +85,6 @@ export default function MainLayout() {
     };
 
     const handleMouseUp = () => {
-      console.log('🎯 [MainLayout] Resize end');
 
       // Re-enable transitions
       if (mainLayout && mainLayout instanceof HTMLElement) {

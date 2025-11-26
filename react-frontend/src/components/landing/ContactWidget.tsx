@@ -58,7 +58,7 @@ export function ContactWidget({ isOpen, onClose }: ContactWidgetProps) {
     };
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/contact/submit', {
+      const response = await fetch('/api/v1/contact/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

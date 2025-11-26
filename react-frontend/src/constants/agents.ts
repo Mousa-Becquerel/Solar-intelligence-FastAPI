@@ -18,11 +18,11 @@ export const AGENT_TITLES: Record<AgentType, string> = {
   market: 'PV Capacity Analysis',
   news: 'News & Insights',
   digitalization: 'Digitalization Expert',
-  nzia_policy: 'NZIA Policy Expert',
+  nzia_policy: 'NZIA policy expert in italian framework',
   manufacturer_financial: 'Manufacturer Financial Analyst',
   nzia_market_impact: 'NZIA Market Impact Expert',
   component_prices: 'Component Prices Analysis',
-  seamless: 'Seamless IPV Expert',
+  seamless: 'IPV Expert',
 };
 
 // Agent dropdown display names (shown in chat header)
@@ -30,11 +30,11 @@ export const AGENT_DROPDOWN_NAMES: Record<AgentType, string> = {
   market: 'Alex - PV Capacity',
   news: 'Emma - News Analyst',
   digitalization: 'Nova - Digitalization Expert',
-  nzia_policy: 'Aniza - NZIA Policy Expert',
+  nzia_policy: 'Aniza - NZIA policy expert in italian framework',
   manufacturer_financial: 'Finn - Manufacturer Financial Analyst',
   nzia_market_impact: 'Nina - NZIA Market Impact Expert',
   component_prices: 'Priya - Component Prices Analyst',
-  seamless: 'Sam - Seamless IPV Expert',
+  seamless: 'Sam - IPV Expert',
 };
 
 export interface SuggestedPrompt {

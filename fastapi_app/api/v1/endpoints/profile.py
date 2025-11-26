@@ -7,17 +7,21 @@ Handles user profile management including:
 - Change password
 - Usage statistics
 - Contact requests
+- GDPR data export
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime, timedelta
+import json
 
 from fastapi_app.db.session import get_db
 from fastapi_app.db.models import User, Conversation, Message, ContactRequest, UserSurvey, UserSurveyStage2
 from fastapi_app.core.deps import get_current_active_user
+from fastapi_app.services.gdpr_service import GDPRService
 import bcrypt
 
 router = APIRouter()
@@ -84,6 +88,7 @@ class ChangePasswordRequest(BaseModel):
 
 @router.get("/profile", response_model=ProfileData, tags=["Profile"])
 async def get_profile(
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -98,6 +103,17 @@ async def get_profile(
     - Usage statistics
     - Contact requests
     """
+    # Log this data access for GDPR compliance
+    await GDPRService.log_from_request(
+        db=db,
+        request=request,
+        user=current_user,
+        activity_type="data_access",
+        purpose="User accessed their profile information",
+        data_categories=["profile", "usage_stats", "contact_requests"],
+        legal_basis="contract"
+    )
+
     # Get user info
     user_data = ProfileResponse(
         username=current_user.username,
@@ -292,3 +308,253 @@ async def change_password(
     await db.commit()
 
     return {"message": "Password updated successfully"}
+
+
+@router.get("/profile/export-data", tags=["Profile", "GDPR"])
+async def export_user_data(
+    request: Request,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Export all user data in machine-readable JSON format
+
+    **GDPR Article 20 - Right to Data Portability**
+
+    **Requires**: Authentication (Bearer token)
+
+    **Returns**: Complete user data export including:
+    - Profile information
+    - GDPR consent records
+    - All conversations and messages
+    - Survey responses
+    - Hired agents
+    - Contact requests
+    - Data processing logs (last 100 activities)
+
+    The export is provided as a downloadable JSON file.
+    """
+    try:
+        # Generate export data using GDPR service
+        export_data = await GDPRService.export_user_data(
+            db=db,
+            user=current_user,
+            request=request
+        )
+
+        # Return as downloadable JSON
+        filename = f"solar_intelligence_data_export_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+
+        return JSONResponse(
+            content=export_data,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Type": "application/json"
+            }
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to export data: {str(e)}"
+        )
+
+
+@router.get("/profile/processing-logs", tags=["Profile", "GDPR"])
+async def get_processing_logs(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+    limit: int = 50,
+    offset: int = 0
+):
+    """
+    Get data processing activity logs for transparency
+
+    **GDPR Article 30 - Records of Processing Activities**
+
+    **Requires**: Authentication (Bearer token)
+
+    **Query Parameters**:
+    - limit: Number of logs to return (default: 50, max: 100)
+    - offset: Pagination offset (default: 0)
+
+    **Returns**: List of data processing activities
+    """
+    # Validate limit
+    if limit > 100:
+        limit = 100
+
+    try:
+        logs = await GDPRService.get_processing_logs(
+            db=db,
+            user_id=current_user.id,
+            limit=limit,
+            offset=offset
+        )
+
+        return {
+            "logs": logs,
+            "count": len(logs),
+            "limit": limit,
+            "offset": offset
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch processing logs: {str(e)}"
+        )
+
+
+class RequestRestrictionRequest(BaseModel):
+    reason: str
+    grounds: str  # 'accuracy', 'unlawful', 'no_longer_needed', 'objection'
+
+
+@router.post("/profile/request-restriction", tags=["Profile", "GDPR"])
+async def request_restriction(
+    restriction_data: RequestRestrictionRequest,
+    request: Request,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Request restriction of data processing
+
+    **GDPR Article 18 - Right to Restriction of Processing**
+
+    **Requires**: Authentication (Bearer token)
+
+    **Body**:
+    - reason: Explanation for why processing should be restricted
+    - grounds: Legal grounds ('accuracy', 'unlawful', 'no_longer_needed', 'objection')
+
+    **Grounds Explained**:
+    - accuracy: You contest the accuracy of your personal data
+    - unlawful: The processing is unlawful but you don't want data deletion
+    - no_longer_needed: We no longer need the data but you need it for legal claims
+    - objection: You've objected to processing pending verification of legitimate grounds
+
+    **Returns**: Success message
+    """
+    # Validate grounds
+    valid_grounds = ['accuracy', 'unlawful', 'no_longer_needed', 'objection']
+    if restriction_data.grounds not in valid_grounds:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid grounds. Must be one of: {', '.join(valid_grounds)}"
+        )
+
+    try:
+        # Set restriction
+        current_user.processing_restricted = True
+        current_user.restriction_requested_at = datetime.utcnow()
+        current_user.restriction_reason = restriction_data.reason
+        current_user.restriction_grounds = restriction_data.grounds
+
+        await db.commit()
+
+        # Log this action
+        await GDPRService.log_from_request(
+            db=db,
+            request=request,
+            user=current_user,
+            activity_type="data_modification",
+            purpose=f"User requested restriction of processing (grounds: {restriction_data.grounds})",
+            data_categories=["profile", "processing_status"],
+            legal_basis="consent"
+        )
+
+        return {
+            "message": "Processing restriction applied successfully",
+            "restricted_at": current_user.restriction_requested_at.isoformat(),
+            "grounds": restriction_data.grounds,
+            "note": "While restriction is active, we will only store your data and process it with your consent or for legal claims, legal obligations, or public interest."
+        }
+
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to apply restriction: {str(e)}"
+        )
+
+
+@router.post("/profile/cancel-restriction", tags=["Profile", "GDPR"])
+async def cancel_restriction(
+    request: Request,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Cancel restriction of data processing
+
+    **GDPR Article 18 - Right to Restriction of Processing**
+
+    **Requires**: Authentication (Bearer token)
+
+    **Returns**: Success message
+    """
+    if not current_user.processing_restricted:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No active restriction to cancel"
+        )
+
+    try:
+        # Remove restriction
+        current_user.processing_restricted = False
+        current_user.restriction_requested_at = None
+        current_user.restriction_reason = None
+        current_user.restriction_grounds = None
+
+        await db.commit()
+
+        # Log this action
+        await GDPRService.log_from_request(
+            db=db,
+            request=request,
+            user=current_user,
+            activity_type="data_modification",
+            purpose="User cancelled restriction of processing",
+            data_categories=["profile", "processing_status"],
+            legal_basis="consent"
+        )
+
+        return {
+            "message": "Processing restriction removed successfully",
+            "note": "Normal data processing has been resumed."
+        }
+
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to cancel restriction: {str(e)}"
+        )
+
+
+@router.get("/profile/restriction-status", tags=["Profile", "GDPR"])
+async def get_restriction_status(
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get current restriction status
+
+    **Requires**: Authentication (Bearer token)
+
+    **Returns**: Current restriction status
+    """
+    if not current_user.processing_restricted:
+        return {
+            "restricted": False,
+            "message": "No active processing restrictions"
+        }
+
+    return {
+        "restricted": True,
+        "requested_at": current_user.restriction_requested_at.isoformat() if current_user.restriction_requested_at else None,
+        "reason": current_user.restriction_reason,
+        "grounds": current_user.restriction_grounds,
+        "note": "Your data processing is currently restricted. We will only store your data and process it with your consent or for legal claims, legal obligations, or public interest."
+    }

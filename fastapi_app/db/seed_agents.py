@@ -60,6 +60,12 @@ AGENT_CONFIGURATIONS = [
         "required_plan": "free",
         "description": "Component Prices Agent - PV component and raw material price analysis",
         "is_enabled": True
+    },
+    {
+        "agent_type": "seamless",
+        "required_plan": "free",
+        "description": "Seamless Agent - Comprehensive solar industry analysis",
+        "is_enabled": True
     }
 ]
 

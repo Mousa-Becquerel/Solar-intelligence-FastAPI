@@ -281,6 +281,12 @@ profiling:
 - "Annual": New capacity added in that year
 - "Cumulative": Total installed capacity up to and including that year
 
+**IMPORTANT - Calculating Cumulative Values for Forecast Years:**
+When calculating cumulative capacity for forecast years (2025+), the forecast cumulative values in the dataset only represent the sum of forecasted annual additions, NOT the true cumulative total. To get the correct cumulative value for any forecast year:
+1. Get the cumulative value at 2024 (last historical year) for the same Territory and Connection
+2. Add the forecast cumulative value to the 2024 historical cumulative value
+Example: If 2024 Historical cumulative = 100 GW and 2026 Forecast-Low cumulative = 15 GW, the true 2026 cumulative = 115 GW
+
 **Default Behavior:**
 Use Connection = "Total" for general queries unless the user specifically asks for a breakdown by connection type.
 
@@ -395,6 +401,14 @@ You can generate three types of plots:
 ## 1. LINE CHART
 Use for showing trends over time for different countries, regions, or series.
 
+**CRITICAL: Value Formatting Rules (Same as Stacked Bar Charts)**
+- **ALWAYS use GW (gigawatts) as the unit** in the "unit" field
+- **ALWAYS convert MW values to GW** by dividing by 1000
+- **ALWAYS use decimal format** for GW values (e.g., "0.046 GW", "1.2 GW", "21.5 GW")
+- **For values < 1 GW**: Use 3 decimal places (e.g., "0.046 GW", "0.150 GW")
+- **For values >= 1 GW**: Use 1 decimal place (e.g., "1.2 GW", "21.0 GW")
+- **NEVER use 'k' suffix** - always use proper GW decimal format
+
 Example schema:
 {
   "plot_type": "line",
@@ -402,8 +416,8 @@ Example schema:
   "description": "Line chart showing the evolution of photovoltaic capacity over time for selected countries, regions, or segments.",
 
   "x_axis_label": "Year",
-  "y_axis_label": "Installed Capacity (MW)",
-  "unit": "MW",
+  "y_axis_label": "Installed Capacity (GW)",
+  "unit": "GW",
 
   "filters_applied": {
     "Scenario": "Historical Primary",
@@ -449,6 +463,14 @@ Use for comparing values across different categories (e.g., countries, regions) 
 
 **IMPORTANT**: Bar charts should use ONLY ONE SCENARIO at a time. For multi-scenario comparisons, use LINE CHART instead.
 
+**CRITICAL: Value Formatting Rules (Same as Line and Stacked Bar Charts)**
+- **ALWAYS use GW (gigawatts) as the unit** in the "unit" field
+- **ALWAYS convert MW values to GW** by dividing by 1000
+- **ALWAYS use decimal format** for GW values (e.g., "0.046 GW", "1.2 GW", "21.5 GW")
+- **For values < 1 GW**: Use 3 decimal places (e.g., "0.046 GW", "0.150 GW")
+- **For values >= 1 GW**: Use 1 decimal place (e.g., "1.2 GW", "21.0 GW")
+- **NEVER use 'k' suffix** - always use proper GW decimal format
+
 Example schema:
 {
   "plot_type": "bar",
@@ -456,8 +478,8 @@ Example schema:
   "description": "Bar chart comparing total installed PV capacity across different countries in 2024.",
 
   "x_axis_label": "",
-  "y_axis_label": "Installed Capacity (MW)",
-  "unit": "MW",
+  "y_axis_label": "Installed Capacity (GW)",
+  "unit": "GW",
 
   "filters_applied": {
     "Scenario": "Historical Primary",
@@ -514,6 +536,33 @@ Use for showing composition/breakdown of capacity by Connection type over time.
 - Include "share" (percentage as decimal), "is_small" (true for segments < 5% of total), and "show_segment_labels" (true to show value labels on bars)
 - Set "show_segment_labels" to false if there are many years/categories to prevent label clutter
 
+**CRITICAL: Value Formatting Rules**
+- **ALWAYS use GW (gigawatts) as the unit** in the "unit" field
+- **ALWAYS convert MW values to GW** by dividing by 1000
+- **ALWAYS use decimal format** for GW values (e.g., "0.046 GW", "1.2 GW", "21.5 GW")
+- **For values < 1 GW**: Use 3 decimal places (e.g., "0.046 GW", "0.150 GW", "0.378 GW")
+- **For values >= 1 GW**: Use 1 decimal place (e.g., "1.2 GW", "5.3 GW", "21.0 GW")
+- **NEVER use 'k' suffix** (e.g., "46k") - always use proper GW decimal format
+- The "value" field should contain the value in MW (as stored in database)
+- The "formatted_value" field should contain the GW representation with proper decimals
+
+**Python formatting example:**
+```python
+# Convert MW to GW with proper decimal formatting
+def format_capacity_gw(mw_value):
+    gw_value = mw_value / 1000.0
+    if gw_value < 1.0:
+        return f"{gw_value:.3f} GW"  # 3 decimals for values < 1 GW
+    else:
+        return f"{gw_value:.1f} GW"   # 1 decimal for values >= 1 GW
+
+# Example usage:
+# 46 MW → format_capacity_gw(46) → "0.046 GW"
+# 150 MW → format_capacity_gw(150) → "0.150 GW"
+# 5300 MW → format_capacity_gw(5300) → "5.3 GW"
+# 21000 MW → format_capacity_gw(21000) → "21.0 GW"
+```
+
 Example schema for stacked bar chart:
 {
   "plot_type": "stacked_bar",
@@ -521,8 +570,8 @@ Example schema for stacked bar chart:
   "description": "Stacked bar chart showing the distribution of capacity across Centralised, Distributed, and Off-grid connections over time.",
 
   "x_axis_label": "Year",
-  "y_axis_label": "Installed Capacity (MW)",
-  "unit": "MW",
+  "y_axis_label": "Installed Capacity (GW)",
+  "unit": "GW",
   "stack_by": "Connection",
 
   "filters_applied": {
@@ -554,7 +603,7 @@ Example schema for stacked bar chart:
       "category": "2020",
       "stack": "Off-grid",
       "value": 500.0,
-      "formatted_value": "0.5 GW",
+      "formatted_value": "0.500 GW",
       "share": 0.021,
       "is_small": true,
       "show_segment_labels": true
@@ -581,7 +630,7 @@ Example schema for stacked bar chart:
       "category": "2021",
       "stack": "Off-grid",
       "value": 600.0,
-      "formatted_value": "0.6 GW",
+      "formatted_value": "0.600 GW",
       "share": 0.021,
       "is_small": true,
       "show_segment_labels": true
@@ -879,6 +928,8 @@ The regional solar market showed strong growth with an average increase of **15.
 - Do NOT change the meaning of the data
 - ONLY reformat, structure, and present the existing information beautifully
 - If the Market Intelligence Agent mentions data unavailability, present it clearly but don't apologize excessively
+- Never offer any links to the user to download files or data
+- Never offer to generate PowerPoint presentations, PDFs, Excel files, or any other downloadable content
 
 **Output Format:**
 Respond directly with the formatted markdown text. Do NOT wrap it in JSON or use field names like "informative_summary". Just output the markdown content directly.""",
@@ -1127,13 +1178,14 @@ Our experts typically respond within **24-48 hours** with thorough, actionable i
                         "quality": "good_answer"
                     }
 
-    async def analyze_stream(self, query: str, conversation_id: str = None):
+    async def analyze_stream(self, query: str, conversation_id: str = None, _retry_count: int = 0):
         """
         Analyze query with streaming response
 
         Args:
             query: Natural language query
             conversation_id: Optional conversation ID for maintaining context
+            _retry_count: Internal retry counter for handling expired containers
 
         Yields:
             Text chunks or plot JSON as they are generated
@@ -1342,23 +1394,40 @@ Agent Response: {market_intelligence_response}"""
                                     })
 
         except Exception as e:
-            # Check if this is a BadRequestError from OpenAI with corrupted reasoning items
+            # Check if this is a BadRequestError from OpenAI
             error_str = str(e)
-            if "code_interpreter_call" in error_str and "reasoning" in error_str and "invalid_request_error" in error_str:
-                logger.error(f"Detected corrupted session with reasoning items. Clearing session...")
-                # Clear the corrupted session
-                from fastapi_app.utils.session_factory import clear_agent_session
-                if conversation_id:
-                    clear_agent_session(conversation_id, agent_type="market")
-                    yield f"\n\n**Session Error:** The conversation history contained corrupted data from a previous code execution. The session has been cleared. Please try your query again in a new message."
+            from fastapi_app.utils.session_factory import clear_agent_session
+
+            # Handle expired container error - clear session and retry automatically
+            if "Container is expired" in error_str:
+                logger.error("Detected expired code interpreter container. Clearing session and retrying...")
+                if conversation_id and _retry_count < 1:
+                    await clear_agent_session(conversation_id, agent_type="market")
+                    logger.info(f"Session cleared. Retrying query (attempt {_retry_count + 2})...")
+                    # Retry the workflow with cleared session
+                    async for chunk in self.analyze_stream(query, conversation_id, _retry_count + 1):
+                        yield chunk
+                    return  # Exit after retry completes
                 else:
-                    yield f"\n\n**Error:** {error_str}"
+                    yield json.dumps({"type": "text_chunk", "content": "\n\n**Error:** Session recovery failed. Please start a new conversation."})
+            # Handle corrupted reasoning items - clear session and retry automatically
+            elif "code_interpreter_call" in error_str and "reasoning" in error_str and "invalid_request_error" in error_str:
+                logger.error("Detected corrupted session with reasoning items. Clearing session and retrying...")
+                if conversation_id and _retry_count < 1:
+                    await clear_agent_session(conversation_id, agent_type="market")
+                    logger.info(f"Session cleared. Retrying query (attempt {_retry_count + 2})...")
+                    # Retry the workflow with cleared session
+                    async for chunk in self.analyze_stream(query, conversation_id, _retry_count + 1):
+                        yield chunk
+                    return  # Exit after retry completes
+                else:
+                    yield json.dumps({"type": "text_chunk", "content": "\n\n**Error:** Session recovery failed. Please start a new conversation."})
             else:
                 error_msg = f"Failed to stream query: {str(e)}"
                 logger.error(error_msg)
                 import traceback
                 logger.error(traceback.format_exc())
-                yield f"\n\n**Error:** {error_msg}"
+                yield json.dumps({"type": "text_chunk", "content": f"\n\n**Error:** {error_msg}"})
 
     def clear_conversation_memory(self, conversation_id: str = None):
         """

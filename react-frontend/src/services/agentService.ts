@@ -8,7 +8,7 @@
 import type { AgentType } from '../constants/agents';
 import API_CONFIG from '../api/config';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const TOKEN_KEY = API_CONFIG.TOKEN_KEY; // Use same token key as API client
 
 export interface HireAgentResponse {

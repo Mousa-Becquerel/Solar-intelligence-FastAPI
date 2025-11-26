@@ -14,15 +14,17 @@ export default function NewConversationButton() {
   const [creating, setCreating] = useState(false);
 
   const handleNewConversation = async () => {
+    console.log(`➕ [NewConversationButton] Creating new conversation...`);
     try {
       setCreating(true);
       // Create conversation with default agent (market)
       const result = await apiClient.createConversation('market');
+      console.log(`✅ [NewConversationButton] Created conversation ${result.conversation_id}`);
       toast.success('New conversation created');
       // Navigate to the new conversation
       navigate(`/app?conversation=${result.conversation_id}`);
     } catch (error) {
-      console.error('Failed to create conversation:', error);
+      console.error('❌ [NewConversationButton] Failed to create conversation:', error);
       toast.error('Failed to create conversation');
     } finally {
       setCreating(false);

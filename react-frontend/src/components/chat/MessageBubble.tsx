@@ -77,15 +77,23 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
         justifyContent: isUser ? 'flex-end' : 'flex-start',
         marginBottom: '8px',
         animation: 'messageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        width: '100%',
+        // Prevent horizontal overflow
+        maxWidth: '100%',
+        boxSizing: 'border-box',
       }}
     >
       <div
         style={{
-          maxWidth: '85%',
+          // For user messages: auto width (shrink to content), for bot: up to 100%
+          width: isUser ? 'auto' : '100%',
+          maxWidth: isUser ? '75%' : '100%',
           minWidth: '32px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: isUser ? 'flex-end' : 'flex-start',
+          // Prevent overflow
+          overflow: 'hidden',
         }}
       >
         {/* Agent Name and Icon - Only for bot messages */}
@@ -168,6 +176,11 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
             fontWeight: isUser ? '400' : '300',
             letterSpacing: '-0.01em',
             lineHeight: '1.6',
+            // For plot messages, take full width of parent to prevent shrinking
+            width: message.plotData ? '100%' : 'auto',
+            // Ensure content doesn't overflow
+            maxWidth: '100%',
+            boxSizing: 'border-box',
           }}
         >
           {/* Message content */}
@@ -376,19 +389,78 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
                       {children}
                     </td>
                   ),
-                  a: ({ href, children }) => (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: '#0a1850', /* becq-blue */
-                        textDecoration: 'underline',
-                      }}
-                    >
-                      {children}
-                    </a>
-                  ),
+                  a: ({ href, children }) => {
+                    // For Emma (news agent), style ALL links as citation buttons
+                    // For other agents, only style specific citation patterns
+                    const isNewsAgent = agentType === 'news';
+                    const childText = String(children).toLowerCase().trim();
+
+                    const isCitation = isNewsAgent || (children && (
+                      childText.includes('details here') ||
+                      childText.includes('source') ||
+                      childText === 'source' ||
+                      childText.includes('read more') ||
+                      /^(source|read\s*more|details)\s*$/i.test(childText)
+                    ));
+
+                    return (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: isCitation ? '#0a1850' : '#0a1850', /* becq-blue */
+                          textDecoration: 'none',
+                          display: isCitation ? 'inline-flex' : 'inline',
+                          alignItems: isCitation ? 'center' : undefined,
+                          gap: isCitation ? '6px' : undefined,
+                          background: isCitation ? '#fbbf24' : undefined, /* becq-gold solid */
+                          padding: isCitation ? '6px 12px' : undefined,
+                          borderRadius: isCitation ? '4px' : undefined,
+                          fontWeight: isCitation ? '500' : undefined,
+                          fontSize: isCitation ? '0.8125rem' : undefined,
+                          transition: 'background-color 0.2s ease',
+                          fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+                          marginLeft: isCitation ? '4px' : undefined,
+                          marginRight: isCitation ? '4px' : undefined,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (isCitation) {
+                            e.currentTarget.style.backgroundColor = '#f59e0b';
+                          } else {
+                            e.currentTarget.style.textDecoration = 'underline';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (isCitation) {
+                            e.currentTarget.style.backgroundColor = '#fbbf24';
+                          } else {
+                            e.currentTarget.style.textDecoration = 'none';
+                          }
+                        }}
+                      >
+                        {isCitation && (
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{ flexShrink: 0 }}
+                          >
+                            {/* External link icon - Material Design style */}
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                          </svg>
+                        )}
+                        {isCitation ? 'Source' : children}
+                      </a>
+                    );
+                  },
                   strong: ({ children }) => (
                     <strong style={{ color: '#1e293b', fontWeight: '600' }}>
                       {children}
@@ -402,7 +474,12 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
               )}
 
               {/* Plot/Chart visualization */}
-              {message.plotData && <PlotMessage plotData={message.plotData} />}
+              {message.plotData && (
+                <PlotMessage
+                  key={`plot-${message.id}-${message.plotData.plot_type}`}
+                  plotData={message.plotData}
+                />
+              )}
 
               {/* Approval Buttons */}
               {message.approvalData && (

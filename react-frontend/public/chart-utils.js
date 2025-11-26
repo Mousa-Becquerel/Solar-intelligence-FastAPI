@@ -567,18 +567,27 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
         }
     }
     
-    // Preserve original chart dimensions to prevent size changes on reset
-    let rect = containerNode.getBoundingClientRect();
-    if (containerNode.__originalDimensions) {
-        rect = containerNode.__originalDimensions;
-    } else {
-        // Store original dimensions on first render
-        containerNode.__originalDimensions = {
-            width: rect.width,
-            height: rect.height
-        };
+    // Always use fresh dimensions from container
+    // Don't cache dimensions as they're lost on page reload and can cause sizing issues
+    const rect = containerNode.getBoundingClientRect();
+
+    // Ensure container has valid dimensions before rendering
+    if (rect.width < 100) {
+        console.warn('⚠️ Chart container too small, skipping render. Width:', rect.width);
+        return;
     }
-    
+
+    // CRITICAL: Check if reset button should be shown BEFORE clearing the SVG
+    // This flag is set by legend click handlers and PERSISTS across re-renders
+    // until the reset button is clicked (which clears it)
+    const shouldShowResetButton = containerNode.__showResetButton || false;
+    console.log('🔍 [Debug] Captured showResetButton flag at start of render:', shouldShowResetButton);
+
+    // IMPORTANT: If flag is false but we have preselectedVisible, it means chart was filtered
+    // This handles the case where React re-renders after D3 filtering
+    const hasFiltering = preselectedVisible && preselectedVisible.length > 0;
+    console.log('🔍 [Debug] Has preselectedVisible filtering:', hasFiltering, preselectedVisible);
+
     // Get plot type early for margin calculations
     const plotType = (plotData.plot_type || 'line').toLowerCase();
     
@@ -642,33 +651,117 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
         window.chartStates.set(containerId, controller);
     }
     
-    // For line plots, add a simple download button since we removed controls
-    if (plotType === 'line') {
-        const downloadBtn = svg.append('g')
-            .attr('class', 'simple-download-btn')
-            .attr('transform', `translate(${rect.width - 40}, 10)`)
-            .style('cursor', 'pointer')
-            .on('click', () => {
-                window.downloadD3Chart(containerId, `${plotData.title || 'chart'}.png`);
-            });
-        
-        downloadBtn.append('rect')
-            .attr('width', 30)
-            .attr('height', 20)
-            .attr('rx', 3)
-            .attr('fill', '#f3f4f6')
-            .attr('stroke', '#d1d5db');
-        
-        downloadBtn.append('text')
-            .attr('x', 15)
-            .attr('y', 13)
-            .attr('text-anchor', 'middle')
-            .style('font-size', '10px')
-            .style('font-weight', '600')
-            .style('fill', '#374151')
-            .text('⬇');
+    // Add download button for ALL chart types (always visible)
+    const downloadBtn = svg.append('g')
+        .attr('class', 'simple-download-btn')
+        .attr('transform', `translate(${rect.width - 40}, 10)`)
+        .style('cursor', 'pointer')
+        .style('opacity', '0.9')
+        .on('click', () => {
+            window.downloadD3Chart(containerId, `${plotData.title || 'chart'}.png`);
+        })
+        .on('mouseenter', function() {
+            d3.select(this).style('opacity', '1');
+            d3.select(this).select('rect').attr('fill', '#e5e7eb');
+        })
+        .on('mouseleave', function() {
+            d3.select(this).style('opacity', '0.9');
+            d3.select(this).select('rect').attr('fill', '#f3f4f6');
+        });
+
+    downloadBtn.append('rect')
+        .attr('width', 30)
+        .attr('height', 24)
+        .attr('rx', 4)
+        .attr('fill', '#f3f4f6')
+        .attr('stroke', '#d1d5db')
+        .attr('stroke-width', '1.5');
+
+    downloadBtn.append('text')
+        .attr('x', 15)
+        .attr('y', 15)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '11px')
+        .style('font-weight', '600')
+        .style('fill', '#374151')
+        .text('⬇');
+
+    // Add reset button for ALL chart types (to restore filtered series)
+    // Position it to the left of the download button (download is at rect.width - 40)
+    const resetBtn = svg.append('g')
+        .attr('class', 'chart-reset-btn')
+        .attr('transform', `translate(${rect.width - 110}, 10)`)
+        .style('cursor', 'pointer')
+        .style('display', 'none') // Hidden by default, shown when filtering occurs
+        .style('opacity', '0.95')
+        .on('click', function() {
+            // CRITICAL FIX: Always get a FRESH deep copy of original data
+            // This prevents corruption from multiple reset clicks
+            const base = containerNode.__originalPlotData;
+
+            if (!base) {
+                console.error('❌ No original plot data found!');
+                return;
+            }
+
+            // Deep clone to prevent any mutations
+            let freshData;
+            try {
+                freshData = JSON.parse(JSON.stringify(base));
+            } catch (e) {
+                console.error('❌ Failed to clone original data:', e);
+                freshData = base; // Fallback to direct reference
+            }
+
+            console.log('🔄 Resetting chart to show all series');
+            console.log('📊 Original data has', freshData.data ? freshData.data.length : 0, 'data points');
+
+            // Clear the flag so button will be hidden after reset
+            containerNode.__showResetButton = false;
+
+            // Re-render with fresh copy of original dataset (no preselectedVisible)
+            // This ensures ALL series are visible
+            renderD3Chart(containerId, freshData);
+        })
+        .on('mouseenter', function() {
+            d3.select(this).style('opacity', '1');
+            d3.select(this).select('rect').attr('fill', '#fde68a');
+        })
+        .on('mouseleave', function() {
+            d3.select(this).style('opacity', '0.95');
+            d3.select(this).select('rect').attr('fill', '#fef3c7');
+        });
+
+    resetBtn.append('rect')
+        .attr('width', 50)
+        .attr('height', 24)
+        .attr('rx', 4)
+        .attr('fill', '#fef3c7')
+        .attr('stroke', '#fbbf24')
+        .attr('stroke-width', '1.5');
+
+    resetBtn.append('text')
+        .attr('x', 25)
+        .attr('y', 15)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '11px')
+        .style('font-weight', '600')
+        .style('fill', '#92400e')
+        .text('↻ Reset');
+
+    // Check if reset button should be shown (for categorical charts after re-render with filtered data)
+    // Show button if EITHER: (1) flag is set, OR (2) we have preselected filtering
+    console.log('🔍 [Debug] Checking captured showResetButton flag:', shouldShowResetButton, 'for plot:', plotData.title);
+    console.log('🔍 [Debug] Has filtering:', hasFiltering, 'preselectedVisible:', preselectedVisible);
+    console.log('🔍 [Debug] SVG width:', rect.width, 'Reset button position:', rect.width - 110);
+
+    if (shouldShowResetButton || hasFiltering) {
+        // Set the flag to persist across future renders
+        containerNode.__showResetButton = true;
+        resetBtn.style('display', null); // Show the button
+        console.log('🔄 [Reset Button] Showing reset button (flag:', shouldShowResetButton, 'hasFiltering:', hasFiltering, ')');
     }
-    
+
     // No zoom functionality - removed for cleaner interface
     
     // Add editable title to the chart
@@ -895,17 +988,28 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
         const shouldShowSegmentLabels = data.length > 0 ? data[0].show_segment_labels !== false : true;
         const xAxisFontSize = shouldShowSegmentLabels ? '12px' : '13px'; // Slightly larger when segment labels are hidden
         const xAxisFontWeight = shouldShowSegmentLabels ? '500' : '600'; // Bolder when segment labels are hidden
-        
+
+        // Determine if labels should be rotated based on average label length and bar width
+        const avgLabelLength = tickVals.reduce((sum, d) => sum + String(d).length, 0) / tickVals.length;
+        const barWidth = xScale.bandwidth();
+        const shouldRotateLabels = avgLabelLength > 8 || barWidth < 60; // Rotate if labels are long or bars are narrow
+
         g.selectAll('text.bar-year-label')
             .data(tickVals)
             .enter()
             .append('text')
             .attr('class', 'bar-year-label')
             .attr('x', d => xScale(d) + xScale.bandwidth() / 2)
-            .attr('y', height + 20) // Position below the bars
-            .attr('text-anchor', 'middle')
+            .attr('y', height + (shouldRotateLabels ? 10 : 20)) // Position closer to bars when rotated
+            .attr('text-anchor', shouldRotateLabels ? 'end' : 'middle')
+            .attr('transform', shouldRotateLabels ?
+                function(d) {
+                    const x = xScale(d) + xScale.bandwidth() / 2;
+                    const y = height + 10;
+                    return `rotate(-45, ${x}, ${y})`;
+                } : null)
             .style('font-family', "'Inter', 'Segoe UI', 'Roboto', sans-serif")
-            .style('font-size', xAxisFontSize)
+            .style('font-size', shouldRotateLabels ? '11px' : xAxisFontSize) // Slightly smaller when rotated
             .style('font-weight', xAxisFontWeight)
             .style('fill', '#374151')
             .text(d => d);
@@ -1292,10 +1396,15 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
           // Calculate totals for each category and add sum labels on top
           const categoryTotals = Array.from(d3.group(data, d => d.category), ([category, values]) => {
               const total = d3.sum(values, d => d.value);
-              return { category, total };
+              // Look for a formatted total from backend (if available in the first value of this category)
+              const formattedTotal = values[0]?.formatted_total || null;
+              return { category, total, formattedTotal };
           });
 
           // Add total sum labels on top of stacked bars
+          const barWidth = xScale.bandwidth();
+          const useSmallFont = barWidth < 60; // Use smaller font if bars are narrow
+
           g.selectAll('text.stack-total-label')
               .data(categoryTotals)
               .enter()
@@ -1305,42 +1414,33 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
               .attr('y', d => yScale(d.total) - 8) // 8px above the top of the stack
               .attr('text-anchor', 'middle')
               .style('font-family', "'Inter', 'Segoe UI', 'Roboto', sans-serif")
-              .style('font-size', '13px')
-              .style('font-weight', '700')
-              .style('fill', '#1f2937')
+              .style('font-size', useSmallFont ? '9px' : '13px')
+              .style('font-weight', useSmallFont ? '500' : '700')
+              .style('fill', useSmallFont ? '#64748b' : '#1f2937')
               .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8)')
               .text(d => {
-                  // Format the total value nicely
-                  const value = d.total;
-                  if (value === 0 || value === 0.0) {
-                      return "0";
-                  } else if (value >= 1000000) {
-                      return `${(value/1000000).toFixed(1)}GW`;
-                  } else if (value >= 10000) {
-                      const formatted = value/1000;
-                      if (formatted == Math.floor(formatted)) {
-                          return `${Math.floor(formatted)}k`;
-                      } else {
-                          return `${formatted.toFixed(1)}k`;
-                      }
-                  } else if (value >= 1000) {
-                      return `${(value/1000).toFixed(1)}k`;
-                  } else if (value >= 100) {
-                      return `${Math.round(value)}`;
-                  } else if (value >= 1) {
-                      if (value == Math.floor(value)) {
-                          return `${Math.floor(value)}`;
-                      } else {
-                          return `${value.toFixed(1)}`;
-                      }
+                  // Use backend's formatted total if available
+                  if (d.formattedTotal) {
+                      return d.formattedTotal;
+                  }
+
+                  // Otherwise format the total value in GW
+                  const valueMW = d.total;
+                  const valueGW = valueMW / 1000.0; // Convert MW to GW
+
+                  if (valueMW === 0 || valueMW === 0.0) {
+                      return "0 GW";
+                  } else if (valueGW < 1.0) {
+                      // Values < 1 GW: use 3 decimal places
+                      return `${valueGW.toFixed(3)} GW`;
                   } else {
-                      return `${value.toFixed(2)}`;
+                      // Values >= 1 GW: use 1 decimal place
+                      return `${valueGW.toFixed(1)} GW`;
                   }
               });
 
           // Add individual segment values for larger segments (with smart visibility control)
           const shouldShowSegmentLabels = data.length > 0 ? data[0].show_segment_labels !== false : true;
-          const barWidth = xScale.bandwidth();
           const filteredStackedData = shouldShowSegmentLabels
               ? stackedData.filter(d => {
                   const segmentHeight = yScale(d.y0) - yScale(d.y1);
@@ -1369,22 +1469,18 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
                   if (d.formatted_value) {
                       return d.formatted_value;
                   }
-                  // Fallback formatting
-                  const value = d.value;
-                  if (value === 0 || value === 0.0) {
-                      return "0";
-                  } else if (value >= 1000000) {
-                      return `${(value/1000000).toFixed(1)}GW`;
-                  } else if (value >= 1000) {
-                      return `${(value/1000).toFixed(1)}k`;
-                  } else if (value >= 1) {
-                      if (value == Math.floor(value)) {
-                          return `${Math.floor(value)}`;
-                      } else {
-                          return `${value.toFixed(1)}`;
-                      }
+                  // Fallback formatting - convert MW to GW
+                  const valueMW = d.value;
+                  const valueGW = valueMW / 1000.0; // Convert MW to GW
+
+                  if (valueMW === 0 || valueMW === 0.0) {
+                      return "0 GW";
+                  } else if (valueGW < 1.0) {
+                      // Values < 1 GW: use 3 decimal places
+                      return `${valueGW.toFixed(3)} GW`;
                   } else {
-                      return `${value.toFixed(2)}`;
+                      // Values >= 1 GW: use 1 decimal place
+                      return `${valueGW.toFixed(1)} GW`;
                   }
               })
               .each(function() {
@@ -1460,32 +1556,16 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
                   .attr('class', 'bar-value-label')
                   .attr('x', d => xScale(d.category || d.series) + xScale.bandwidth() / 2)
                   .attr('y', d => {
-                      const barHeight = height - yScale(d.value);
-                      // Position label in the middle of the bar if it's tall enough, otherwise above
-                      if (barHeight > 30) {
-                          return yScale(d.value) + barHeight / 2;
-                      } else {
-                          return yScale(d.value) - 8;
-                      }
+                      // Always position label above the bar for better visibility
+                      return yScale(d.value) - 5;
                   })
                   .attr('text-anchor', 'middle')
-                  .attr('dominant-baseline', d => {
-                      const barHeight = height - yScale(d.value);
-                      return barHeight > 30 ? 'middle' : 'auto';
-                  })
+                  .attr('dominant-baseline', 'auto')
                   .style('font-family', "'Inter', 'Segoe UI', 'Roboto', sans-serif")
-                  .style('font-size', '12px')
+                  .style('font-size', '11px')
                   .style('font-weight', '600')
-                  .style('fill', d => {
-                      const barHeight = height - yScale(d.value);
-                      // White text if inside tall bars, dark text if above short bars
-                      return barHeight > 30 ? '#ffffff' : '#374151';
-                  })
-                  .style('text-shadow', d => {
-                      const barHeight = height - yScale(d.value);
-                      // Add shadow for readability
-                      return barHeight > 30 ? '1px 1px 2px rgba(0,0,0,0.7)' : 'none';
-                  })
+                  .style('fill', '#374151')
+                  .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8)') // White shadow for contrast
                   .text(d => {
                       // Use backend's formatted value if available, otherwise format here
                       if (d.formatted_value) {
@@ -1571,14 +1651,19 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
                   .duration(500)
                   .style('opacity', 0);
           });
-          
+
           // Calculate totals for each category and add sum labels on top
           const categoryTotals = Array.from(d3.group(data, d => d.category), ([category, values]) => {
               const total = d3.sum(values, d => d.value);
-              return { category, total };
+              // Look for a formatted total from backend (if available in the first value of this category)
+              const formattedTotal = values[0]?.formatted_total || null;
+              return { category, total, formattedTotal };
           });
-          
+
           // Add total sum labels on top of stacked bars
+          const barWidth = xScale.bandwidth();
+          const useSmallFont = barWidth < 60; // Use smaller font if bars are narrow
+
           g.selectAll('text.stack-total-label')
               .data(categoryTotals)
               .enter()
@@ -1588,48 +1673,33 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
               .attr('y', d => yScale(d.total) - 8) // 8px above the top of the stack
               .attr('text-anchor', 'middle')
               .style('font-family', "'Inter', 'Segoe UI', 'Roboto', sans-serif")
-              .style('font-size', '13px')
-              .style('font-weight', '700')
-              .style('fill', '#1f2937')
+              .style('font-size', useSmallFont ? '9px' : '13px')
+              .style('font-weight', useSmallFont ? '500' : '700')
+              .style('fill', useSmallFont ? '#64748b' : '#1f2937')
               .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8)')
               .text(d => {
-                  // Format the total value nicely using backend's format_capacity_value logic
-                  const value = d.total;
-                  // Handle zero explicitly to avoid formatting issues
-                  if (value === 0 || value === 0.0) {
-                      return "0";
-                  } else if (value >= 1000000) {
-                      return `${(value/1000000).toFixed(1)}GW`;
-                  } else if (value >= 10000) {
-                      // For values 10k and above, show 1 decimal if meaningful
-                      const formatted = value/1000;
-                      if (formatted == Math.floor(formatted)) {
-                          return `${Math.floor(formatted)}k`;
-                      } else {
-                          return `${formatted.toFixed(1)}k`;
-                      }
-                  } else if (value >= 1000) {
-                      // For values 1k-10k, always show 1 decimal place for precision
-                      return `${(value/1000).toFixed(1)}k`;
-                  } else if (value >= 100) {
-                      // For values 100-999, show whole numbers
-                      return `${Math.round(value)}`;
-                  } else if (value >= 1) {
-                      // For values 1-99, show 1 decimal if meaningful
-                      if (value == Math.floor(value)) {
-                          return `${Math.floor(value)}`;
-                      } else {
-                          return `${value.toFixed(1)}`;
-                      }
+                  // Use backend's formatted total if available
+                  if (d.formattedTotal) {
+                      return d.formattedTotal;
+                  }
+
+                  // Otherwise format the total value in GW
+                  const valueMW = d.total;
+                  const valueGW = valueMW / 1000.0; // Convert MW to GW
+
+                  if (valueMW === 0 || valueMW === 0.0) {
+                      return "0 GW";
+                  } else if (valueGW < 1.0) {
+                      // Values < 1 GW: use 3 decimal places
+                      return `${valueGW.toFixed(3)} GW`;
                   } else {
-                      // For values < 1 but > 0, show 2 decimal places
-                      return `${value.toFixed(2)}`;
+                      // Values >= 1 GW: use 1 decimal place
+                      return `${valueGW.toFixed(1)} GW`;
                   }
               });
-          
+
           // Add individual segment values for larger segments (with smart visibility control)
           const shouldShowSegmentLabels = data.length > 0 ? data[0].show_segment_labels !== false : true; // Default to true if not specified
-          const barWidth = xScale.bandwidth();
           const filteredStackedData = shouldShowSegmentLabels
               ? stackedData.filter(d => {
                   // Calculate actual pixel height of the segment
@@ -1655,27 +1725,22 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
               .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.7)')
               .style('pointer-events', 'none')
               .text(d => {
-                  // Use backend's formatted value if available, otherwise format here
+                  // Use backend's formatted value if available
                   if (d.formatted_value) {
                       return d.formatted_value;
                   }
-                  // Fallback formatting for individual segments (more precise)
-                  const value = d.value;
-                  // Handle zero explicitly to avoid formatting issues
-                  if (value === 0 || value === 0.0) {
-                      return "0";
-                  } else if (value >= 1000000) {
-                      return `${(value/1000000).toFixed(1)}GW`;
-                  } else if (value >= 1000) {
-                      return `${(value/1000).toFixed(1)}k`;
-                  } else if (value >= 1) {
-                      if (value == Math.floor(value)) {
-                          return `${Math.floor(value)}`;
-                      } else {
-                          return `${value.toFixed(1)}`;
-                      }
+                  // Fallback formatting - convert MW to GW
+                  const valueMW = d.value;
+                  const valueGW = valueMW / 1000.0; // Convert MW to GW
+
+                  if (valueMW === 0 || valueMW === 0.0) {
+                      return "0 GW";
+                  } else if (valueGW < 1.0) {
+                      // Values < 1 GW: use 3 decimal places
+                      return `${valueGW.toFixed(3)} GW`;
                   } else {
-                      return `${value.toFixed(2)}`;
+                      // Values >= 1 GW: use 1 decimal place
+                      return `${valueGW.toFixed(1)} GW`;
                   }
               })
               .each(function() {
@@ -2031,7 +2096,9 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
     }
     
     // For bar/stacked charts, use horizontal layout with better spacing
-    const itemSpacing = (plotType === 'bar' || plotType === 'stacked') ? 30 : compactSpacing;
+    // Calculate item width to determine optimal spacing
+    const sampleItemWidth = Math.max(...legendItems.map(name => String(name).length)) * 8 + 40; // Estimate width based on longest name
+    const itemSpacing = (plotType === 'bar' || plotType === 'stacked') ? Math.max(sampleItemWidth, 120) : compactSpacing;
 
     // Track visibility state
     const visibility = new Map(legendItems.map(n => [n, true]));
@@ -2128,8 +2195,13 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
             const isVisible = visibility.get(name);
             visibility.set(name, !isVisible);
             const safe = cssSafe(name);
+
             if (plotType === 'line') {
               // For line charts, keep simple toggle without re-render
+              // Show/hide reset button based on whether any series are filtered
+              const anyFiltered = Array.from(visibility.values()).some(v => !v);
+              svg.select('.chart-reset-btn').style('display', anyFiltered ? null : 'none');
+
               group.style('display', isVisible ? 'none' : null);
               g.selectAll(`.series-${safe}`).style('display', isVisible ? 'none' : null);
               reflowLegend();
@@ -2143,6 +2215,13 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
                           : (d.category || d.series);
                 return visibleList.includes(key);
               });
+
+              // CRITICAL: Store that reset button should be shown after re-render
+              // because some series are now filtered
+              const shouldShowReset = visibleList.length < legendItems.length;
+              console.log('🔍 [Debug] Setting showResetButton flag:', shouldShowReset, 'visibleList:', visibleList.length, 'total:', legendItems.length);
+              containerNode.__showResetButton = shouldShowReset;
+
               // Re-render with filtered data and keep current visibility
               return renderD3Chart(containerId, { ...base, data: filtered }, visibleList);
             }
@@ -2178,6 +2257,10 @@ function renderD3Chart(containerId, plotData, preselectedVisible) {
             d3.select(this).style('display', on ? null : 'none');
             g.selectAll(`.series-${safe}`).style('display', on ? null : 'none');
         });
+
+        // Show reset button if any series are filtered
+        const anyFiltered = Array.from(visibility.values()).some(v => !v);
+        svg.select('.chart-reset-btn').style('display', anyFiltered ? null : 'none');
     }
     reflowLegend();
     

@@ -65,3 +65,18 @@ Local Settings/
 nul
 nul.*
 
+# Secrets and sensitive configuration files
+*-env.txt
+*-env.json
+*env.json
+*env.txt
+*-task-definition.json
+*task-definition*.json
+docker-compose.test-rds.yml
+current-task-definition.json
+new-env.txt
+new-env.json
+old-env.json
+new-task-definition.json
+task-definition-v2.json
+

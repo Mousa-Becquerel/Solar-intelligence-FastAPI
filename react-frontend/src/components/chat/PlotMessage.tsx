@@ -33,14 +33,44 @@ declare global {
 export default function PlotMessage({ plotData }: PlotMessageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const plotId = useRef(`plot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const renderAttemptedRef = useRef(false);
 
   useEffect(() => {
     if (!containerRef.current || !plotData) {
       return;
     }
 
+    renderAttemptedRef.current = false;
+
     // Wait for D3 and renderD3Chart to be available
     const renderChart = () => {
+      if (renderAttemptedRef.current) {
+        return; // Prevent duplicate renders
+      }
+
+      if (!containerRef.current) {
+        return;
+      }
+
+      // Check if container has proper dimensions
+      const rect = containerRef.current.getBoundingClientRect();
+
+      // Log full parent chain for debugging width constraints
+      let elem = containerRef.current.parentElement;
+      let depth = 0;
+      while (elem && depth < 5) {
+        const parentRect = elem.getBoundingClientRect();
+        const styles = window.getComputedStyle(elem);
+        elem = elem.parentElement;
+        depth++;
+      }
+
+      if (rect.width < 200) {
+        console.warn(`⚠️ [PlotMessage] Container too narrow (${rect.width}px), waiting for proper sizing...`);
+        return; // Don't render yet, wait for ResizeObserver to trigger
+      }
+
       if (typeof window.d3 === 'undefined') {
         console.error('❌ D3.js not loaded');
         if (containerRef.current) {
@@ -68,11 +98,10 @@ export default function PlotMessage({ plotData }: PlotMessageProps) {
         return;
       }
 
-      console.log('✅ Rendering D3 chart with data:', plotData);
+      renderAttemptedRef.current = true;
 
       try {
         window.renderD3Chart(plotId.current, plotData);
-        console.log('✅ D3 chart rendered successfully');
       } catch (error) {
         console.error('❌ Error rendering D3 chart:', error);
         if (containerRef.current) {
@@ -81,11 +110,28 @@ export default function PlotMessage({ plotData }: PlotMessageProps) {
       }
     };
 
-    // Delay rendering to ensure DOM is ready and scripts are loaded
-    const timer = setTimeout(renderChart, 200);
+    // Use ResizeObserver to detect when container is properly sized
+    resizeObserverRef.current = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        if (width >= 200 && !renderAttemptedRef.current) {
+          renderChart();
+        }
+      }
+    });
+
+    if (containerRef.current) {
+      resizeObserverRef.current.observe(containerRef.current);
+    }
+
+    // Also try to render after a delay as fallback
+    const timer = setTimeout(renderChart, 500);
 
     return () => {
       clearTimeout(timer);
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
     };
   }, [plotData]);
 

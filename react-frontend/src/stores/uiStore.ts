@@ -53,7 +53,6 @@ export const useUIStore = create<UIState>()(
         // Save to conversation-scoped storage if conversationId provided
         if (conversationId) {
           artifactsByConversation.set(conversationId, { content, type });
-          console.log(`💾 [UIStore] Saved artifact for conversation ${conversationId}`);
         }
 
         set({
@@ -87,7 +86,6 @@ export const useUIStore = create<UIState>()(
             content: state.artifactContent,
             type: state.artifactType,
           });
-          console.log(`💾 [UIStore] Saved artifact for conversation ${conversationId}`);
         }
       },
 
@@ -95,14 +93,12 @@ export const useUIStore = create<UIState>()(
       restoreArtifact: (conversationId: number) => {
         const saved = artifactsByConversation.get(conversationId);
         if (saved) {
-          console.log(`📂 [UIStore] Restored artifact for conversation ${conversationId}`);
           set({
             artifactOpen: false, // Start closed, user can reopen with button
             artifactContent: saved.content,
             artifactType: saved.type,
           });
         } else {
-          console.log(`📂 [UIStore] No artifact found for conversation ${conversationId}`);
           set({
             artifactOpen: false,
             artifactContent: null,
