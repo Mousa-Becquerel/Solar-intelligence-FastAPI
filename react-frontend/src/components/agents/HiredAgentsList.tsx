@@ -7,6 +7,7 @@
  */
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore, useUIStore } from '../../stores';
 import type { AgentType } from '../../constants/agents';
 
@@ -18,6 +19,7 @@ interface HiredAgentsListProps {
 export default function HiredAgentsList({
   hiredAgents,
 }: HiredAgentsListProps) {
+  const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { sidebarExpanded, toggleSidebar } = useUIStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -127,7 +129,10 @@ export default function HiredAgentsList({
         {/* Collapse Button - Only shown when expanded */}
         {sidebarExpanded && (
           <button
-            onClick={toggleSidebar}
+            onClick={() => {
+              setDropdownOpen(false);
+              toggleSidebar();
+            }}
             aria-label="Collapse sidebar"
             title="Collapse sidebar"
             style={{
@@ -284,7 +289,16 @@ export default function HiredAgentsList({
           }}
         >
           <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
+            onClick={() => {
+              if (!sidebarExpanded) {
+                // If sidebar is collapsed, expand it first, then show dropdown after animation
+                toggleSidebar();
+                setTimeout(() => setDropdownOpen(true), 300);
+              } else {
+                // If sidebar is already expanded, just toggle dropdown
+                setDropdownOpen(!dropdownOpen);
+              }
+            }}
             type="button"
             title={!sidebarExpanded ? user?.full_name || 'User' : undefined}
             style={{
@@ -346,8 +360,8 @@ export default function HiredAgentsList({
             )}
           </button>
 
-          {/* Dropdown Menu */}
-          {dropdownOpen && (
+          {/* Dropdown Menu - Only show when sidebar is expanded */}
+          {dropdownOpen && sidebarExpanded && (
             <div
               style={{
                 position: 'absolute',
@@ -362,17 +376,24 @@ export default function HiredAgentsList({
                 zIndex: 1000,
               }}
             >
-              <a
-                href="/profile"
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/profile');
+                }}
                 style={{
+                  width: '100%',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
                   padding: '12px 16px',
-                  textDecoration: 'none',
+                  border: 'none',
+                  background: 'transparent',
                   color: '#111827',
                   fontSize: '0.875rem',
                   fontWeight: '400',
+                  cursor: 'pointer',
+                  textAlign: 'left',
                   transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                   borderBottom: '1px solid #E5E7EB',
                 }}
@@ -397,21 +418,28 @@ export default function HiredAgentsList({
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
                 <span>Profile</span>
-              </a>
+              </button>
 
               {/* Admin Link - Only visible for admin users */}
               {user?.role === 'admin' && (
-                <a
-                  href="/admin/users"
+                <button
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate('/admin');
+                  }}
                   style={{
+                    width: '100%',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
                     padding: '12px 16px',
-                    textDecoration: 'none',
+                    border: 'none',
+                    background: 'transparent',
                     color: '#111827',
                     fontSize: '0.875rem',
                     fontWeight: '400',
+                    cursor: 'pointer',
+                    textAlign: 'left',
                     transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     borderBottom: '1px solid #E5E7EB',
                   }}
@@ -436,7 +464,7 @@ export default function HiredAgentsList({
                     <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
                   </svg>
                   <span>Admin</span>
-                </a>
+                </button>
               )}
 
               <button

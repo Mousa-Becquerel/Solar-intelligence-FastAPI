@@ -260,15 +260,29 @@
 }
 
 .successMessage {
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+  margin: 0 auto 1.5rem;
+  max-width: 550px;
+  font-size: 0.95rem;
+  text-align: center;
   background: #d5f4e6;
   color: #27ae60;
   border: 1px solid #a8e6cf;
+  animation: slideDown 0.3s ease-out;
 }
 
 .errorMessage {
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+  margin: 0 auto 1.5rem;
+  max-width: 550px;
+  font-size: 0.95rem;
+  text-align: center;
   background: #fadbd8;
   color: #e74c3c;
   border: 1px solid #f5b7b1;
+  animation: slideDown 0.3s ease-out;
 }
 
 /* Footer */

@@ -3,7 +3,7 @@
  * User management dashboard for administrators
  */
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '../../api/client';
@@ -144,11 +144,11 @@ export default function AdminUsersPage() {
             </svg>
             Create User
           </Link>
-          <Link to="/agents" className={`${styles.btn} ${styles.btnSecondary}`}>
+          <Link to="/admin" className={`${styles.btn} ${styles.btnSecondary}`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M15 18l-6-6 6-6"></path>
             </svg>
-            Back to Dashboard
+            Back to Admin
           </Link>
         </div>
       </div>

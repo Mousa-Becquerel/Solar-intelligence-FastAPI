@@ -478,18 +478,25 @@ export default function SidebarPanel() {
               zIndex: 1000,
             }}
           >
-            <a
-              href="/profile"
+            <button
+              onClick={() => {
+                setDropdownOpen(false);
+                navigate('/profile');
+              }}
               className="dropdown-menu-item"
               style={{
+                width: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
                 padding: '12px 16px',
-                textDecoration: 'none',
+                border: 'none',
+                background: 'transparent',
                 color: '#111827',
                 fontSize: '0.875rem',
                 fontWeight: '400',
+                cursor: 'pointer',
+                textAlign: 'left',
                 transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 borderBottom: '1px solid #E5E7EB',
               }}
@@ -514,22 +521,29 @@ export default function SidebarPanel() {
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
               <span>Profile</span>
-            </a>
+            </button>
 
             {/* Admin Link - Only visible for admin users */}
             {user?.role === 'admin' && (
-              <a
-                href="/admin"
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/admin');
+                }}
                 className="dropdown-menu-item"
                 style={{
+                  width: '100%',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
                   padding: '12px 16px',
-                  textDecoration: 'none',
+                  border: 'none',
+                  background: 'transparent',
                   color: '#111827',
                   fontSize: '0.875rem',
                   fontWeight: '400',
+                  cursor: 'pointer',
+                  textAlign: 'left',
                   transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                   borderBottom: '1px solid #E5E7EB',
                 }}
@@ -554,7 +568,7 @@ export default function SidebarPanel() {
                   <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
                 </svg>
                 <span>Admin</span>
-              </a>
+              </button>
             )}
 
             <button

@@ -2,12 +2,49 @@
  * Admin Dashboard - Landing page for all admin features
  */
 
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores';
+import { apiClient } from '../../api/client';
 import './AdminDashboard.css';
+
+interface DashboardStats {
+  totalUsers: number;
+  pendingVerifications: number;
+  activeBreaches: number;
+}
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    pendingVerifications: 0,
+    activeBreaches: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      setIsLoading(true);
+      const [usersData, pendingData] = await Promise.all([
+        apiClient.getUsers(),
+        apiClient.getPendingUsers(),
+      ]);
+      setStats({
+        totalUsers: usersData.length,
+        pendingVerifications: pendingData.length,
+        activeBreaches: 0, // Breach count from breaches endpoint if implemented
+      });
+    } catch (error) {
+      console.error('Failed to load admin stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const adminSections = [
     {
@@ -23,10 +60,25 @@ export default function AdminDashboard() {
       ),
       links: [
         { to: '/admin/users', label: 'All Users', badge: null },
-        { to: '/admin/users/pending', label: 'Pending Verifications', badge: 'pending' },
+        { to: '/admin/users/pending', label: 'Pending Verifications', badge: stats.pendingVerifications > 0 ? stats.pendingVerifications.toString() : null },
         { to: '/admin/users/create', label: 'Create New User', badge: null },
       ],
-      color: '#3b82f6',
+      color: '#F57C00',
+    },
+    {
+      title: 'Platform Analytics',
+      description: 'Track platform usage with anonymized user data',
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M18 20V10"></path>
+          <path d="M12 20V4"></path>
+          <path d="M6 20v-6"></path>
+        </svg>
+      ),
+      links: [
+        { to: '/admin/analytics', label: 'View Analytics Dashboard', badge: null },
+      ],
+      color: '#F57C00',
     },
     {
       title: 'Data Breach Management',
@@ -42,7 +94,7 @@ export default function AdminDashboard() {
         { to: '/admin/breaches', label: 'Active Breaches', badge: null },
         { to: '/admin/breaches', label: 'Report New Breach', badge: null },
       ],
-      color: '#dc2626',
+      color: '#F57C00',
     },
   ];
 
@@ -56,6 +108,12 @@ export default function AdminDashboard() {
             Welcome back, {user?.full_name || 'Administrator'}
           </p>
         </div>
+        <Link to="/agents" className="back-to-app-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 18l-6-6 6-6"></path>
+          </svg>
+          Back to App
+        </Link>
       </div>
 
       {/* Admin Sections Grid */}
@@ -71,7 +129,7 @@ export default function AdminDashboard() {
             <div className="section-links">
               {section.links.map((link) => (
                 <Link
-                  key={link.to}
+                  key={link.to + link.label}
                   to={link.to}
                   className="section-link"
                   style={{ borderLeftColor: section.color }}
@@ -102,7 +160,7 @@ export default function AdminDashboard() {
       {/* Quick Stats */}
       <div className="admin-stats">
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>
+          <div className="stat-icon" style={{ backgroundColor: '#FFF3E0', color: '#F57C00' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
@@ -111,33 +169,33 @@ export default function AdminDashboard() {
             </svg>
           </div>
           <div className="stat-content">
-            <p className="stat-label">Total Users</p>
-            <p className="stat-value">—</p>
+            <p className="stat-label">TOTAL USERS</p>
+            <p className="stat-value">{isLoading ? '...' : stats.totalUsers}</p>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}>
+          <div className="stat-icon" style={{ backgroundColor: '#FFF3E0', color: '#F57C00' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
             </svg>
           </div>
           <div className="stat-content">
-            <p className="stat-label">Active Breaches</p>
-            <p className="stat-value">—</p>
+            <p className="stat-label">ACTIVE BREACHES</p>
+            <p className="stat-value">{isLoading ? '...' : stats.activeBreaches}</p>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
+          <div className="stat-icon" style={{ backgroundColor: '#FFF3E0', color: '#F57C00' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
           </div>
           <div className="stat-content">
-            <p className="stat-label">Pending Verifications</p>
-            <p className="stat-value">—</p>
+            <p className="stat-label">PENDING VERIFICATIONS</p>
+            <p className="stat-value">{isLoading ? '...' : stats.pendingVerifications}</p>
           </div>
         </div>
       </div>

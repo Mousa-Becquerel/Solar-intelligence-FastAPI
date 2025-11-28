@@ -3,7 +3,7 @@
  * Ported from templates/waitlist.html
  */
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../api';
 import styles from './WaitlistPage.module.css';
@@ -177,6 +177,10 @@ export function WaitlistPage() {
       setEmail('');
       setSelectedAgents([]);
       setCurrentStep(1);
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setMessage(null);
+      }, 5000);
     } catch (error: any) {
       setMessage({
         type: 'error',

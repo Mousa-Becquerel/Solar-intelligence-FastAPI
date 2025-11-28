@@ -331,7 +331,7 @@ export function CookiePolicyPage() {
                 View Terms of Service
               </a>
               <button
-                onClick={() => {/* TODO: Implement cookie settings modal */}}
+                onClick={() => setShowCookieSettings(true)}
                 className={`${styles.btn} ${styles.btnPrimary}`}
               >
                 Manage Cookie Settings
@@ -362,6 +362,12 @@ export function CookiePolicyPage() {
       {isContactOpen && (
         <ContactWidget onClose={() => setIsContactOpen(false)} />
       )}
+
+      {/* Cookie Settings Modal */}
+      <CookieSettingsModal
+        isOpen={showCookieSettings}
+        onClose={() => setShowCookieSettings(false)}
+      />
     </div>
   );
 }

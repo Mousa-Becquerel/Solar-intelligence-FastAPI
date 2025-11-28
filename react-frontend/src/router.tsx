@@ -48,6 +48,7 @@ const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
 const AdminPendingUsersPage = lazy(() => import('./pages/admin/AdminPendingUsersPage'));
 const AdminCreateUserPage = lazy(() => import('./pages/admin/AdminCreateUserPage'));
 const AdminBreachesPage = lazy(() => import('./pages/admin/AdminBreachesPage'));
+const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'));
 
 export const router = createBrowserRouter([
   {
@@ -176,6 +177,16 @@ export const router = createBrowserRouter([
       <Suspense fallback={<LoadingFallback />}>
         <ProtectedRoute requireAdmin>
           <AdminBreachesPage />
+        </ProtectedRoute>
+      </Suspense>
+    ),
+  },
+  {
+    path: '/admin/analytics',
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <ProtectedRoute requireAdmin>
+          <AdminAnalyticsPage />
         </ProtectedRoute>
       </Suspense>
     ),

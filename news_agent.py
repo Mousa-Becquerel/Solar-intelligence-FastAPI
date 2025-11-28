@@ -2,8 +2,8 @@
 News Analysis Agent
 ===================
 
-Multi-agent workflow for news analysis with intent classification and web scraping.
-Uses OpenAI Agents SDK with classifier-based routing.
+Single-agent workflow for news analysis with file search.
+Uses OpenAI Agents SDK with FileSearchTool for news database queries.
 """
 
 import os
@@ -13,11 +13,11 @@ from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from dotenv import load_dotenv
 import asyncio
-from pydantic import BaseModel
 
 # Import from openai-agents library
-from agents import Agent, Runner, FileSearchTool, WebSearchTool, ModelSettings
+from agents import Agent, Runner, FileSearchTool, ModelSettings
 from fastapi_app.utils.session_factory import create_agent_session
+from openai.types.shared.reasoning import Reasoning
 
 # Logfire imports
 import logfire
@@ -64,54 +64,19 @@ if not OPENAI_API_KEY:
 # Set OpenAI API key for agents library
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
-# === Pydantic Models ===
-class IntentClassificationSchema(BaseModel):
-    """Schema for intent classification"""
-    query_class: str  # "general_news_query", "more_detailed_news_query", or "general"
-
-class WebSearchFilters(BaseModel):
-    """Filters for web search tool"""
-    allowed_domains: list[str] = []
-
-    class Config:
-        extra = "allow"
-
 @dataclass
 class NewsAgentConfig:
     """Configuration for the news agent"""
-    model: str = "gpt-4.1"
-    intent_model: str = "gpt-4.1-mini"  # Using gpt-4o for intent classification (gpt-5 not widely available yet)
+    model: str = "gpt-5-mini"
     vector_store_id: str = "vs_68eac39b41248191be25c41a212c58a2"
     agent_name: str = "News Analyst"
     verbose: bool = True
 
 class NewsAgent:
     """
-    Multi-agent news analysis workflow using OpenAI Agents SDK.
-    Uses intent classification to route queries to appropriate specialized agents.
+    Single-agent news analysis workflow using OpenAI Agents SDK.
+    Uses FileSearchTool to query the news database.
     """
-
-    INTENT_CLASSIFICATION_PROMPT = """You are an intent classification agent. Your role is to classify user queries into categories:
-
-**"general_news_query"**: Use this when:
-- User asks about any news topic (e.g., "What's the latest news about France?", "Show me solar news")
-- User asks for news on a specific topic for the first time
-- User asks general questions about news, trends, or developments
-- User wants to search for articles or news items
-- User asks for more details about any article (even if previously mentioned)
-- This is the DEFAULT for ALL news-related queries
-
-**"more_detailed_news_query"**: DISABLED - Never use this option. Always use "general_news_query" instead.
-
-**"general"**: Use this for:
-- Greetings (hello, hi, how are you)
-- General conversation unrelated to news
-- Off-topic queries
-
-**IMPORTANT**: Always choose "general_news_query" for any news-related question, regardless of whether it's a follow-up or initial query.
-
-Analyze the conversation history carefully to determine the intent.
-"""
 
     NEWS_AGENT_PROMPT = """You are a news analysis assistant specialized in photovoltaic (PV) and renewable energy news. You have access to a news database through file search.
 
@@ -172,125 +137,56 @@ The database contains news articles in JSON format with EXACTLY these fields:
 - If users don't specify a time period, provide the most recent information available
 """
 
-    SCRAPING_AGENT_PROMPT = """You are a scraping agent that extracts detailed information from news article links.
-
-**Your Task:**
-1. First, look through the conversation history to find a pv-magazine.com URL that was mentioned
-2. If you find a URL, use the web search tool to extract detailed content from that specific article
-3. Provide comprehensive details including:
-   - Full article content and context
-   - Specific numbers, dates, financial figures, and facts
-   - Key quotes and insights
-   - Additional information not in the summary
-
-**If NO URL is found in the conversation:**
-- Politely inform the user that you need them to first ask for news articles
-- Suggest they ask for general news first, then you can provide more details
-- Example: "I couldn't find a specific article URL in our conversation. Please first ask me to search for news (e.g., 'What's the latest news about X?'), and then I can provide more details about a specific article."
-
-**Important:**
-- Always reference the specific article URL you're analyzing
-- Present findings in a clear, well-structured markdown format
-- Use **bold** for key numbers and facts
-"""
-
     def __init__(self, config: Optional[NewsAgentConfig] = None):
         """
-        Initialize the News Agent with multi-agent workflow
+        Initialize the News Agent
 
         Args:
             config: Configuration object for the agent
         """
         self.config = config or NewsAgentConfig()
-        self.intent_agent = None
         self.news_agent = None
-        self.scraping_agent = None
-        # Removed conversation_sessions dict - using stateless PostgreSQL sessions now
 
         logger.info("Using stateless PostgreSQL sessions for scalability")
 
-        # Initialize agents
+        # Initialize agent
         self._initialize_agents()
 
-        logger.info(f"✅ News Agent workflow initialized (Memory: SQLite)")
+        logger.info(f"✅ News Agent initialized")
 
     def _initialize_agents(self):
-        """Create all agents in the workflow"""
+        """Create the news agent"""
         try:
-            # 1. Create intent classification agent
-            self.intent_agent = Agent(
-                name="Intent Classifier",
-                instructions=self.INTENT_CLASSIFICATION_PROMPT,
-                model=self.config.intent_model,
-                output_type=IntentClassificationSchema,
-                model_settings=ModelSettings(
-                    temperature=0.3,  # Lower temperature for consistent classification
-                    top_p=1,
-                    max_tokens=100,
-                    store=True
-                )
-            )
-            logger.info("✅ Created intent classification agent")
-
-            # 2. Create file search tool for news agent
+            # Create file search tool for news agent
             file_search = FileSearchTool(
                 max_num_results=8,
                 vector_store_ids=[self.config.vector_store_id],
                 include_search_results=True,
             )
 
-            # 3. Create news agent with file search
+            # Create news agent with file search
             self.news_agent = Agent(
                 name="News Analyst",
                 instructions=self.NEWS_AGENT_PROMPT,
                 model=self.config.model,
                 tools=[file_search],
                 model_settings=ModelSettings(
-                    temperature=0.7,
-                    top_p=1,
-                    max_tokens=4096,  # Increased from 2048 to allow for complete responses with citations
-                    store=True
+                    store=True,
+                    reasoning=Reasoning(
+                        effort="low",
+                        summary="auto"
+                    )
                 )
             )
             logger.info(f"✅ Created news agent with vector store: {self.config.vector_store_id}")
 
-            # 4. Create web search tool for scraping agent (matching new_agent_new.py)
-            web_search = WebSearchTool(
-                user_location={
-                    "type": "approximate",
-                    "country": None,
-                    "region": None,
-                    "city": None,
-                    "timezone": None
-                },
-                search_context_size="medium",
-                filters=WebSearchFilters(
-                    allowed_domains=["www.pv-magazine.com"]
-                )
-            )
-
-            # 5. Create scraping agent with web search
-            self.scraping_agent = Agent(
-                name="Scraping Agent",
-                instructions=self.SCRAPING_AGENT_PROMPT,
-                model=self.config.model,
-                tools=[web_search],
-                model_settings=ModelSettings(
-                    temperature=0.7,
-                    top_p=1,
-                    max_tokens=4096,  # Increased from 2048 to allow for detailed article content
-                    store=True
-                )
-            )
-            logger.info("✅ Created scraping agent with web search")
-
         except Exception as e:
-            logger.error(f"❌ Failed to initialize agents: {e}")
+            logger.error(f"❌ Failed to initialize news agent: {e}")
             raise
 
     async def analyze_stream(self, query: str, conversation_id: str = None):
         """
-        Analyze query with streaming response using multi-agent workflow
+        Analyze query with streaming response
 
         Args:
             query: Natural language query about news
@@ -308,23 +204,8 @@ The database contains news articles in JSON format with EXACTLY these fields:
                 session = create_agent_session(conversation_id, agent_type='news')
                 logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (news agent)")
 
-            # Step 1: Classify the intent (non-streaming)
-            # IMPORTANT: Don't pass session to intent classifier to avoid duplicate messages in history
-            classify_result = await Runner.run(self.intent_agent, query, session=None)
-            classification = classify_result.final_output.query_class if hasattr(classify_result.final_output, 'query_class') else "general"
-
-            logger.info(f"Intent classified as: {classification}")
-
-            # Step 2: Route to appropriate agent with streaming
-            if classification == "general_news_query":
-                # Use news agent with file search
-                result = Runner.run_streamed(self.news_agent, query, session=session)
-            elif classification == "more_detailed_news_query":
-                # Use scraping agent for detailed information
-                result = Runner.run_streamed(self.scraping_agent, query, session=session)
-            else:
-                # Default to news agent for general queries
-                result = Runner.run_streamed(self.news_agent, query, session=session)
+            # Run news agent with streaming
+            result = Runner.run_streamed(self.news_agent, query, session=session)
 
             # Stream text deltas as they arrive
             async for event in result.stream_events():
@@ -333,10 +214,6 @@ The database contains news articles in JSON format with EXACTLY these fields:
                     from openai.types.responses import ResponseTextDeltaEvent
                     if isinstance(event.data, ResponseTextDeltaEvent):
                         if event.data.delta:  # Only yield if there's content
-                            # Debug: Log the raw delta to inspect citation format
-                            logger.info(f"🔍 RAW DELTA: {repr(event.data.delta)}")
-
-                            # NO CLEANING - Pass through raw delta to let model citations show
                             yield event.data.delta
 
         except Exception as e:
@@ -348,7 +225,7 @@ The database contains news articles in JSON format with EXACTLY these fields:
 
     async def analyze(self, query: str, conversation_id: str = None) -> Dict[str, Any]:
         """
-        Analyze news query using multi-agent workflow
+        Analyze news query
 
         Args:
             query: Natural language query about news
@@ -373,31 +250,11 @@ The database contains news articles in JSON format with EXACTLY these fields:
                     session = create_agent_session(conversation_id, agent_type='news')
                     logger.info(f"Created stateless PostgreSQL session for conversation {conversation_id} (news agent)")
 
-                # Step 1: Classify the intent
-                # IMPORTANT: Don't pass session to intent classifier to avoid duplicate messages in history
-                classify_result = await Runner.run(self.intent_agent, query, session=None)
-                classification = classify_result.final_output.query_class if hasattr(classify_result.final_output, 'query_class') else "general"
-
-                logger.info(f"Intent classified as: {classification}")
-                agent_span.set_attribute("classification", classification)
-
-                # Step 2: Route to appropriate agent
-                if classification == "general_news_query":
-                    # Use news agent with file search
-                    result = await Runner.run(self.news_agent, query, session=session)
-                elif classification == "more_detailed_news_query":
-                    # Use scraping agent for detailed information
-                    result = await Runner.run(self.scraping_agent, query, session=session)
-                else:
-                    # Default to news agent for general queries
-                    result = await Runner.run(self.news_agent, query, session=session)
+                # Run news agent
+                result = await Runner.run(self.news_agent, query, session=session)
 
                 # Extract the final response
                 response_text = result.final_output if hasattr(result, 'final_output') else str(result)
-
-                # TEMPORARILY DISABLED: Clean citation markers from the response
-                # Testing if citations contain URLs
-                # response_text = clean_citation_markers(response_text)
 
                 # Track the response
                 agent_span.set_attribute("assistant_response", response_text)

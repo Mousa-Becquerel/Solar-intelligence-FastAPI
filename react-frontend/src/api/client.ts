@@ -28,6 +28,17 @@ import type {
   SurveyStatus,
   SurveySubmitResponse,
 } from '../types/survey';
+import type {
+  AnalyticsOverview,
+  UsageOverTime,
+  AgentUsageStats,
+  RecentQuery,
+  RecentQueriesResponse,
+  UserEngagement,
+  HourlyDistribution,
+  FullAnalyticsReport,
+  SurveyAnalytics,
+} from '../types/analytics';
 
 class APIClient {
   private baseUrl: string;
@@ -360,9 +371,12 @@ class APIClient {
   // ========================================
 
   async joinWaitlist(email: string, agents: string[]): Promise<{ message: string }> {
-    return this.request<{ message: string }>('waitlist/join', {
+    return this.request<{ message: string }>('auth/waitlist/join', {
       method: 'POST',
-      body: JSON.stringify({ email, agents }),
+      body: JSON.stringify({
+        email,
+        interested_agents: agents.join(',')
+      }),
     });
   }
 
@@ -447,6 +461,71 @@ class APIClient {
 
   async checkSurveyStatus(): Promise<SurveyStatus> {
     return this.request('survey/check-survey-status', {
+      method: 'GET',
+    });
+  }
+
+  // ========================================
+  // Analytics Endpoints (Admin)
+  // ========================================
+
+  async getAnalyticsOverview(): Promise<{ status: string; data: AnalyticsOverview }> {
+    return this.request('admin/analytics/overview', {
+      method: 'GET',
+    });
+  }
+
+  async getAnalyticsUsageOverTime(days: number = 30): Promise<{ status: string; data: UsageOverTime }> {
+    return this.request(`admin/analytics/usage-over-time?days=${days}`, {
+      method: 'GET',
+    });
+  }
+
+  async getAnalyticsAgentUsage(days: number = 30): Promise<{ status: string; data: AgentUsageStats }> {
+    return this.request(`admin/analytics/agent-usage?days=${days}`, {
+      method: 'GET',
+    });
+  }
+
+  async getAnalyticsRecentQueries(
+    limit: number = 20,
+    offset: number = 0,
+    agent?: string,
+    search?: string,
+    days?: number
+  ): Promise<{ status: string; data: RecentQueriesResponse }> {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
+    if (agent && agent !== 'all') params.append('agent', agent);
+    if (search) params.append('search', search);
+    if (days) params.append('days', days.toString());
+
+    return this.request(`admin/analytics/recent-queries?${params.toString()}`, {
+      method: 'GET',
+    });
+  }
+
+  async getAnalyticsUserEngagement(days: number = 30): Promise<{ status: string; data: UserEngagement }> {
+    return this.request(`admin/analytics/user-engagement?days=${days}`, {
+      method: 'GET',
+    });
+  }
+
+  async getAnalyticsHourlyDistribution(days: number = 30): Promise<{ status: string; data: HourlyDistribution }> {
+    return this.request(`admin/analytics/hourly-distribution?days=${days}`, {
+      method: 'GET',
+    });
+  }
+
+  async getAnalyticsFullReport(days: number = 30): Promise<{ status: string; data: FullAnalyticsReport }> {
+    return this.request(`admin/analytics/full-report?days=${days}`, {
+      method: 'GET',
+    });
+  }
+
+  async getAnalyticsSurveys(): Promise<{ status: string; data: SurveyAnalytics }> {
+    return this.request('admin/analytics/surveys', {
       method: 'GET',
     });
   }
