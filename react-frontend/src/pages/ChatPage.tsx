@@ -5,9 +5,8 @@
  */
 
 import { createContext, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import ChatContainer from '../components/chat/ChatContainer';
-import { useUIStore, useAuthStore } from '../stores';
+import { useUIStore } from '../stores';
 import ContactForm from '../components/artifact/ContactForm';
 import { SurveyModal } from '../components/survey/SurveyModal';
 import { SurveyModalStage2 } from '../components/survey/SurveyModalStage2';
@@ -21,10 +20,7 @@ export const ArtifactContext = createContext<{
 } | null>(null);
 
 export default function ChatPage() {
-  const { openArtifact, closeArtifact, clearArtifact } = useUIStore();
-  const { user } = useAuthStore();
-  const [searchParams] = useSearchParams();
-  const conversationId = searchParams.get('conversation');
+  const { openArtifact, closeArtifact, clearArtifact, activeConversationId } = useUIStore();
 
   // Survey state
   const [showSurvey1, setShowSurvey1] = useState(false);
@@ -63,8 +59,7 @@ export default function ChatPage() {
   };
 
   const openContactForm = () => {
-    const convId = conversationId ? Number(conversationId) : undefined;
-    openArtifact(<ContactForm onSuccess={handleContactSuccess} />, 'contact', convId);
+    openArtifact(<ContactForm onSuccess={handleContactSuccess} />, 'contact', activeConversationId || undefined);
   };
 
   const handleContactSuccess = () => {
@@ -94,7 +89,7 @@ export default function ChatPage() {
       <SurveyModal
         isOpen={showSurvey1}
         onClose={() => setShowSurvey1(false)}
-        onSuccess={async (newQueryCount, newQueryLimit) => {
+        onSuccess={async () => {
           setShowSurvey1(false);
           // Refresh survey status from API to get the true completion state
           await refreshSurveyStatus();
@@ -105,7 +100,7 @@ export default function ChatPage() {
       <SurveyModalStage2
         isOpen={showSurvey2}
         onClose={() => setShowSurvey2(false)}
-        onSuccess={async (newQueryCount, newQueryLimit) => {
+        onSuccess={async () => {
           setShowSurvey2(false);
           // Refresh survey status from API to get the true completion state
           await refreshSurveyStatus();

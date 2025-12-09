@@ -30,6 +30,7 @@ class AgentAccessResponse(BaseModel):
     access_reason: Optional[str]
     is_whitelisted: bool
     is_grandfathered: bool
+    is_hired: bool = False  # Whether user has explicitly hired this agent
 
     class Config:
         from_attributes = True
@@ -156,6 +157,48 @@ async def hire_agent(
         )
 
     return {"message": f"Successfully hired agent '{request.agent_type}'"}
+
+
+class TrialStatusResponse(BaseModel):
+    """Response for trial status check"""
+    is_trial_exhausted: bool
+    agents_unhired: bool
+    redirect_to_agents: bool
+    message: Optional[str] = None
+
+
+@router.get(
+    "/trial-status",
+    response_model=TrialStatusResponse,
+    summary="Check trial status",
+    description="Check if user's trial is exhausted and handle unhiring of agents"
+)
+async def check_trial_status(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Check if user's trial is exhausted.
+    If exhausted, unhire all non-fallback agents and signal redirect to Agents page.
+    """
+    is_exhausted, agents_unhired = await AgentAccessService.check_and_handle_trial_exhaustion(
+        db, current_user
+    )
+
+    if is_exhausted:
+        return TrialStatusResponse(
+            is_trial_exhausted=True,
+            agents_unhired=agents_unhired,
+            redirect_to_agents=True,
+            message="Your trial has ended. All agents except Sam have been released. Please upgrade to continue using them."
+        )
+
+    return TrialStatusResponse(
+        is_trial_exhausted=False,
+        agents_unhired=False,
+        redirect_to_agents=False,
+        message=None
+    )
 
 
 # ============================================

@@ -8,9 +8,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '../../api';
+import { useUIStore } from '../../stores';
 
 export default function NewConversationButton() {
   const navigate = useNavigate();
+  const { setActiveConversationId } = useUIStore();
   const [creating, setCreating] = useState(false);
 
   const handleNewConversation = async () => {
@@ -21,8 +23,9 @@ export default function NewConversationButton() {
       const result = await apiClient.createConversation('market');
       console.log(`✅ [NewConversationButton] Created conversation ${result.conversation_id}`);
       toast.success('New conversation created');
-      // Navigate to the new conversation
-      navigate(`/app?conversation=${result.conversation_id}`);
+      // Set conversation in store and navigate (no ID in URL)
+      setActiveConversationId(result.conversation_id);
+      navigate('/chat');
     } catch (error) {
       console.error('❌ [NewConversationButton] Failed to create conversation:', error);
       toast.error('Failed to create conversation');

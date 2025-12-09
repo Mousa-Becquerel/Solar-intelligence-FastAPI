@@ -7,8 +7,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useUIStore, useAuthStore } from '../../stores';
+import { useUIStore } from '../../stores';
 import { useAccessibleAgents } from '../../hooks/useAccessibleAgents';
 import { AGENT_DROPDOWN_NAMES } from '../../constants/agents';
 import type { AgentType } from '../../constants/agents';
@@ -17,14 +16,15 @@ interface ChatHeaderProps {
   selectedAgent: AgentType;
   onAgentChange: (agent: AgentType) => void;
   onAgentInitialized?: (initialized: boolean) => void;
+  initialAgentFromUrl?: AgentType | null;
 }
 
 export default function ChatHeader({
   selectedAgent,
   onAgentChange,
   onAgentInitialized,
+  initialAgentFromUrl,
 }: ChatHeaderProps) {
-  const navigate = useNavigate();
   const { artifactOpen, artifactContent, artifactType, openArtifact } = useUIStore();
   const { accessibleAgents, loading } = useAccessibleAgents();
 
@@ -34,16 +34,35 @@ export default function ChatHeader({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Auto-select first accessible agent if current selection is not accessible
+  // But prioritize URL-specified agent if provided and accessible
   useEffect(() => {
     if (!loading && accessibleAgents.length > 0) {
-      const isSelectedAgentAccessible = accessibleAgents.some(
-        agent => agent.agent_type === selectedAgent
-      );
+      // Check if URL-specified agent is accessible
+      if (initialAgentFromUrl) {
+        const isUrlAgentAccessible = accessibleAgents.some(
+          agent => agent.agent_type === initialAgentFromUrl
+        );
+        if (isUrlAgentAccessible && selectedAgent !== initialAgentFromUrl) {
+          // URL agent is accessible and not already selected - use it
+          onAgentChange(initialAgentFromUrl);
+        } else if (!isUrlAgentAccessible) {
+          // URL agent not accessible - fall back to first accessible agent
+          const firstAgent = accessibleAgents[0].agent_type as AgentType;
+          if (selectedAgent !== firstAgent) {
+            onAgentChange(firstAgent);
+          }
+        }
+      } else {
+        // No URL agent - check if current selection is accessible
+        const isSelectedAgentAccessible = accessibleAgents.some(
+          agent => agent.agent_type === selectedAgent
+        );
 
-      if (!isSelectedAgentAccessible) {
-        // Current agent not accessible - select first accessible agent
-        const firstAgent = accessibleAgents[0].agent_type as AgentType;
-        onAgentChange(firstAgent);
+        if (!isSelectedAgentAccessible) {
+          // Current agent not accessible - select first accessible agent
+          const firstAgent = accessibleAgents[0].agent_type as AgentType;
+          onAgentChange(firstAgent);
+        }
       }
 
       // Mark agent as initialized once we've loaded and checked accessible agents
@@ -51,7 +70,7 @@ export default function ChatHeader({
         onAgentInitialized(true);
       }
     }
-  }, [accessibleAgents, loading, selectedAgent, onAgentChange, onAgentInitialized]);
+  }, [accessibleAgents, loading, selectedAgent, onAgentChange, onAgentInitialized, initialAgentFromUrl]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

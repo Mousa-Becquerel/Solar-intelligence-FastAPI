@@ -8,12 +8,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore, useAuthStore } from '../../stores';
-import NewConversationButton from './NewConversationButton';
 import ConversationList from './ConversationList';
 
 export default function SidebarPanel() {
   const navigate = useNavigate();
-  const { sidebarExpanded, toggleSidebar, setSidebarExpanded } = useUIStore();
+  const { sidebarExpanded, toggleSidebar, setSidebarExpanded, setActiveConversationId } = useUIStore();
   const { user, logout } = useAuthStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -208,7 +207,8 @@ export default function SidebarPanel() {
               title="New Chat"
               aria-label="New Chat"
               onClick={() => {
-                // Navigate to new chat without conversation ID
+                // Clear active conversation and navigate to new chat
+                setActiveConversationId(null);
                 navigate('/chat');
               }}
               style={{
@@ -283,7 +283,8 @@ export default function SidebarPanel() {
             {/* New Chat Tab */}
             <button
               onClick={() => {
-                // Navigate to new chat without conversation ID
+                // Clear active conversation and navigate to new chat
+                setActiveConversationId(null);
                 navigate('/chat');
               }}
               style={{

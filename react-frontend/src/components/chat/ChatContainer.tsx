@@ -6,10 +6,10 @@
  */
 
 import { useState, useEffect, useCallback, useContext, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '../../api';
-import { useConversationStore, useUIStore, useAuthStore } from '../../stores';
+import { useUIStore, useAuthStore } from '../../stores';
 import type { Message } from '../../types/api';
 import type { AgentType } from '../../constants/agents';
 import ChatHeader from './ChatHeader';
@@ -17,7 +17,6 @@ import WelcomeScreen from './WelcomeScreen';
 import LoadingSkeleton from './LoadingSkeleton';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
-import QueryLimitMessage from './QueryLimitMessage';
 import { ArtifactContext } from '../../pages/ChatPage';
 
 // Agent-specific placeholders
@@ -29,7 +28,8 @@ const AGENT_PLACEHOLDERS: Record<AgentType, string> = {
   manufacturer_financial: 'Ask about PV manufacturer financials...',
   nzia_market_impact: 'Ask about NZIA market impact...',
   component_prices: 'Ask about component prices...',
-  seamless: 'Ask about seamless IPV...',
+  seamless: 'Ask about IPV...',
+  quality: 'Ask about PV risks, reliability, and degradation...',
 };
 
 // Helper to generate unique message IDs
@@ -40,10 +40,27 @@ const generateMessageId = () => {
 
 export default function ChatContainer() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const conversationId = searchParams.get('conversation');
-  const { saveArtifact, restoreArtifact } = useUIStore();
+  const navigate = useNavigate();
+  const agentFromUrl = searchParams.get('agent') as AgentType | null;
+  const { saveArtifact, restoreArtifact, activeConversationId, setActiveConversationId } = useUIStore();
   const { user } = useAuthStore();
   const artifactContext = useContext(ArtifactContext);
+
+  // Use store-based conversation ID (not URL)
+  const conversationId = activeConversationId;
+
+  // Clean URL on mount if it has conversation param
+  useEffect(() => {
+    if (searchParams.has('conversation')) {
+      // Remove conversation from URL but keep agent if present
+      const agent = searchParams.get('agent');
+      if (agent) {
+        setSearchParams({ agent }, { replace: true });
+      } else {
+        navigate('/chat', { replace: true });
+      }
+    }
+  }, []);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,11 +68,11 @@ export default function ChatContainer() {
   const [streaming, setStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
   const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
-  const [selectedAgent, setSelectedAgent] = useState<AgentType>('market');
+  // Use agent from URL if provided, otherwise default to 'market'
+  const [selectedAgent, setSelectedAgent] = useState<AgentType>(agentFromUrl || 'market');
   const [agentInitialized, setAgentInitialized] = useState(false);
   const [skipLoadMessages, setSkipLoadMessages] = useState(false);
-  const [prevConversationId, setPrevConversationId] = useState<string | null>(null);
-  const [showQueryLimitMessage, setShowQueryLimitMessage] = useState(false);
+  const [prevConversationId, setPrevConversationId] = useState<number | null>(null);
   const [surveyStage, setSurveyStage] = useState<1 | 2>(1);
   const [bothSurveysCompleted, setBothSurveysCompleted] = useState(false);
 
@@ -80,11 +97,8 @@ export default function ChatContainer() {
 
   // Cancel request when navigating to new chat
   useEffect(() => {
-    const convId = conversationId ? Number(conversationId) : null;
-    const prevConvId = prevConversationId ? Number(prevConversationId) : null;
-
     // If conversation changed and we had an ongoing request, cancel it
-    if (prevConvId !== convId && abortControllerRef.current) {
+    if (prevConversationId !== conversationId && abortControllerRef.current) {
       cancelRequest();
     }
   }, [conversationId, prevConversationId, cancelRequest]);
@@ -108,17 +122,16 @@ export default function ChatContainer() {
 
   // Load messages and handle artifact persistence when conversation changes
   useEffect(() => {
-    const convId = conversationId ? Number(conversationId) : null;
-    const prevConvId = prevConversationId ? Number(prevConversationId) : null;
-
+    const convId = conversationId;
+    const prevConvId = prevConversationId;
 
     // Save artifact for previous conversation before switching
-    if (prevConvId && !isNaN(prevConvId) && prevConvId !== convId) {
+    if (prevConvId && prevConvId !== convId) {
       saveArtifact(prevConvId);
     }
 
     // Restore artifact for new conversation
-    if (convId && !isNaN(convId)) {
+    if (convId) {
       restoreArtifact(convId);
 
       // Skip loading if we just created a new conversation and already have messages
@@ -129,13 +142,14 @@ export default function ChatContainer() {
       }
       loadMessages(convId);
     } else {
-      // No conversation selected - create one immediately to avoid URL change on first message
+      // No conversation selected - create one immediately
       // But only if agent has been properly initialized by ChatHeader
       const createInitialConversation = async () => {
         try {
           const newConv = await apiClient.createConversation(selectedAgent);
           setSkipLoadMessages(true);
-          setSearchParams({ conversation: newConv.conversation_id.toString() }, { replace: true });
+          // Set conversation ID in store (not URL)
+          setActiveConversationId(newConv.conversation_id);
         } catch (error) {
           console.error('❌ [useEffect] Failed to create initial conversation:', error);
         }
@@ -152,32 +166,56 @@ export default function ChatContainer() {
     }
 
     setPrevConversationId(conversationId);
-  }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages, selectedAgent, setSearchParams, agentInitialized]);
+  }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages, selectedAgent, setActiveConversationId, agentInitialized]);
 
   const handleSendMessage = async (content: string) => {
     try {
       // Check query limits for free tier users
+      // Note: Sam (seamless) is allowed in fallback mode - backend handles daily quota
       if (user && user.plan_type === 'free' && artifactContext) {
         const currentUser = await apiClient.getCurrentUser();
         const queryCount = currentUser.monthly_query_count || 0;
         const surveyStatus = artifactContext.getSurveyStatus();
 
         // Calculate current query limit based on surveys completed
-        let currentLimit = 5; // Base limit
+        // Free tier: 5 base + 5 after survey 1 + 5 after survey 2 = 15 total max
+        let currentLimit = 5; // Base trial limit for free users
         if (surveyStatus?.stage1_completed) {
-          currentLimit += 5; // +5 for Stage 1
+          currentLimit += 5; // +5 for Stage 1 completion = 10 total
         }
         if (surveyStatus?.stage2_completed) {
-          currentLimit += 5; // +5 for Stage 2
+          currentLimit += 5; // +5 for Stage 2 completion = 15 total
         }
 
+        // Check if user is in fallback mode (trial exhausted)
+        const isInFallbackMode = queryCount >= currentLimit;
 
-        // If at or over limit, add messages showing the limit
-        if (queryCount >= currentLimit) {
+        // Sam (seamless) agent is allowed in fallback mode - backend will handle daily quota
+        const isSamAgent = selectedAgent === 'seamless';
+
+        // If at or over limit AND not using Sam agent, show the limit message
+        if (isInFallbackMode && !isSamAgent) {
 
           // Check if both surveys are completed
           const bothCompleted = surveyStatus?.stage1_completed && surveyStatus?.stage2_completed;
           setBothSurveysCompleted(bothCompleted || false);
+
+          // If both surveys completed (trial fully exhausted at 15 queries),
+          // unhire all agents and redirect to Agents page
+          if (bothCompleted) {
+            try {
+              // Call backend to unhire all non-fallback agents
+              const trialStatus = await apiClient.checkTrialStatus();
+              if (trialStatus.redirect_to_agents) {
+                toast.info(trialStatus.message || 'Your trial has ended. Redirecting to Agents page...');
+                // Redirect to Agents page
+                navigate('/agents');
+                return;
+              }
+            } catch (err) {
+              console.error('Failed to check trial status:', err);
+            }
+          }
 
           // Determine which survey to show (if any)
           if (!surveyStatus?.stage1_completed) {
@@ -187,7 +225,7 @@ export default function ChatContainer() {
           }
 
           // If no conversation, create one
-          let convId = conversationId ? Number(conversationId) : null;
+          let convId = conversationId;
           const isNewConversation = !convId;
 
           if (!convId) {
@@ -215,21 +253,21 @@ export default function ChatContainer() {
 
           setMessages((prev) => [...prev, userMessage, limitMessage]);
 
-          // Update URL if new conversation
-          // Use 'replace' to avoid triggering a full page reload/remount
+          // Update store if new conversation (not URL)
           if (isNewConversation) {
             setSkipLoadMessages(true);
-            setSearchParams({ conversation: convId.toString() }, { replace: true });
+            setActiveConversationId(convId);
           }
 
           return; // Don't send to backend
         }
+        // If using Sam in fallback mode, allow the request - backend will handle daily quota
       }
 
       setSending(true);
 
       // If no conversation selected, create one first
-      let convId = conversationId ? Number(conversationId) : null;
+      let convId = conversationId;
       const isNewConversation = !convId;
 
       if (!convId) {
@@ -247,11 +285,10 @@ export default function ChatContainer() {
       };
       setMessages((prev) => [...prev, userMessage]);
 
-      // Update URL AFTER adding message, and skip loading messages since we already have them
-      // Use 'replace' to avoid triggering a full page reload/remount
+      // Update store AFTER adding message (not URL)
       if (isNewConversation) {
         setSkipLoadMessages(true);
-        setSearchParams({ conversation: convId.toString() }, { replace: true });
+        setActiveConversationId(convId);
       }
 
       // Start streaming response
@@ -294,6 +331,28 @@ export default function ChatContainer() {
           });
           throw new Error(errorData.detail || `You need to hire the ${selectedAgent} agent first. Please go to the Agents page to hire this agent before chatting.`);
         }
+
+        // Handle 429 - Rate limit / Query limit reached
+        if (response.status === 429) {
+          const errorData = await response.json();
+          console.error('429 Too Many Requests - Query limit reached:', errorData);
+
+          const detail = errorData.detail;
+
+          // Check if it's daily fallback limit (Sam's 10 queries/day)
+          if (detail?.is_fallback_mode && detail?.daily_queries_remaining === 0) {
+            throw new Error('You\'ve used all 10 daily queries for Sam. Upgrade to Analyst or Strategist for unlimited access!');
+          }
+
+          // Check if trial ended and user trying non-fallback agent
+          if (detail?.is_fallback_mode && detail?.fallback_agent) {
+            throw new Error('Your trial has ended. Only Sam is available with 10 queries/day in the free tier. Upgrade for full access!');
+          }
+
+          // General query limit message
+          throw new Error(detail?.error || 'Query limit reached. Please upgrade your plan for more queries.');
+        }
+
         console.error(`Chat request failed with status ${response.status}`);
         throw new Error('Streaming failed');
       }
@@ -469,6 +528,7 @@ export default function ChatContainer() {
         selectedAgent={selectedAgent}
         onAgentChange={setSelectedAgent}
         onAgentInitialized={setAgentInitialized}
+        initialAgentFromUrl={agentFromUrl}
       />
 
       <div
@@ -557,7 +617,7 @@ export default function ChatContainer() {
                 ? [
                     {
                       id: streamingMessageId,
-                      conversation_id: Number(conversationId) || 0,
+                      conversation_id: conversationId || 0,
                       sender: 'bot' as const,
                       content: streamingMessage,
                       agent_type: selectedAgent,  // Use current selected agent for streaming

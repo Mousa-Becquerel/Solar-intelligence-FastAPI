@@ -48,9 +48,19 @@
 
 .cardWrapper {
   width: 320px;
+  height: 260px; /* Increased height to fit all card content */
   flex-shrink: 0;
   backface-visibility: hidden;
   transform: translateZ(0);
+  overflow: hidden; /* Prevent content overflow */
+}
+
+/* Ensure child card fills the wrapper properly */
+.cardWrapper > div {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes scroll {

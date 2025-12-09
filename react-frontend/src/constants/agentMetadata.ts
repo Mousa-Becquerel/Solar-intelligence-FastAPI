@@ -72,16 +72,17 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
       'AI/ML applications',
       'Smart grid technology',
     ],
+    premium: true,
     icon: '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   },
   nzia_policy: {
     name: 'Aniza',
-    role: 'NZIA policy expert in italian framework',
+    role: "Expert in Italy's NZIA policy framework",
     provider: 'Becquerel Institute',
     color: 'purple',
     initial: 'A',
     badges: ['ferx','nzia'],
-    description: 'NZIA policy expert in italian framework - Expert on the Net-Zero Industry Act (NZIA) auction mechanisms, compliance requirements, and regulatory frameworks for photovoltaic projects in Italy.',
+    description: "Expert in Italy's NZIA policy framework - Specialized in the Net-Zero Industry Act (NZIA) auction mechanisms, compliance requirements, and regulatory frameworks for photovoltaic projects in Italy.",
     capabilities: [
       'FERX framework analysis',
       'NZIA compliance guidance',
@@ -115,7 +116,7 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
     color: 'teal',
     initial: 'N',
     badges: ['datahub','nzia'],
-    description: 'Assesses market implications of NZIA regulations, including compliance impacts on different PV segments and regional market responses across EU countries.',
+    description: "Net-Zero Industry Act & 'Made in EU' Rules in Practice: Impacts on PV Markets, Projects' Economics & How to Comply",
     capabilities: [
       'EU NZIA market impact analysis',
       'EU manufacturing targets (40% by 2030)',
@@ -123,7 +124,7 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
       'Compliance criteria evaluation',
       'Country-level PV market forecasts',
     ],
-    premium: false,
+    premium: true,
     icon: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
   },
   component_prices: {
@@ -163,6 +164,24 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
     icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
     customBadge: '/badges/SEAMLESS-PV-LOGO.png',
   },
+  quality: {
+    name: 'Quinn',
+    role: 'PV Risk & Reliability Expert',
+    provider: 'Becquerel Institute',
+    color: 'purple',
+    initial: 'Q',
+    badges: ['datahub'],
+    description: 'Technical assistant for solar PV professionals, investors, asset managers, O&M teams, and due diligence analysts. Provides expert analysis on PV system risks, reliability, degradation, bankability, and lifecycle performance based on SolarBankability guidelines and peer-reviewed research.',
+    capabilities: [
+      'Performance Loss Rate (PLR) & degradation analysis',
+      'Technical risk assessment (FMEA, RAM analysis)',
+      'Degradation modes & inspection techniques (EL, IR, UV)',
+      'Bankability & financial risk integration',
+      'EPC & O&M best practices and checklists',
+      'IEC standards & quality frameworks',
+    ],
+    icon: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  },
 };
 
 // Agents to display on the agents page (excluding Maya and Leo per user request)
@@ -175,4 +194,5 @@ export const AVAILABLE_AGENTS: AgentType[] = [
   'nzia_market_impact',
   'component_prices',
   'seamless',
+  'quality',
 ];

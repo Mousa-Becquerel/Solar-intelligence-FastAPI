@@ -6,6 +6,7 @@
  * Matches Flask design exactly
  */
 
+import { useNavigate } from 'react-router-dom';
 import './AgentCard.css';
 import type { AgentType } from '../../constants/agents';
 import type { AgentMetadata } from '../../constants/agentMetadata';
@@ -15,9 +16,10 @@ interface AgentCardProps {
   metadata: AgentMetadata;
   isHired: boolean;
   userPlan: string;
-  onToggleHire: (agentType: AgentType) => void;
+  onToggleHire: (agentType: AgentType) => Promise<void> | void;
   onCardClick?: (agentType: AgentType) => void;
   isRecommended?: boolean;
+  isInFallbackMode?: boolean;  // True if free user has exhausted trial queries
 }
 
 export default function AgentCard({
@@ -28,12 +30,25 @@ export default function AgentCard({
   onToggleHire,
   onCardClick,
   isRecommended = false,
+  isInFallbackMode = false,
 }: AgentCardProps) {
+  const navigate = useNavigate();
   const { name, role, color, initial, premium } = metadata;
 
-  // Check if user can hire this agent
-  const canHire = !premium || userPlan === 'premium' || userPlan === 'max' || userPlan === 'admin';
-  const requiresUpgrade = premium && !canHire;
+  // Free users in fallback mode can ONLY hire Sam (seamless agent)
+  // Free users in trial can hire ALL agents
+  // Analyst users cannot hire strategist agents (Nova/Nina)
+  // Strategist/Enterprise/Admin users can hire all agents
+  const isSamAgent = agentType === 'seamless';
+  const canHire = (userPlan === 'free' && isInFallbackMode)
+    ? isSamAgent  // In fallback mode, only Sam is available
+    : (
+        !premium ||
+        (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
+        ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
+      );
+  // Show upgrade prompt for agents that can't be hired
+  const requiresUpgrade = !canHire;
 
   // Unified color scheme: Yellow background with blue icon
   const badgeColors = { bg: '#FFB74D', text: '#1e3a8a' };
@@ -46,105 +61,109 @@ export default function AgentCard({
       style={{
         position: 'relative',
         borderRadius: '16px', // MD3 large corner radius
-        padding: '24px',
+        padding: '20px',
         cursor: 'pointer',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '8px',
         minHeight: '140px',
-        overflow: 'visible', // Changed to visible to show top border
+        height: '100%', // Fill parent container
+        overflow: 'hidden', // Prevent content overflow
+        boxSizing: 'border-box',
         boxShadow: 'none',
         border: 'none', // MD3 flat design - no borders
         background: 'white',
         // Add top border for recommended agents
         borderTop: isRecommended ? '3px solid #FFB74D' : 'none',
-        paddingTop: isRecommended ? '21px' : '24px', // Adjust padding to maintain height
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = '#f5f5f5'; // Slightly darker on hover
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'white';
+        paddingTop: isRecommended ? '17px' : '20px', // Adjust padding to maintain height
+        paddingLeft: '20px',
       }}
     >
-      {/* Recommended Star Icon - Small badge in top-right */}
-      {isRecommended && (
+      {/* Tier Badge - Top Right - MD3 Chip Style */}
+      {/* Strategist badge for premium agents (Nova, Nina) */}
+      {/* Analyst badge for non-premium, non-Sam agents */}
+      {/* No badge for Sam (seamless) */}
+      {premium ? (
         <div
           style={{
             position: 'absolute',
-            top: '8px',
-            right: premium ? '46px' : '8px', // Shift left if there's a premium badge
-            background: '#FFB74D',
-            borderRadius: '50%',
-            width: '28px',
-            height: '28px',
+            top: '10px',
+            right: '10px',
+            background: 'linear-gradient(135deg, #FFB74D 0%, #F59E0B 100%)',
+            color: '#1e293b',
+            fontSize: '0.6875rem',
+            fontWeight: '600',
+            padding: '5px 10px',
+            borderRadius: '16px',
+            zIndex: 3,
+            letterSpacing: '0.02em',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 3,
-            boxShadow: '0 2px 4px rgba(255, 183, 77, 0.3)',
+            gap: '4px',
           }}
-          title="Recommended for you"
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="#1e293b"
-            stroke="none"
-          >
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
           </svg>
+          Strategist
         </div>
-      )}
-
-      {/* Premium Badge - Top Right */}
-      {premium && (
+      ) : !isSamAgent ? (
         <div
           style={{
             position: 'absolute',
-            top: '12px',
-            right: '12px',
-            background: '#E89C43',
-            color: 'white',
-            fontSize: '0.625rem',
+            top: '10px',
+            right: '10px',
+            background: 'linear-gradient(135deg, #E8F0FE 0%, #DBEAFE 100%)',
+            color: '#1e3a8a',
+            fontSize: '0.6875rem',
             fontWeight: '600',
-            padding: '4px 8px',
-            borderRadius: '4px',
+            padding: '5px 10px',
+            borderRadius: '16px',
             zIndex: 3,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
+            letterSpacing: '0.02em',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            border: '1px solid rgba(30, 58, 138, 0.1)',
           }}
         >
-          Premium
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          Analyst
         </div>
-      )}
+      ) : null}
 
       {/* Header with small square icon and name */}
       <div
         style={{
           display: 'flex',
           alignItems: 'flex-start',
-          gap: '12px',
+          gap: '10px',
+          marginTop: '24px', // Space for tier badge
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         {/* Small Square Icon - Image or Letter */}
         <div
           style={{
-            width: '48px',
-            height: '48px',
+            width: '40px',
+            height: '40px',
             borderRadius: '8px',
             background: badgeColors.bg,
             color: badgeColors.text,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1.25rem',
+            fontSize: '1.125rem',
             fontWeight: '600',
             flexShrink: 0,
             fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
-            padding: '8px',
+            padding: '6px',
             overflow: 'hidden',
           }}
         >
@@ -239,33 +258,37 @@ export default function AgentCard({
         </div>
       </div>
 
-      {/* Action Buttons - Hire and Explore */}
+      {/* Action Buttons - Chat and Hire */}
       <div
         style={{
           display: 'flex',
           gap: '8px',
           marginTop: 'auto',
+          flexShrink: 0,
         }}
       >
-        {/* Hire/Unhire Button */}
+        {/* Chat Button - Left side */}
         <button
-          onClick={(e) => {
+          onClick={async (e) => {
             e.stopPropagation(); // Prevent card click
-            if (!requiresUpgrade) onToggleHire(agentType);
+            // Auto-hire if not already hired (and user can hire)
+            if (!isHired && !requiresUpgrade) {
+              await onToggleHire(agentType);
+            }
+            // Navigate to chat with this agent selected
+            if (!requiresUpgrade) {
+              navigate(`/chat?agent=${agentType}`);
+            }
           }}
           disabled={requiresUpgrade}
           style={{
             flex: 1,
-            padding: '12px 16px',
-            background: requiresUpgrade
-              ? '#f5f5f5'
-              : isHired
-                ? '#1e3a8a' // Blue for hired state
-                : '#FFB74D', // Yellow for hire action
-            color: requiresUpgrade ? '#9ca3af' : 'white', // White text for both hired and hire states
+            padding: '10px 14px',
+            background: requiresUpgrade ? '#f5f5f5' : '#1e3a8a', // Blue for chat
+            color: requiresUpgrade ? '#9ca3af' : 'white',
             border: 'none',
             borderRadius: '9999px', // Full rounded
-            fontSize: '0.875rem',
+            fontSize: '0.8125rem',
             fontWeight: '500',
             cursor: requiresUpgrade ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -274,7 +297,55 @@ export default function AgentCard({
             justifyContent: 'center',
             gap: '6px',
             fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
-            minHeight: '40px',
+            minHeight: '36px',
+            boxShadow: 'none',
+          }}
+          onMouseEnter={(e) => {
+            if (!requiresUpgrade) {
+              e.currentTarget.style.background = '#1e40af'; // Lighter blue on hover
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!requiresUpgrade) {
+              e.currentTarget.style.background = '#1e3a8a';
+            }
+          }}
+        >
+          Chat
+        </button>
+
+        {/* Hire/Unhire Button - Right side */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent card click
+            if (!requiresUpgrade) onToggleHire(agentType);
+          }}
+          disabled={requiresUpgrade}
+          style={{
+            flex: 1,
+            padding: '10px 14px',
+            background: requiresUpgrade
+              ? '#f5f5f5'
+              : isHired
+                ? '#FFB74D' // Yellow for hired state (to unhire)
+                : '#f5f5f5', // Gray for not hired
+            color: requiresUpgrade
+              ? '#9ca3af'
+              : isHired
+                ? 'white'
+                : '#64748b',
+            border: 'none',
+            borderRadius: '9999px', // Full rounded
+            fontSize: '0.8125rem',
+            fontWeight: '500',
+            cursor: requiresUpgrade ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+            minHeight: '36px',
             boxShadow: 'none',
             position: 'relative',
             overflow: 'hidden',
@@ -285,9 +356,9 @@ export default function AgentCard({
               return;
             }
             if (isHired) {
-              e.currentTarget.style.background = '#1e40af'; // Lighter blue on hover
+              e.currentTarget.style.background = '#F5A73B'; // Darker yellow on hover
             } else {
-              e.currentTarget.style.background = '#F5A73B'; // Slightly darker yellow on hover
+              e.currentTarget.style.background = '#eeeeee';
             }
           }}
           onMouseLeave={(e) => {
@@ -296,9 +367,9 @@ export default function AgentCard({
               return;
             }
             if (isHired) {
-              e.currentTarget.style.background = '#1e3a8a';
-            } else {
               e.currentTarget.style.background = '#FFB74D';
+            } else {
+              e.currentTarget.style.background = '#f5f5f5';
             }
           }}
         >
@@ -338,40 +409,6 @@ export default function AgentCard({
           ) : (
             <span>Hire</span>
           )}
-        </button>
-
-        {/* Explore Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent card click
-            onCardClick?.(agentType);
-          }}
-          style={{
-            flex: 1,
-            padding: '12px 16px',
-            background: '#f5f5f5', // MD3 secondary button background
-            color: '#64748b',
-            border: 'none',
-            borderRadius: '9999px', // Full rounded
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
-            minHeight: '40px',
-            boxShadow: 'none',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#eeeeee';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#f5f5f5';
-          }}
-        >
-          <span>Explore</span>
         </button>
       </div>
 

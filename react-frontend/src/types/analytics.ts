@@ -44,6 +44,7 @@ export interface AgentUsageStats {
 export interface RecentQuery {
   id: number;
   query: string;
+  response: string;
   agent: string;
   timestamp: string;
   user_hash: string;

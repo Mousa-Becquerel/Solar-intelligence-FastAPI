@@ -22,6 +22,7 @@ AGENT_NAME_MAPPING = {
     "Manufacturer_Financial_Analyst": "manufacturer_financial",  # Finn
     "Component_Prices_Analyst": "component_prices",  # Priya
     "IPV_Expert": "seamless",  # Sam
+    "PV_Risk_Reliability_Expert": "quality",  # Quinn
 }
 
 
@@ -41,6 +42,7 @@ Below are descriptions of the available agents and their capabilities, as well a
 - Manufacturer Financial Analyst (Finn): Analyzes financial performance, investment opportunities, and economic viability of solar manufacturers. Provides insights on market valuations, profitability trends, cost structures, and financial forecasting.
 - Component Prices Analyst (Priya): Tracks and analyzes photovoltaic component pricing across the full PV value chain including modules, polysilicon, wafers, cells, and raw materials. Provides multi-region price comparisons, technology-specific pricing trends (PERC, TOPCon, HJT), and weekly price data updates covering China, EU, US, India, and Australia markets.
 - IPV Expert (Sam): Retrieval-bound expert with access to 6 comprehensive documents covering IPV market analysis, regulatory environment, manufacturing costs, and long-term deployment scenarios. Provides insights on all integrated photovoltaic segments: BIPV (building-integrated), IIPV (infrastructure-integrated), AgriPV (agriculture), and VIPV (vehicle-integrated). Covers market potential, cost-competitiveness, stakeholder needs, standards compliance, and SAM forecasts up to 2050.
+- PV Risk & Reliability Expert (Quinn): Technical assistant for solar PV professionals, investors, asset managers, O&M teams, and due diligence analysts. Provides expert analysis on PV system risks, reliability, degradation, bankability, and lifecycle performance. Covers Performance Loss Rate (PLR) calculation methodologies, technical risk assessment (FMEA, RAM analysis), degradation modes and inspection techniques (EL, IR, UV), EPC & O&M best practices, and IEC standards compliance.
 
 **Valid Agent Enum Names** (use exactly as provided below and never output any other string):
 
@@ -52,7 +54,8 @@ Below are descriptions of the available agents and their capabilities, as well a
   \"NIZA_Market_Impact_Expert\",
   \"Manufacturer_Financial_Analyst\",
   \"Component_Prices_Analyst\",
-  \"IPV_Expert\"
+  \"IPV_Expert\",
+  \"PV_Risk_Reliability_Expert\"
 ]
 
 # Steps

@@ -12,17 +12,19 @@ export type AgentType =
   | 'manufacturer_financial'
   | 'nzia_market_impact'
   | 'component_prices'
-  | 'seamless';
+  | 'seamless'
+  | 'quality';
 
 export const AGENT_TITLES: Record<AgentType, string> = {
   market: 'PV Capacity Analysis',
   news: 'News & Insights',
   digitalization: 'Digitalization Expert',
-  nzia_policy: 'NZIA policy expert in italian framework',
+  nzia_policy: "Expert in Italy's NZIA policy framework",
   manufacturer_financial: 'Manufacturer Financial Analyst',
   nzia_market_impact: 'NZIA Market Impact Expert',
   component_prices: 'Component Prices Analysis',
   seamless: 'IPV Expert',
+  quality: 'PV Risk & Reliability Expert',
 };
 
 // Agent dropdown display names (shown in chat header)
@@ -30,11 +32,12 @@ export const AGENT_DROPDOWN_NAMES: Record<AgentType, string> = {
   market: 'Alex - PV Capacity',
   news: 'Emma - News Analyst',
   digitalization: 'Nova - Digitalization Expert',
-  nzia_policy: 'Aniza - NZIA policy expert in italian framework',
+  nzia_policy: "Aniza - Expert in Italy's NZIA policy framework",
   manufacturer_financial: 'Finn - Manufacturer Financial Analyst',
   nzia_market_impact: 'Nina - NZIA Market Impact Expert',
   component_prices: 'Priya - Component Prices Analyst',
   seamless: 'Sam - IPV Expert',
+  quality: 'Quinn - PV Risk & Reliability Expert',
 };
 
 export interface SuggestedPrompt {
@@ -206,32 +209,32 @@ export const AGENT_PROMPTS: Record<AgentType, SuggestedPrompt[]> = {
   ],
   nzia_market_impact: [
     {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#26A69A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
       title: 'EU Targets',
       prompt: 'What are the EU NZIA manufacturing targets for 2030 and 2040?',
     },
     {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00897B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>',
       title: 'Compliance Impact',
       prompt: 'How will NZIA compliance criteria affect PV project development across different EU countries?',
     },
     {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#26A69A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>',
       title: 'Segment Comparison',
       prompt: 'Compare NZIA impact on utility-scale vs residential PV segments',
     },
     {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00897B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>',
       title: 'Germany Response',
       prompt: "What are Germany's projected PV market responses to NZIA implementation?",
     },
     {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#26A69A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
       title: 'Implementation Timeline',
       prompt: 'What is the NZIA implementation timeline and key milestones from 2024-2026?',
     },
     {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00897B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>',
       title: 'Recommendations',
       prompt: 'What strategic recommendations does the NZIA report provide for PV manufacturers and developers?',
     },
@@ -291,13 +294,45 @@ export const AGENT_PROMPTS: Record<AgentType, SuggestedPrompt[]> = {
     },
     {
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>',
-      title: 'Stakeholder Guide',
-      prompt: 'What practical guidance does the IPV handbook provide for stakeholders?',
+      title: 'IPV Applications',
+      prompt: 'What are the main applications for integrated photovoltaics in buildings?',
     },
     {
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>',
       title: 'SEAMLESS Project',
       prompt: 'What are the main objectives and findings of the SEAMLESS-PV project?',
+    },
+  ],
+  quality: [
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>',
+      title: 'PLR Methods',
+      prompt: 'What are the key performance loss rate (PLR) calculation methodologies?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+      title: 'PV Failure Modes',
+      prompt: 'What are the main PV failure taxonomy categories and failure modes?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>',
+      title: 'Inspection Techniques',
+      prompt: 'What inspection methods are used for PV degradation analysis (EL, IR, UV)?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
+      title: 'Bankability Factors',
+      prompt: 'What are the key technical risks affecting PV project bankability and LCOE?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>',
+      title: 'EPC Best Practices',
+      prompt: 'What are the technical specifications and checklists for EPC contracts?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>',
+      title: 'O&M Optimization',
+      prompt: 'What are best practices for preventive vs predictive maintenance in PV systems?',
     },
   ],
 };

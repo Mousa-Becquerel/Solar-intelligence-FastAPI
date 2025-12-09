@@ -2,9 +2,9 @@
 Async Database Models for FastAPI
 Simplified version for testing - will gradually match Flask models
 """
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Float
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Float, Date
 from sqlalchemy.sql import func
-from datetime import datetime
+from datetime import datetime, date
 import bcrypt
 
 from fastapi_app.db.session import Base
@@ -42,13 +42,18 @@ class User(Base):
     terms_version = Column(String(10), default='1.0')
 
     # Plan and Usage Tracking
-    plan_type = Column(String(20), default='free')  # 'free' or 'premium'
+    # Plan types: 'free', 'analyst', 'strategist', 'enterprise'
+    plan_type = Column(String(20), default='free')
     query_count = Column(Integer, default=0)
     last_query_date = Column(DateTime, nullable=True)
     plan_start_date = Column(DateTime, nullable=True)
     plan_end_date = Column(DateTime, nullable=True)
     monthly_query_count = Column(Integer, default=0)
     last_reset_date = Column(DateTime, nullable=True)
+
+    # Daily free queries for fallback agents (after main queries exhausted)
+    daily_free_queries = Column(Integer, default=10)
+    daily_free_queries_reset_date = Column(Date, nullable=True)
 
     # Soft Delete for Account Deletion (30-day grace period)
     deleted = Column(Boolean, default=False, nullable=False)
@@ -100,11 +105,16 @@ class User(Base):
 
         Note: For 'free' tier, base limit is 5 queries.
         Survey bonuses are added separately in the profile endpoint.
+        Paid plans (analyst, strategist, enterprise) have unlimited queries.
         """
         limits = {
             'free': 5,  # Base limit: 5 queries (can be increased by surveys)
-            'premium': 1000,
-            'max': 10000
+            'analyst': 999999,  # Unlimited
+            'strategist': 999999,  # Unlimited
+            'enterprise': 999999,  # Unlimited
+            # Legacy support
+            'premium': 999999,
+            'max': 999999,
         }
         return limits.get(self.plan_type, 5)
 
@@ -113,6 +123,43 @@ class User(Base):
         if self.role == 'admin':
             return True
         return self.monthly_query_count < self.get_query_limit()
+
+    def is_in_fallback_mode(self, total_query_limit: int) -> bool:
+        """Check if free user has exhausted main queries and is in fallback mode
+
+        Args:
+            total_query_limit: The total query limit including survey bonuses
+        """
+        if self.plan_type != 'free':
+            return False
+        if self.role == 'admin':
+            return False
+        return (self.monthly_query_count or 0) >= total_query_limit
+
+    def can_use_fallback_agent(self) -> bool:
+        """Check if user can make a query to a fallback agent (daily limit)"""
+        if self.role == 'admin':
+            return True
+
+        # Reset daily queries if it's a new day
+        today = date.today()
+        if self.daily_free_queries_reset_date is None or self.daily_free_queries_reset_date < today:
+            return True  # Will be reset when query is made
+
+        return (self.daily_free_queries or 0) > 0
+
+    def use_daily_free_query(self):
+        """Decrement daily free query counter, reset if new day"""
+        today = date.today()
+
+        # Reset if it's a new day
+        if self.daily_free_queries_reset_date is None or self.daily_free_queries_reset_date < today:
+            self.daily_free_queries = 9  # 10 - 1 for this query
+            self.daily_free_queries_reset_date = today
+        else:
+            self.daily_free_queries = max(0, (self.daily_free_queries or 10) - 1)
+
+        self.last_query_date = datetime.utcnow()
 
     def increment_query_count(self):
         """Increment query counts"""
@@ -175,9 +222,12 @@ class AgentAccess(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     agent_type = Column(String(50), unique=True, nullable=False, index=True)
-    required_plan = Column(String(20), default='free')  # 'free', 'premium', 'max', 'admin'
+    # Plan types: 'free', 'analyst', 'strategist', 'enterprise', 'admin'
+    required_plan = Column(String(20), default='free')
     is_enabled = Column(Boolean, default=True)
     description = Column(Text, nullable=True)
+    # Whether this agent is available in fallback mode (for free users after queries exhausted)
+    available_in_fallback = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

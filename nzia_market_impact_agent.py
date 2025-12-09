@@ -81,7 +81,7 @@ class NZIAMarketImpactAgentConfig:
         """Set default vector store IDs if not provided"""
         if self.vector_store_ids is None:
             self.vector_store_ids = [
-                "vs_690b636df880819196c9c9d62deaf221"  # Becquerel Institute NZIA Market Impact report
+                "vs_692f24b9c0708191a6f5c1583092f733"  # Becquerel Institute NZIA Market Impact report
             ]
 
 class NZIAMarketImpactAgent:

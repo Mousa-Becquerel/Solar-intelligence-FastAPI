@@ -10,6 +10,7 @@ import { FeatureHighlightSection } from '../../components/landing/FeatureHighlig
 import { AgentsSection } from '../../components/landing/AgentsSection';
 import { WorkflowSection } from '../../components/landing/WorkflowSection';
 import { ComparisonSection } from '../../components/landing/ComparisonSection';
+import { PricingSection } from '../../components/landing/PricingSection';
 import { FAQSection } from '../../components/landing/FAQSection';
 import { Footer } from '../../components/landing/Footer';
 import { ContactWidget } from '../../components/landing/ContactWidget';
@@ -30,6 +31,7 @@ export function LandingPage() {
       <AgentsSection />
       <WorkflowSection />
       <ComparisonSection />
+      <PricingSection />
       <FAQSection />
       <Footer onContactClick={() => setIsContactOpen(true)} />
       <ContactWidget isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />

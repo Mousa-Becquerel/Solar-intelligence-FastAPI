@@ -16,6 +16,9 @@ interface UIState {
   // Sidebar state
   sidebarExpanded: boolean;
 
+  // Active conversation state (kept in memory, not URL)
+  activeConversationId: number | null;
+
   // Artifact panel state
   artifactOpen: boolean;
   artifactContent: any | null;
@@ -24,6 +27,7 @@ interface UIState {
   // Actions
   toggleSidebar: () => void;
   setSidebarExpanded: (expanded: boolean) => void;
+  setActiveConversationId: (id: number | null) => void;
   openArtifact: (content: any, type: string, conversationId?: number) => void;
   closeArtifact: () => void;
   clearArtifact: () => void;
@@ -37,6 +41,7 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       // Initial state
       sidebarExpanded: false,
+      activeConversationId: null,
       artifactOpen: false,
       artifactContent: null,
       artifactType: null,
@@ -47,6 +52,10 @@ export const useUIStore = create<UIState>()(
 
       setSidebarExpanded: (expanded: boolean) =>
         set({ sidebarExpanded: expanded }),
+
+      // Conversation actions
+      setActiveConversationId: (id: number | null) =>
+        set({ activeConversationId: id }),
 
       // Artifact actions
       openArtifact: (content: any, type: string, conversationId?: number) => {

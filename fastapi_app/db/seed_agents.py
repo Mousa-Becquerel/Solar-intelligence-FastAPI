@@ -4,9 +4,21 @@ Seed Agent Access Configuration
 Initializes the AgentAccess table with correct plan requirements
 matching the frontend agent metadata.
 
-According to frontend metadata (react-frontend/src/constants/agentMetadata.ts):
-- ONLY nzia_market_impact (Nina) is premium
-- ALL other agents should be available on free plan
+Plan hierarchy:
+- free: All users can access (Alex, Emma, Finn, Priya, Aniza, Sam)
+- analyst: Paid plan, same agents as free but unlimited queries
+- strategist: Paid plan, includes Nova and Nina
+- enterprise: Full access + custom integrations
+
+Premium agents requiring 'strategist' plan:
+- digitalization (Nova)
+- nzia_market_impact (Nina)
+
+Analyst plan agents:
+- quality (Quinn)
+
+Fallback agents (available to free users after main queries exhausted):
+- seamless (Sam) - 10 queries/day
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -22,50 +34,65 @@ AGENT_CONFIGURATIONS = [
     {
         "agent_type": "market",
         "required_plan": "free",
-        "description": "Market Intelligence Agent - Provides market trends and analysis",
-        "is_enabled": True
+        "description": "Market Intelligence Agent (Alex) - Provides market trends and analysis",
+        "is_enabled": True,
+        "available_in_fallback": False
     },
     {
         "agent_type": "news",
         "required_plan": "free",
-        "description": "News Agent - Latest solar industry news and updates",
-        "is_enabled": True
+        "description": "News Agent (Emma) - Latest solar industry news and updates",
+        "is_enabled": True,
+        "available_in_fallback": False
     },
     {
         "agent_type": "digitalization",
-        "required_plan": "free",
-        "description": "Digitalization Trends Agent - Digital transformation in solar",
-        "is_enabled": True
+        "required_plan": "strategist",
+        "description": "Digitalization Trends Agent (Nova) - Digital transformation in solar (Strategist)",
+        "is_enabled": True,
+        "available_in_fallback": False
     },
     {
         "agent_type": "nzia_policy",
         "required_plan": "free",
-        "description": "NZIA Policy Agent - European NZIA policy analysis",
-        "is_enabled": True
+        "description": "NZIA Policy Agent (Aniza) - European NZIA policy analysis",
+        "is_enabled": True,
+        "available_in_fallback": False
     },
     {
         "agent_type": "nzia_market_impact",
-        "required_plan": "premium",
-        "description": "NZIA Market Impact Agent - EU market impact analysis (Premium)",
-        "is_enabled": True
+        "required_plan": "strategist",
+        "description": "NZIA Market Impact Agent (Nina) - EU market impact analysis (Strategist)",
+        "is_enabled": True,
+        "available_in_fallback": False
     },
     {
         "agent_type": "manufacturer_financial",
         "required_plan": "free",
-        "description": "Manufacturer Financial Agent - Financial analysis of PV manufacturers",
-        "is_enabled": True
+        "description": "Manufacturer Financial Agent (Finn) - Financial analysis of PV manufacturers",
+        "is_enabled": True,
+        "available_in_fallback": False
     },
     {
         "agent_type": "component_prices",
         "required_plan": "free",
-        "description": "Component Prices Agent - PV component and raw material price analysis",
-        "is_enabled": True
+        "description": "Component Prices Agent (Priya) - PV component and raw material price analysis",
+        "is_enabled": True,
+        "available_in_fallback": False
     },
     {
         "agent_type": "seamless",
         "required_plan": "free",
-        "description": "Seamless Agent - Comprehensive solar industry analysis",
-        "is_enabled": True
+        "description": "IPV Expert Agent (Sam) - Integrated PV analysis (BIPV, AgriPV, VIPV)",
+        "is_enabled": True,
+        "available_in_fallback": True  # Sam is available in fallback mode
+    },
+    {
+        "agent_type": "quality",
+        "required_plan": "analyst",
+        "description": "PV Risk & Reliability Expert (Quinn) - Technical analysis for PV system risks, reliability, and bankability (Analyst)",
+        "is_enabled": True,
+        "available_in_fallback": False
     }
 ]
 
@@ -98,19 +125,23 @@ async def seed_agent_access():
                     existing_agent.required_plan = config["required_plan"]
                     existing_agent.description = config["description"]
                     existing_agent.is_enabled = config["is_enabled"]
+                    existing_agent.available_in_fallback = config.get("available_in_fallback", False)
                     updated_count += 1
-                    logger.info(f"   ✏️  Updated: {agent_type} (required_plan={config['required_plan']})")
+                    fallback_str = " [FALLBACK]" if config.get("available_in_fallback") else ""
+                    logger.info(f"   ✏️  Updated: {agent_type} (required_plan={config['required_plan']}){fallback_str}")
                 else:
                     # Create new agent
                     new_agent = AgentAccess(
                         agent_type=agent_type,
                         required_plan=config["required_plan"],
                         description=config["description"],
-                        is_enabled=config["is_enabled"]
+                        is_enabled=config["is_enabled"],
+                        available_in_fallback=config.get("available_in_fallback", False)
                     )
                     db.add(new_agent)
                     created_count += 1
-                    logger.info(f"   ➕ Created: {agent_type} (required_plan={config['required_plan']})")
+                    fallback_str = " [FALLBACK]" if config.get("available_in_fallback") else ""
+                    logger.info(f"   ➕ Created: {agent_type} (required_plan={config['required_plan']}){fallback_str}")
 
             await db.commit()
 
@@ -118,8 +149,10 @@ async def seed_agent_access():
             logger.info(f"   - Created: {created_count} agents")
             logger.info(f"   - Updated: {updated_count} agents")
             logger.info(f"   - Total: {len(AGENT_CONFIGURATIONS)} agents configured")
-            logger.info(f"   - Premium agents: nzia_market_impact")
-            logger.info(f"   - Free agents: market, news, digitalization, nzia_policy, manufacturer_financial, component_prices")
+            logger.info(f"   - Strategist agents: digitalization (Nova), nzia_market_impact (Nina)")
+            logger.info(f"   - Analyst agents: quality (Quinn)")
+            logger.info(f"   - Free agents: market, news, nzia_policy, manufacturer_financial, component_prices, seamless")
+            logger.info(f"   - Fallback agents: seamless (Sam)")
 
         except Exception as e:
             await db.rollback()
@@ -140,10 +173,11 @@ async def verify_agent_access():
 
             for agent in all_agents:
                 status = "✅" if agent.is_enabled else "❌"
-                plan_emoji = "💎" if agent.required_plan == "premium" else "🆓"
+                plan_emoji = "💎" if agent.required_plan == "strategist" else "🆓"
+                fallback_emoji = "🔄" if getattr(agent, 'available_in_fallback', False) else ""
                 logger.info(
                     f"   {status} {plan_emoji} {agent.agent_type}: "
-                    f"required_plan={agent.required_plan}, enabled={agent.is_enabled}"
+                    f"required_plan={agent.required_plan}, enabled={agent.is_enabled} {fallback_emoji}"
                 )
 
             # Check critical agents
@@ -166,12 +200,26 @@ async def verify_agent_access():
             nina_agent = result.scalar_one_or_none()
 
             if nina_agent:
-                if nina_agent.required_plan == "premium":
-                    logger.info("   ✅ VERIFIED: nzia_market_impact (Nina) is PREMIUM (correct)")
+                if nina_agent.required_plan == "strategist":
+                    logger.info("   ✅ VERIFIED: nzia_market_impact (Nina) is STRATEGIST (correct)")
                 else:
-                    logger.warning(f"   ⚠️  WARNING: nzia_market_impact (Nina) requires '{nina_agent.required_plan}' (should be 'premium')")
+                    logger.warning(f"   ⚠️  WARNING: nzia_market_impact (Nina) requires '{nina_agent.required_plan}' (should be 'strategist')")
             else:
                 logger.warning("   ⚠️  WARNING: nzia_market_impact (Nina) not found in database")
+
+            # Check fallback agent
+            result = await db.execute(
+                select(AgentAccess).where(AgentAccess.agent_type == "seamless")
+            )
+            sam_agent = result.scalar_one_or_none()
+
+            if sam_agent:
+                if getattr(sam_agent, 'available_in_fallback', False):
+                    logger.info("   ✅ VERIFIED: seamless (Sam) is FALLBACK agent (correct)")
+                else:
+                    logger.warning("   ⚠️  WARNING: seamless (Sam) is NOT marked as fallback agent")
+            else:
+                logger.warning("   ⚠️  WARNING: seamless (Sam) not found in database")
 
         except Exception as e:
             logger.error(f"❌ Error verifying agent access: {e}")

@@ -25,6 +25,7 @@ _manufacturer_financial_agent = None
 _nzia_market_impact_agent = None
 _component_prices_agent = None
 _seamless_agent = None
+_quality_agent = None
 
 
 def get_news_agent_instance():
@@ -97,6 +98,15 @@ def get_seamless_agent_instance():
         from seamless_agent import SeamlessAgent
         _seamless_agent = SeamlessAgent()
     return _seamless_agent
+
+
+def get_quality_agent_instance():
+    """Get or create Quality agent instance"""
+    global _quality_agent
+    if _quality_agent is None:
+        from quality_agent import QualityAgent
+        _quality_agent = QualityAgent()
+    return _quality_agent
 
 
 # ============================================
@@ -642,3 +652,53 @@ class ChatProcessingService:
         except Exception as e:
             logger.error(f"Seamless agent streaming error: {str(e)}")
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    @staticmethod
+    async def process_quality_agent_stream(
+        db: AsyncSession,
+        user_message: str,
+        conv_id: int,
+        agent_type: str = 'quality'
+    ) -> AsyncGenerator[str, None]:
+        """
+        Process message with Quality agent (streaming via SSE)
+        Streams text chunks back to the client
+
+        Yields:
+            SSE-formatted strings
+        """
+        quality_agent = get_quality_agent_instance()
+        full_response = ""
+
+        try:
+            # Stream text chunks as they arrive
+            async for chunk in quality_agent.analyze_stream(user_message, conversation_id=str(conv_id)):
+                full_response += chunk
+                yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+
+            # Save the complete response to database
+            try:
+                bot_msg = Message(
+                    conversation_id=conv_id,
+                    sender='bot',
+                    agent_type=agent_type,
+                    content=json.dumps({
+                        'type': 'string',
+                        'value': full_response,
+                        'comment': None
+                    })
+                )
+                db.add(bot_msg)
+                await db.commit()
+                logger.info(f"Quality agent message saved: {len(full_response)} chars")
+            except Exception as db_error:
+                logger.error(f"Error saving quality agent message: {db_error}")
+                await db.rollback()
+
+            # Send completion event
+            yield f"data: {json.dumps({'type': 'done', 'full_response': full_response})}\n\n"
+
+        except Exception as e:
+            error_msg = f"Streaming error: {str(e)}"
+            logger.error(error_msg)
+            yield f"data: {json.dumps({'type': 'error', 'message': error_msg})}\n\n"

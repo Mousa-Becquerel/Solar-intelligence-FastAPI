@@ -304,10 +304,6 @@ export default function ProfilePage() {
                   )}
                 </div>
                 <div>
-                  <span className="label">Role</span>
-                  <p className="value" style={{ textTransform: 'capitalize' }}>{profileData.user.role}</p>
-                </div>
-                <div>
                   <span className="label">Member Since</span>
                   <p className="value">{formatDate(profileData.user.created_at)}</p>
                 </div>
@@ -412,9 +408,23 @@ export default function ProfilePage() {
             {/* Current Plan */}
             <div className="plan-badge">
               <p className="plan-type">{profileData.plan_info.type}</p>
-              <p className="plan-status">{profileData.plan_info.status}</p>
-              {profileData.plan_info.type === 'free' ? (
-                <button className="upgrade-button">
+              <p className="plan-status">
+                {/* Show appropriate status based on plan type */}
+                {profileData.plan_info.type === 'free' || profileData.plan_info.type === 'scout'
+                  ? 'Free Tier'
+                  : profileData.plan_info.type === 'analyst'
+                    ? 'Analyst Plan'
+                    : profileData.plan_info.type === 'strategist'
+                      ? 'Strategist Plan'
+                      : profileData.plan_info.type === 'enterprise'
+                        ? 'Enterprise Plan'
+                        : profileData.plan_info.status}
+              </p>
+              {(profileData.plan_info.type === 'free' || profileData.plan_info.type === 'scout') ? (
+                <button
+                  className="upgrade-button"
+                  onClick={() => window.open('https://www.becquerelinstitute.eu/shop/solarintelligence-ai-monthly-subscription-70#attr=96', '_blank', 'noopener,noreferrer')}
+                >
                   Upgrade to Premium
                 </button>
               ) : (
@@ -430,21 +440,35 @@ export default function ProfilePage() {
             <div className="glass-card">
               <h2 className="section-title">Usage Statistics</h2>
 
-              {/* Queries This Month */}
-              <div style={{ marginBottom: '28px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>Queries This Month</span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#FFB74D' }}>
-                    {profileData.usage_stats.monthly_queries} / {profileData.usage_stats.query_limit}
-                  </span>
+              {/* Queries This Month - Hide limit section for unlimited plans */}
+              {profileData.usage_stats.query_limit === 'Unlimited' || parseInt(profileData.usage_stats.query_limit) >= 999999 ? (
+                <div style={{ marginBottom: '28px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>Queries This Month</span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#FFB74D' }}>
+                      {profileData.usage_stats.monthly_queries}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                    Unlimited queries available
+                  </p>
                 </div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${getProgressPercentage()}%` }}></div>
+              ) : (
+                <div style={{ marginBottom: '28px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>Queries This Month</span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#FFB74D' }}>
+                      {profileData.usage_stats.monthly_queries} / {profileData.usage_stats.query_limit}
+                    </span>
+                  </div>
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: `${getProgressPercentage()}%` }}></div>
+                  </div>
+                  <p style={{ marginTop: '8px', fontSize: '0.75rem', color: '#9ca3af' }}>
+                    {profileData.usage_stats.queries_remaining} queries remaining
+                  </p>
                 </div>
-                <p style={{ marginTop: '8px', fontSize: '0.75rem', color: '#9ca3af' }}>
-                  {profileData.usage_stats.queries_remaining} queries remaining
-                </p>
-              </div>
+              )}
 
               {/* Stats List */}
               <div>
@@ -455,14 +479,6 @@ export default function ProfilePage() {
                 <div className="stat-item">
                   <span className="stat-label">Conversations</span>
                   <span className="stat-value">{profileData.usage_stats.total_conversations}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Messages Sent</span>
-                  <span className="stat-value">{profileData.usage_stats.total_messages}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Account Age</span>
-                  <span className="stat-value">{profileData.usage_stats.account_age_days} days</span>
                 </div>
               </div>
 

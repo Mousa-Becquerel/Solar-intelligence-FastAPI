@@ -28,6 +28,7 @@ class AgentService:
         'manufacturer_financial': 'Manufacturer Financial Agent',
         'component_prices': 'Component Prices Agent',
         'seamless': 'SEAMLESS-PV & BIPV Agent',
+        'quality': 'PV Risk & Reliability Expert',
         'weaviate': 'Database Query Agent'
     }
 

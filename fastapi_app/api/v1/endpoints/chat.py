@@ -170,25 +170,71 @@ async def send_chat_message(
                 total_limit += stage2_survey.bonus_queries_granted
 
         # Check if user exceeded their limit
+        is_in_fallback_mode = False
         if current_user.role != 'admin' and current_user.monthly_query_count >= total_limit:
-            queries_used = current_user.monthly_query_count
-            plan_type = current_user.plan_type
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail={
-                    'error': f'Query limit reached. You have used {queries_used}/{total_limit} queries this month.',
-                    'plan_type': plan_type,
-                    'queries_used': queries_used,
-                    'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
-                    'upgrade_required': plan_type == 'free'
-                }
-            )
+            # Check if user can use fallback mode (free users with fallback agents)
+            if current_user.plan_type == 'free':
+                # Check if the requested agent is available in fallback mode
+                is_fallback_agent = await AgentAccessService.is_fallback_agent(db, agent_type)
 
-        # Increment query count
+                if is_fallback_agent:
+                    # Check if user has daily free queries remaining
+                    if current_user.can_use_fallback_agent():
+                        is_in_fallback_mode = True
+                        logger.info(f"User {current_user.id} using fallback mode for agent {agent_type}")
+                    else:
+                        raise HTTPException(
+                            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                            detail={
+                                'error': 'Daily query limit reached. Sam is available with 10 queries per day.',
+                                'plan_type': current_user.plan_type,
+                                'queries_used': current_user.monthly_query_count,
+                                'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
+                                'daily_queries_remaining': current_user.daily_free_queries or 0,
+                                'upgrade_required': True,
+                                'is_fallback_mode': True
+                            }
+                        )
+                else:
+                    # Agent not available in fallback, block access
+                    queries_used = current_user.monthly_query_count
+                    raise HTTPException(
+                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                        detail={
+                            'error': f'Trial ended. Only Sam is available with 10 queries/day.',
+                            'plan_type': current_user.plan_type,
+                            'queries_used': queries_used,
+                            'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
+                            'upgrade_required': True,
+                            'is_fallback_mode': True,
+                            'fallback_agent': 'seamless'
+                        }
+                    )
+            else:
+                # Non-free users who exceeded their limit
+                queries_used = current_user.monthly_query_count
+                plan_type = current_user.plan_type
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail={
+                        'error': f'Query limit reached. You have used {queries_used}/{total_limit} queries this month.',
+                        'plan_type': plan_type,
+                        'queries_used': queries_used,
+                        'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
+                        'upgrade_required': False
+                    }
+                )
+
+        # Increment query count (or use daily free query for fallback mode)
         try:
-            current_user.increment_query_count()
-            await db.commit()
-            logger.info(f"Query count incremented for user {current_user.id}")
+            if is_in_fallback_mode:
+                # Use daily free query counter for fallback mode
+                current_user.use_daily_free_query()
+                logger.info(f"Daily free query used for user {current_user.id}, remaining: {current_user.daily_free_queries}")
+            else:
+                # Normal query count increment
+                current_user.increment_query_count()
+                logger.info(f"Query count incremented for user {current_user.id}")
         except Exception as e:
             logger.error(f"Error incrementing query count: {e}")
             await db.rollback()
@@ -329,6 +375,21 @@ async def send_chat_message(
             elif agent_type == "seamless":
                 return StreamingResponse(
                     ChatProcessingService.process_seamless_agent_stream(
+                        db, user_message, conv_id, agent_type
+                    ),
+                    media_type="text/event-stream",
+                    headers={
+                        'Cache-Control': 'no-cache, no-transform',
+                        'X-Accel-Buffering': 'no',
+                        'Connection': 'keep-alive',
+                        'Content-Type': 'text/event-stream; charset=utf-8',
+                        'X-Content-Type-Options': 'nosniff'
+                    }
+                )
+
+            elif agent_type == "quality":
+                return StreamingResponse(
+                    ChatProcessingService.process_quality_agent_stream(
                         db, user_message, conv_id, agent_type
                     ),
                     media_type="text/event-stream",

@@ -18,7 +18,24 @@ class AnalyticsService:
     """Service for platform analytics with anonymized data"""
 
     # Development team user IDs to exclude from analytics
-    EXCLUDED_USER_IDS = {1, 4, 5, 6, 7, 8, 9, 77, 97, 104, 105, 106, 127, 128, 129, 130}
+    EXCLUDED_USER_IDS = {1, 4, 5, 6, 7, 8, 9, 77, 97, 104, 105, 106, 127, 128, 129, 130,133, 135, 136, 137, 138, 139, 141, 156}
+
+    @staticmethod
+    async def get_excluded_user_ids(db: AsyncSession) -> set:
+        """
+        Get all user IDs that should be excluded from analytics.
+        Includes dev team IDs and deleted users.
+        """
+        excluded = set(AnalyticsService.EXCLUDED_USER_IDS)
+
+        # Also exclude deleted users
+        result = await db.execute(
+            select(User.id).where(User.deleted == True)
+        )
+        deleted_user_ids = {row[0] for row in result.all()}
+        excluded.update(deleted_user_ids)
+
+        return excluded
 
     @staticmethod
     def anonymize_user_id(user_id: int) -> str:
@@ -37,7 +54,7 @@ class AnalyticsService:
         """
         try:
             stats = {}
-            excluded = AnalyticsService.EXCLUDED_USER_IDS
+            excluded = await AnalyticsService.get_excluded_user_ids(db)
 
             # Total users (excluding dev team)
             result = await db.execute(
@@ -156,7 +173,7 @@ class AnalyticsService:
         """
         try:
             cutoff_date = datetime.utcnow() - timedelta(days=days)
-            excluded = AnalyticsService.EXCLUDED_USER_IDS
+            excluded = await AnalyticsService.get_excluded_user_ids(db)
 
             # Daily query counts (user messages, excluding dev team)
             result = await db.execute(
@@ -257,7 +274,7 @@ class AnalyticsService:
         """
         try:
             cutoff_date = datetime.utcnow() - timedelta(days=days)
-            excluded = AnalyticsService.EXCLUDED_USER_IDS
+            excluded = await AnalyticsService.get_excluded_user_ids(db)
 
             # Queries by agent type (excluding dev team)
             result = await db.execute(
@@ -430,7 +447,7 @@ class AnalyticsService:
         days: int = None
     ) -> Dict[str, Any]:
         """
-        Get recent queries with anonymized user info
+        Get recent queries with anonymized user info and agent responses
 
         Args:
             db: Database session
@@ -444,7 +461,7 @@ class AnalyticsService:
             Dict with queries list, total count, and pagination info
         """
         try:
-            excluded = AnalyticsService.EXCLUDED_USER_IDS
+            excluded = await AnalyticsService.get_excluded_user_ids(db)
 
             # Base query conditions
             base_conditions = [
@@ -470,12 +487,13 @@ class AnalyticsService:
             total_result = await db.execute(count_query)
             total_count = total_result.scalar() or 0
 
-            # Get paginated results
+            # Get paginated results with conversation_id for fetching responses
             result = await db.execute(
                 select(
                     Message.id,
                     Message.content,
                     Message.timestamp,
+                    Message.conversation_id,
                     Conversation.agent_type,
                     Conversation.user_id
                 ).join(
@@ -488,8 +506,30 @@ class AnalyticsService:
                 ).offset(offset).limit(limit)
             )
 
+            query_rows = result.all()
+
+            # Collect message IDs to find their responses
+            message_ids = [row.id for row in query_rows]
+
+            # For each user message, find the next bot message in the same conversation
+            # We need to get bot responses that come after user messages
+            responses_map = {}
+            if message_ids:
+                for row in query_rows:
+                    # Get the next bot message after this user message in the same conversation
+                    response_result = await db.execute(
+                        select(Message.content).where(
+                            Message.conversation_id == row.conversation_id,
+                            Message.sender == 'bot',
+                            Message.timestamp > row.timestamp
+                        ).order_by(Message.timestamp.asc()).limit(1)
+                    )
+                    response_row = response_result.first()
+                    if response_row:
+                        responses_map[row.id] = AnalyticsService.clean_response_content(response_row.content)
+
             queries = []
-            for row in result.all():
+            for row in query_rows:
                 # Extract and clean query text
                 query_text = AnalyticsService.clean_query_content(row.content)
 
@@ -500,6 +540,7 @@ class AnalyticsService:
                 queries.append({
                     'id': row.id,
                     'query': query_text,
+                    'response': responses_map.get(row.id, ''),
                     'agent': row.agent_type or 'unknown',
                     'timestamp': row.timestamp.isoformat() if row.timestamp else None,
                     'user_hash': AnalyticsService.anonymize_user_id(row.user_id)
@@ -518,6 +559,66 @@ class AnalyticsService:
             return {'queries': [], 'total': 0, 'limit': limit, 'offset': offset, 'has_more': False}
 
     @staticmethod
+    def clean_response_content(content) -> str:
+        """
+        Extract clean response text from message content
+        Handles JSON structures and markdown formatting
+        """
+        import json
+        import re
+
+        if content is None:
+            return ''
+
+        response_text = ''
+
+        # Handle dict content
+        if isinstance(content, dict):
+            if 'value' in content:
+                response_text = str(content['value'])
+            elif 'text' in content:
+                response_text = str(content['text'])
+            elif 'content' in content:
+                response_text = str(content['content'])
+            elif 'message' in content:
+                response_text = str(content['message'])
+            else:
+                response_text = str(content)
+        elif isinstance(content, str):
+            response_text = content
+            # Try to parse as JSON string
+            try:
+                parsed = json.loads(content)
+                if isinstance(parsed, dict):
+                    if 'value' in parsed:
+                        response_text = str(parsed['value'])
+                    elif 'text' in parsed:
+                        response_text = str(parsed['text'])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        else:
+            response_text = str(content)
+
+        # Clean up common JSON artifacts
+        patterns_to_remove = [
+            r'\{"type":\s*"[^"]*",\s*"value":\s*"?',
+            r'"\s*\}$',
+            r'^\s*\{[^}]*"value":\s*"?',
+            r'"?\s*\}\s*$',
+        ]
+
+        for pattern in patterns_to_remove:
+            response_text = re.sub(pattern, '', response_text)
+
+        # Clean up escaped quotes and normalize whitespace
+        response_text = response_text.replace('\\"', '"')
+        response_text = response_text.replace('\\n', '\n')
+        response_text = re.sub(r'[ \t]+', ' ', response_text)  # Collapse multiple spaces/tabs
+        response_text = response_text.strip()
+
+        return response_text
+
+    @staticmethod
     async def get_user_engagement_stats(
         db: AsyncSession,
         days: int = 30
@@ -534,7 +635,7 @@ class AnalyticsService:
         """
         try:
             cutoff_date = datetime.utcnow() - timedelta(days=days)
-            excluded = AnalyticsService.EXCLUDED_USER_IDS
+            excluded = await AnalyticsService.get_excluded_user_ids(db)
 
             # Average queries per active user (excluding dev team)
             result = await db.execute(
@@ -644,7 +745,7 @@ class AnalyticsService:
         """
         try:
             cutoff_date = datetime.utcnow() - timedelta(days=days)
-            excluded = AnalyticsService.EXCLUDED_USER_IDS
+            excluded = await AnalyticsService.get_excluded_user_ids(db)
 
             # Extract hour from timestamp and count (excluding dev team)
             result = await db.execute(
@@ -734,7 +835,7 @@ class AnalyticsService:
         import json
 
         try:
-            excluded = AnalyticsService.EXCLUDED_USER_IDS
+            excluded = await AnalyticsService.get_excluded_user_ids(db)
 
             # Get Stage 1 survey count
             stage1_count_result = await db.execute(

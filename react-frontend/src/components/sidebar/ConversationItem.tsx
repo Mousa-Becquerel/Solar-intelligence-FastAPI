@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Conversation } from '../../types/api';
+import { useUIStore } from '../../stores';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -24,6 +25,7 @@ export default function ConversationItem({
   onDelete,
 }: ConversationItemProps) {
   const navigate = useNavigate();
+  const { setActiveConversationId } = useUIStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleClick = () => {
@@ -32,7 +34,9 @@ export default function ConversationItem({
       preview: conversation.preview,
       agent_type: conversation.agent_type,
     });
-    navigate(`/app?conversation=${conversation.id}`);
+    // Set conversation in store and navigate to chat (no ID in URL)
+    setActiveConversationId(conversation.id);
+    navigate('/chat');
   };
 
   const handleDelete = (e: React.MouseEvent) => {

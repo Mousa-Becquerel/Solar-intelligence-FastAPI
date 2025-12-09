@@ -8,7 +8,7 @@ from sqlalchemy import select, and_, or_, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
-from fastapi_app.db.models import User, HiredAgent, AgentAccess, AgentWhitelist
+from fastapi_app.db.models import User, HiredAgent, AgentAccess, AgentWhitelist, UserSurvey, UserSurveyStage2
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +17,16 @@ class AgentAccessService:
     """Service for managing agent access control"""
 
     # Plan hierarchy for access control
+    # Higher number = more access
     PLAN_HIERARCHY = {
         'free': 0,
-        'premium': 1,
-        'max': 2,
-        'admin': 3
+        'analyst': 1,
+        'strategist': 2,
+        'enterprise': 3,
+        'admin': 99,
+        # Legacy support (map old plan names)
+        'premium': 2,  # Treat as strategist
+        'max': 3,  # Treat as enterprise
     }
 
     @staticmethod
@@ -114,17 +119,78 @@ class AgentAccessService:
             user_plan_level = AgentAccessService.PLAN_HIERARCHY.get(user_plan, 0)
             required_plan_level = AgentAccessService.PLAN_HIERARCHY.get(required_plan, 0)
 
+            # Free users can access ALL agents during their trial period
+            # Trial = base 5 queries + 5 after survey 1 + 5 after survey 2 = 15 total
+            # After trial, they can only access fallback agents (Sam)
+            if user_plan == 'free':
+                # Calculate total query limit including survey bonuses
+                base_limit = user.get_query_limit()  # Returns 5 for free tier
+                total_limit = base_limit
+
+                # Add survey bonuses
+                stage1_result = await db.execute(
+                    select(UserSurvey).where(UserSurvey.user_id == user.id)
+                )
+                stage1_survey = stage1_result.scalar_one_or_none()
+                if stage1_survey:
+                    total_limit += stage1_survey.bonus_queries_granted
+
+                stage2_result = await db.execute(
+                    select(UserSurveyStage2).where(UserSurveyStage2.user_id == user.id)
+                )
+                stage2_survey = stage2_result.scalar_one_or_none()
+                if stage2_survey:
+                    total_limit += stage2_survey.bonus_queries_granted
+
+                if user.monthly_query_count >= total_limit:
+                    # User has exhausted trial - check if agent is available in fallback
+                    if agent_config.available_in_fallback:
+                        logger.info(f"Free user {user.id} in fallback mode granted access to '{agent_type}': fallback agent")
+                        return True, None
+                    else:
+                        logger.info(f"Free user {user.id} denied access to '{agent_type}': trial exhausted, not a fallback agent")
+                        return False, "Your trial has ended. Only Sam is available in the free tier. Please upgrade to continue using this agent."
+                else:
+                    # Still in trial period
+                    logger.info(f"Free user {user.id} granted trial access to '{agent_type}': hired during trial period")
+                    return True, None
+
             if user_plan_level >= required_plan_level:
                 logger.info(f"User {user.id} granted access to '{agent_type}': hired and plan '{user_plan}' meets requirement '{required_plan}'")
                 return True, None
 
-            # Access denied - hired but plan insufficient
+            # Access denied - hired but plan insufficient (e.g., Analyst trying to access Strategist agents)
             logger.info(f"User {user.id} denied access to '{agent_type}': hired but plan '{user_plan}' < required '{required_plan}'")
             return False, f"This agent requires a '{required_plan}' plan or higher. Please upgrade your plan."
 
         except Exception as e:
             logger.error(f"Error checking agent access for user {user.id}, agent '{agent_type}': {str(e)}")
             return False, "An error occurred while checking access permissions"
+
+    @staticmethod
+    async def is_fallback_agent(db: AsyncSession, agent_type: str) -> bool:
+        """Check if an agent is available in fallback mode (for free users after queries exhausted)"""
+        try:
+            result = await db.execute(
+                select(AgentAccess).where(AgentAccess.agent_type == agent_type)
+            )
+            agent_config = result.scalar_one_or_none()
+            return agent_config.available_in_fallback if agent_config else False
+        except Exception as e:
+            logger.error(f"Error checking fallback status for agent '{agent_type}': {str(e)}")
+            return False
+
+    @staticmethod
+    async def get_fallback_agents(db: AsyncSession) -> List[str]:
+        """Get list of agents available in fallback mode"""
+        try:
+            result = await db.execute(
+                select(AgentAccess.agent_type).where(AgentAccess.available_in_fallback == True)
+            )
+            return list(result.scalars().all())
+        except Exception as e:
+            logger.error(f"Error getting fallback agents: {str(e)}")
+            return []
 
     @staticmethod
     async def get_user_accessible_agents(
@@ -232,7 +298,8 @@ class AgentAccessService:
                     "can_access": can_access,
                     "access_reason": access_reason,
                     "is_whitelisted": agent_type in whitelisted_agents,
-                    "is_grandfathered": is_grandfathered
+                    "is_grandfathered": is_grandfathered,
+                    "is_hired": agent_type in hired_agents
                 })
 
             logger.debug(f"Retrieved {len(agents_list)} agents for user {user.id}")
@@ -552,6 +619,33 @@ class AgentAccessService:
             user_plan_level = AgentAccessService.PLAN_HIERARCHY.get(user_plan, 0)
             required_plan_level = AgentAccessService.PLAN_HIERARCHY.get(required_plan, 0)
 
+            # Check if free user is in fallback mode (exhausted trial queries)
+            if user_plan == 'free':
+                # Calculate total query limit including survey bonuses
+                base_limit = user.get_query_limit()  # Returns 5 for free tier
+                total_limit = base_limit
+
+                # Add survey bonuses
+                stage1_result = await db.execute(
+                    select(UserSurvey).where(UserSurvey.user_id == user.id)
+                )
+                stage1_survey = stage1_result.scalar_one_or_none()
+                if stage1_survey:
+                    total_limit += stage1_survey.bonus_queries_granted
+
+                stage2_result = await db.execute(
+                    select(UserSurveyStage2).where(UserSurveyStage2.user_id == user.id)
+                )
+                stage2_survey = stage2_result.scalar_one_or_none()
+                if stage2_survey:
+                    total_limit += stage2_survey.bonus_queries_granted
+
+                if user.monthly_query_count >= total_limit:
+                    # User has exhausted trial, can only hire fallback agents (Sam)
+                    if not agent_config.available_in_fallback:
+                        logger.info(f"Free user {user_id} in fallback mode cannot hire '{agent_type}': only fallback agents allowed")
+                        return False, "Your trial has ended. Only Sam is available in the free tier. Upgrade to hire more agents!"
+
             if user_plan_level < required_plan_level:
                 logger.info(f"User {user_id} cannot hire '{agent_type}': plan '{user_plan}' < required '{required_plan}'")
                 return False, f"This agent requires a '{required_plan}' plan. Please upgrade to hire this agent."
@@ -659,3 +753,107 @@ class AgentAccessService:
         except Exception as e:
             logger.error(f"Error getting agent statistics: {str(e)}")
             return {}
+
+    @staticmethod
+    async def unhire_all_non_fallback_agents(
+        db: AsyncSession,
+        user_id: int
+    ) -> Tuple[bool, int, Optional[str]]:
+        """
+        Unhire all non-fallback agents for a user when their trial ends.
+        Only keeps fallback agents (like Sam) hired.
+
+        Args:
+            db: Database session
+            user_id: User ID
+
+        Returns:
+            Tuple[bool, int, Optional[str]]: (success, count_unhired, error_message)
+        """
+        try:
+            # Get all fallback agent types
+            fallback_result = await db.execute(
+                select(AgentAccess.agent_type).where(AgentAccess.available_in_fallback == True)
+            )
+            fallback_agents = set(fallback_result.scalars().all())
+
+            # Get all hired agents for this user that are NOT fallback agents
+            result = await db.execute(
+                select(HiredAgent).where(
+                    and_(
+                        HiredAgent.user_id == user_id,
+                        HiredAgent.is_active == True,
+                        HiredAgent.agent_type.notin_(fallback_agents) if fallback_agents else True
+                    )
+                )
+            )
+            hired_agents = result.scalars().all()
+
+            count_unhired = 0
+            for agent in hired_agents:
+                agent.is_active = False
+                count_unhired += 1
+                logger.info(f"Unhired agent '{agent.agent_type}' for user {user_id} (trial ended)")
+
+            if count_unhired > 0:
+                await db.commit()
+                logger.info(f"Unhired {count_unhired} non-fallback agents for user {user_id}")
+
+            return True, count_unhired, None
+
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Error unhiring agents for user {user_id}: {str(e)}")
+            return False, 0, f"Error unhiring agents: {str(e)}"
+
+    @staticmethod
+    async def check_and_handle_trial_exhaustion(
+        db: AsyncSession,
+        user: User
+    ) -> Tuple[bool, bool]:
+        """
+        Check if user's trial is exhausted and handle it by unhiring non-fallback agents.
+
+        Args:
+            db: Database session
+            user: User object
+
+        Returns:
+            Tuple[bool, bool]: (is_trial_exhausted, agents_were_unhired)
+        """
+        try:
+            if user.plan_type != 'free':
+                return False, False
+
+            # Calculate total query limit including survey bonuses
+            base_limit = user.get_query_limit()  # Returns 5 for free tier
+            total_limit = base_limit
+
+            # Add survey bonuses
+            stage1_result = await db.execute(
+                select(UserSurvey).where(UserSurvey.user_id == user.id)
+            )
+            stage1_survey = stage1_result.scalar_one_or_none()
+            if stage1_survey:
+                total_limit += stage1_survey.bonus_queries_granted
+
+            stage2_result = await db.execute(
+                select(UserSurveyStage2).where(UserSurveyStage2.user_id == user.id)
+            )
+            stage2_survey = stage2_result.scalar_one_or_none()
+            if stage2_survey:
+                total_limit += stage2_survey.bonus_queries_granted
+
+            # Check if trial is exhausted
+            if user.monthly_query_count >= total_limit:
+                # Trial exhausted - unhire all non-fallback agents
+                success, count, _ = await AgentAccessService.unhire_all_non_fallback_agents(
+                    db, user.id
+                )
+                return True, count > 0
+
+            return False, False
+
+        except Exception as e:
+            logger.error(f"Error checking trial exhaustion for user {user.id}: {str(e)}")
+            return False, False

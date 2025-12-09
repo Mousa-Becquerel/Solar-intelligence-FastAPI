@@ -228,7 +228,7 @@ export default function AgentDetailsModal({
                     letterSpacing: '0.5px',
                   }}
                 >
-                  Premium
+                  Strategist
                 </span>
               )}
             </div>

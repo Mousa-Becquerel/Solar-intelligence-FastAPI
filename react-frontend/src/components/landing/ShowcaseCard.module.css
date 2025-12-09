@@ -18,6 +18,8 @@
   display: flex;
   flex-direction: column;
   user-select: none;
+  overflow: hidden; /* Prevent content from overflowing card bounds */
+  box-sizing: border-box; /* Ensure padding is included in height calculation */
 }
 
 /* Stack positioning - front card (top of stack) */
@@ -83,6 +85,7 @@
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .avatarWrapper {
@@ -137,6 +140,7 @@
   gap: 12px;
   flex: 1;
   overflow: hidden;
+  min-height: 0; /* Allow flex child to shrink below content size */
 }
 
 /* Message wrappers */
@@ -145,6 +149,7 @@
   justify-content: flex-start;
   width: 100%;
   position: relative;
+  flex-shrink: 0; /* Don't shrink the user message */
 }
 
 .agentResponseWrapper {
@@ -190,7 +195,7 @@
 /* Chart container */
 .agentResponseChart {
   background: #ffffff;
-  padding: 32px 28px;
+  padding: 16px 14px; /* Reduced padding to prevent overflow */
   border-radius: 12px;
   border: 2px solid #e9a544;
   align-self: stretch;
@@ -201,6 +206,7 @@
   justify-content: center;
   overflow: hidden;
   min-height: 0;
+  max-height: 100%; /* Ensure chart doesn't exceed available space */
 }
 
 .chartFadeIn {

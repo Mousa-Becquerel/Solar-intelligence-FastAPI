@@ -132,6 +132,7 @@ export interface AgentAccessInfo {
   access_reason: string | null;
   is_whitelisted: boolean;
   is_grandfathered: boolean;
+  is_hired: boolean;
 }
 
 // ========================================
@@ -155,6 +156,6 @@ export interface ValidationError {
 
 export type AgentType = 'market' | 'news' | 'digitalization' | 'nzia_policy' | 'manufacturer_financial' | 'nzia_market_impact' | 'weaviate';
 
-export type PlanType = 'free' | 'premium' | 'enterprise';
+export type PlanType = 'free' | 'analyst' | 'strategist' | 'enterprise' | 'admin' | 'premium' | 'max';
 
 export type MessageSender = 'user' | 'bot';

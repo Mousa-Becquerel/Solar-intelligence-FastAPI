@@ -79,7 +79,7 @@ export default function QueryLimitMessage({ onUpgrade, onTakeSurvey, surveyStage
           }}
         >
           {bothSurveysCompleted
-            ? "You've reached your maximum free query limit. Upgrade to premium to continue:"
+            ? "You've reached your maximum free query limit. Upgrade to Analyst or Strategist to continue:"
             : "You've reached your free query limit. Choose an option below to continue:"}
         </p>
 
@@ -223,7 +223,7 @@ export default function QueryLimitMessage({ onUpgrade, onTakeSurvey, surveyStage
               fontStyle: 'italic',
             }}
           >
-            Upgrade to premium to continue using our services
+            Upgrade to Analyst or Strategist to continue using our services
           </p>
         )}
     </div>

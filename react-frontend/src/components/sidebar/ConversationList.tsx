@@ -6,11 +6,12 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '../../api';
 import type { Conversation } from '../../types/api';
 import ConversationItem from './ConversationItem';
+import { useUIStore } from '../../stores';
 
 interface ConversationListProps {
   isExpanded: boolean;
@@ -19,8 +20,8 @@ interface ConversationListProps {
 export default function ConversationList({ isExpanded }: ConversationListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const activeConversationId = searchParams.get('conversation');
+  const navigate = useNavigate();
+  const { activeConversationId, setActiveConversationId } = useUIStore();
 
   // Fetch conversations on mount
   useEffect(() => {
@@ -46,9 +47,10 @@ export default function ConversationList({ isExpanded }: ConversationListProps) 
       setConversations((prev) => prev.filter((conv) => conv.id !== id));
       toast.success('Conversation deleted');
 
-      // If the deleted conversation was active, redirect to home
-      if (activeConversationId === String(id)) {
-        window.location.href = '/app';
+      // If the deleted conversation was active, clear it and navigate to chat
+      if (activeConversationId === id) {
+        setActiveConversationId(null);
+        navigate('/chat');
       }
     } catch (error) {
       console.error('Failed to delete conversation:', error);
@@ -99,7 +101,7 @@ export default function ConversationList({ isExpanded }: ConversationListProps) 
         <ConversationItem
           key={conversation.id}
           conversation={conversation}
-          isActive={activeConversationId === String(conversation.id)}
+          isActive={activeConversationId === conversation.id}
           isExpanded={isExpanded}
           onDelete={handleDelete}
         />

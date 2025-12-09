@@ -59,6 +59,7 @@ services:
       - ./nzia_market_impact_agent.py:/app/nzia_market_impact_agent.py:ro
       - ./manufacturer_financial_agent.py:/app/manufacturer_financial_agent.py:ro
       - ./seamless_agent.py:/app/seamless_agent.py:ro
+      - ./quality_agent.py:/app/quality_agent.py:ro
     restart: unless-stopped
     depends_on:
       postgres-db:

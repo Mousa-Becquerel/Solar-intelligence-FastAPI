@@ -113,7 +113,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <Navigate to="/waitlist" replace />,
+    element: <LandingPage />,
   },
   {
     path: '/terms',
@@ -203,17 +203,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/app',
-    element: (
-      <ProtectedRoute>
-        <MainLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <ChatPage />,
-      },
-    ],
+    element: <Navigate to="/chat" replace />,
   },
   {
     path: '*',

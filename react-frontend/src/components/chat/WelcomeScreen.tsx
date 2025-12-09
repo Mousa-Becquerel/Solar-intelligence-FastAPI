@@ -23,6 +23,7 @@ const AGENT_SUBTITLES: Record<AgentType, string> = {
   nzia_market_impact: 'Your AI-powered assistant for NZIA market impact assessment and EU manufacturing targets',
   component_prices: 'Your AI-powered assistant for PV component pricing across modules, polysilicon, wafers, cells, and raw materials',
   seamless: 'Your AI-powered assistant for integrated PV market analysis across BIPV, IIPV, AgriPV, and VIPV segments',
+  quality: 'Your AI-powered assistant for PV system risks, reliability, degradation analysis, and bankability assessment',
 };
 
 export default function WelcomeScreen({

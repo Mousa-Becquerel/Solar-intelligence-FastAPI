@@ -40,12 +40,15 @@ export default function AgentsPage() {
   const [userQuery, setUserQuery] = useState<string>('');
   const [recommendedAgents, setRecommendedAgents] = useState<AgentType[]>([]);
   const [isRecommending, setIsRecommending] = useState(false);
+  // Track if free user has exhausted their trial queries (in fallback mode)
+  const [isInFallbackMode, setIsInFallbackMode] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
       // Load user plan and name
       const user = await apiClient.getCurrentUser();
-      setUserPlan(user.plan_type || 'free');
+      const planType = user.plan_type || 'free';
+      setUserPlan(planType);
 
       // Extract first name from full_name (e.g., "John Doe" -> "John")
       let firstName = 'there';
@@ -57,6 +60,27 @@ export default function AgentsPage() {
         firstName = user.username;
       }
       setUserName(firstName);
+
+      // For free users, check if they've exhausted their trial queries (fallback mode)
+      if (planType === 'free') {
+        try {
+          const profile = await apiClient.getProfile();
+          const { monthly_queries, query_limit } = profile.usage_stats;
+          console.log('[AgentsPage] Profile loaded for fallback check:', { monthly_queries, query_limit, planType });
+          // If query_limit is not "Unlimited" and user has reached/exceeded it, they're in fallback
+          if (query_limit !== 'Unlimited') {
+            const limit = parseInt(query_limit, 10);
+            console.log('[AgentsPage] Checking fallback:', { limit, monthly_queries, isInFallback: monthly_queries >= limit });
+            if (!isNaN(limit) && monthly_queries >= limit) {
+              console.log('[AgentsPage] Setting isInFallbackMode to TRUE');
+              setIsInFallbackMode(true);
+            }
+          }
+        } catch (profileError) {
+          console.error('Failed to load profile for fallback check:', profileError);
+          // If we can't load profile, assume not in fallback (safer for user experience)
+        }
+      }
 
       // Load hired agents
       const hiredAgentsList = await getHiredAgents();
@@ -95,9 +119,18 @@ export default function AgentsPage() {
         setHiredAgents((prev) => prev.filter((a) => a !== agentType));
         showToast(`${agentName} has been removed from your team`, 'success');
       } else {
-        // Check if trying to hire a premium agent with a free plan
-        if (agentMetadata.premium && userPlan === 'free') {
-          showToast('This agent requires a Premium or Enterprise plan. Please upgrade to hire this agent.', 'error');
+        // Free users in fallback mode can ONLY hire Sam (seamless)
+        if (userPlan === 'free' && isInFallbackMode && agentType !== 'seamless') {
+          showToast('Your trial has ended. Only Sam is available in the free tier. Upgrade to hire more agents!', 'error');
+          return;
+        }
+
+        // Free users can hire ALL agents during trial period (first 15 queries)
+        // Analyst users cannot hire strategist agents (Nova/Nina)
+        // Strategist/Enterprise/Admin users can hire all agents
+        const canHirePremium = (userPlan === 'free' && !isInFallbackMode) || ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan);
+        if (agentMetadata.premium && !canHirePremium) {
+          showToast('This agent requires a Strategist or Enterprise plan. Please upgrade to hire this agent.', 'error');
           return;
         }
 
@@ -529,9 +562,17 @@ export default function AgentsPage() {
                               const hirePromises = agentsToHire.map(async (agentType) => {
                                 const agentMetadata = AGENT_METADATA[agentType];
 
-                                // Check if premium agent and user has free plan
-                                if (agentMetadata.premium && userPlan === 'free') {
-                                  console.warn(`Skipping auto-hire for premium agent ${agentType} - user has free plan`);
+                                // Free users in fallback mode can ONLY hire Sam
+                                if (userPlan === 'free' && isInFallbackMode && agentType !== 'seamless') {
+                                  console.warn(`Skipping auto-hire for ${agentType} - free user in fallback mode can only hire Sam`);
+                                  return null;
+                                }
+
+                                // Free users can hire ALL agents during trial
+                                // Only Analyst users cannot hire strategist agents
+                                const canHirePremium = (userPlan === 'free' && !isInFallbackMode) || ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan);
+                                if (agentMetadata.premium && !canHirePremium) {
+                                  console.warn(`Skipping auto-hire for premium agent ${agentType} - user plan ${userPlan} insufficient`);
                                   return null;
                                 }
 
@@ -657,7 +698,7 @@ export default function AgentsPage() {
           >
             {[
               { key: 'all' as FilterCategory, label: 'All Agents' },
-              { key: 'premium' as FilterCategory, label: 'Premium' },
+              { key: 'premium' as FilterCategory, label: 'Strategist' },
               { key: 'market' as FilterCategory, label: 'Market Analysis' },
               { key: 'policy' as FilterCategory, label: 'Policy & Compliance' },
               { key: 'financial' as FilterCategory, label: 'Financial Analysis' },
@@ -710,6 +751,7 @@ export default function AgentsPage() {
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 280px))',
+              gridAutoRows: '220px', // Fixed height for all cards
               gap: '24px',
               width: '100%',
               paddingBottom: '2rem',
@@ -726,6 +768,7 @@ export default function AgentsPage() {
                 onToggleHire={handleToggleHire}
                 onCardClick={setSelectedAgentForModal}
                 isRecommended={recommendedAgents.includes(agentType)}
+                isInFallbackMode={isInFallbackMode}
               />
             ))}
           </div>
@@ -742,10 +785,14 @@ export default function AgentsPage() {
           isHired={hiredAgents.includes(selectedAgentForModal)}
           onToggleHire={handleToggleHire}
           canHire={
-            !AGENT_METADATA[selectedAgentForModal].premium ||
-            userPlan === 'premium' ||
-            userPlan === 'max' ||
-            userPlan === 'admin'
+            // Free users in fallback mode can only hire Sam
+            (userPlan === 'free' && isInFallbackMode)
+              ? selectedAgentForModal === 'seamless'
+              : (
+                  !AGENT_METADATA[selectedAgentForModal].premium ||
+                  (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
+                  ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
+                )
           }
         />
       )}

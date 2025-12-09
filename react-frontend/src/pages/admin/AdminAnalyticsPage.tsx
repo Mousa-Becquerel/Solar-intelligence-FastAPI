@@ -6,6 +6,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { apiClient } from '../../api/client';
 import type { FullAnalyticsReport, AgentUsageItem, RecentQuery, RecentQueriesResponse, HourlyData, SurveyAnalytics, Stage1Survey, Stage2Survey } from '../../types/analytics';
 import './AdminAnalyticsPage.css';
@@ -500,14 +502,54 @@ function RecentQueriesList({ agents }: { agents: AgentUsageItem[] }) {
                 className={`query-item ${expandedQuery === query.id ? 'expanded' : ''}`}
                 onClick={() => toggleExpand(query.id)}
               >
-                <p className={`query-content ${expandedQuery === query.id ? 'expanded' : ''}`}>
-                  {query.query || <span className="query-empty-text">Empty query</span>}
-                </p>
+                <div className="query-header">
+                  <div className="query-icon user-icon" title="User Query">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </div>
+                  <p className={`query-content ${expandedQuery === query.id ? 'expanded' : ''}`}>
+                    {query.query || <span className="query-empty-text">Empty query</span>}
+                  </p>
+                  <div className="query-expand-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: expandedQuery === query.id ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+                </div>
                 <div className="query-meta">
                   <span className="query-agent">{formatAgentName(query.agent)}</span>
                   <span className="query-timestamp">{formatTimestamp(query.timestamp)}</span>
                   <span className="query-user">{query.user_hash}</span>
                 </div>
+
+                {/* Agent Response - shown when expanded */}
+                {expandedQuery === query.id && query.response && (
+                  <div className="query-response-section">
+                    <div className="response-header">
+                      <div className="query-icon agent-icon" title="Agent Response">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                          <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                          <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
+                      </div>
+                      <span className="response-label">Agent Response</span>
+                    </div>
+                    <div className="response-content">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {query.response}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+                {expandedQuery === query.id && !query.response && (
+                  <div className="query-response-section no-response">
+                    <span className="no-response-text">No response recorded</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>

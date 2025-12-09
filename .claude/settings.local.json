@@ -12,7 +12,8 @@
       "Bash(tasklist:*)",
       "Bash(docker logs:*)",
       "Bash(docker exec:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(docker-compose logs:*)"
     ],
     "deny": [],
     "ask": []

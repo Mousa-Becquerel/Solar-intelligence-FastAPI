@@ -366,6 +366,15 @@ class APIClient {
     return this.request<AgentAccessInfo[]>('agent-access/my-agents');
   }
 
+  async checkTrialStatus(): Promise<{
+    is_trial_exhausted: boolean;
+    agents_unhired: boolean;
+    redirect_to_agents: boolean;
+    message: string | null;
+  }> {
+    return this.request('agent-access/trial-status');
+  }
+
   // ========================================
   // Waitlist Endpoints
   // ========================================
@@ -461,6 +470,51 @@ class APIClient {
 
   async checkSurveyStatus(): Promise<SurveyStatus> {
     return this.request('survey/check-survey-status', {
+      method: 'GET',
+    });
+  }
+
+  // ========================================
+  // Profile Endpoints
+  // ========================================
+
+  async getProfile(): Promise<{
+    user: {
+      username: string;
+      full_name: string;
+      role: string;
+      created_at: string;
+      plan_type: string;
+      query_count: number;
+      monthly_query_count: number;
+    };
+    plan_info: {
+      type: string;
+      status: string;
+      end_date: string | null;
+    };
+    usage_stats: {
+      monthly_queries: number;
+      query_limit: string;
+      queries_remaining: string;
+      total_queries: number;
+      total_conversations: number;
+      total_messages: number;
+      account_age_days: number;
+      last_query_date: string | null;
+    };
+    contact_requests: Array<{
+      id: number;
+      name: string;
+      email: string;
+      company: string | null;
+      message: string;
+      source: string;
+      status: string;
+      created_at: string;
+    }>;
+  }> {
+    return this.request('profile', {
       method: 'GET',
     });
   }
