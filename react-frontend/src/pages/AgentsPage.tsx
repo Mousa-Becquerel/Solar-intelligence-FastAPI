@@ -121,9 +121,9 @@ export default function AgentsPage() {
         setHiredAgents((prev) => prev.filter((a) => a !== agentType));
         showToast(`${agentName} has been removed from your team`, 'success');
       } else {
-        // Eco (storage_optimization) is admin-only
+        // Eco (storage_optimization) is coming soon (admin-only for now)
         if (agentType === 'storage_optimization' && userRole !== 'admin') {
-          showToast('Eco is currently available to administrators only.', 'error');
+          showToast('Eco is coming soon! Stay tuned for updates.', 'error');
           return;
         }
 
