@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 import logging
 
 from fastapi_app.db.models import User, Conversation, Message, HiredAgent
+from fastapi_app.services.email_service import email_service
 
 logger = logging.getLogger(__name__)
 
@@ -124,9 +125,16 @@ class AdminService:
                 return False, "User is already active"
 
             user.is_active = True
+            user.email_verified = True  # Auto-verify email on admin approval
             await db.commit()
 
-            logger.info(f"User {user_id} ({user.username}) approved")
+            # Send welcome email to notify the user
+            await email_service.send_welcome_email(
+                email=user.username,
+                full_name=user.full_name
+            )
+
+            logger.info(f"User {user_id} ({user.username}) approved and welcome email sent")
             return True, None
 
         except Exception as e:

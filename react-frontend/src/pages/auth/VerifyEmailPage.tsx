@@ -14,6 +14,9 @@ export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [message, setMessage] = useState('');
+  const [showResendForm, setShowResendForm] = useState(false);
+  const [resendEmail, setResendEmail] = useState('');
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -105,6 +108,62 @@ export default function VerifyEmailPage() {
               </div>
               <h2 className="status-title">Verification Failed</h2>
               <p className="status-message">{message}</p>
+
+              {/* Resend Verification Form */}
+              {!showResendForm ? (
+                <>
+                  <p className="resend-hint">Link expired? Request a new verification email.</p>
+                  <button
+                    onClick={() => setShowResendForm(true)}
+                    className="btn-resend"
+                  >
+                    Resend Verification Email
+                  </button>
+                </>
+              ) : resendStatus === 'sent' ? (
+                <div className="resend-success">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeLinecap="round" strokeLinejoin="round"/>
+                    <polyline points="22 4 12 14.01 9 11.01" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p>Verification email sent! Please check your inbox.</p>
+                </div>
+              ) : (
+                <form
+                  className="resend-form"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!resendEmail.trim()) return;
+
+                    setResendStatus('sending');
+                    try {
+                      await authService.resendVerificationPublic(resendEmail);
+                      setResendStatus('sent');
+                      toast.success('Verification email sent!');
+                    } catch (error) {
+                      setResendStatus('idle');
+                      toast.error('Failed to send email. Please try again.');
+                    }
+                  }}
+                >
+                  <input
+                    type="email"
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="resend-input"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={resendStatus === 'sending'}
+                  >
+                    {resendStatus === 'sending' ? 'Sending...' : 'Send New Link'}
+                  </button>
+                </form>
+              )}
+
               <div className="action-buttons">
                 <button
                   onClick={() => navigate('/login')}
@@ -288,6 +347,71 @@ export default function VerifyEmailPage() {
         .btn-secondary:hover {
           background: rgba(1, 6, 84, 0.04); /* MD3: State layer */
           box-shadow: none;
+        }
+
+        /* Resend Verification Styles */
+        .resend-hint {
+          font-size: 0.875rem;
+          color: rgba(1, 6, 84, 0.6);
+          margin: 20px 0 12px 0;
+        }
+
+        .btn-resend {
+          background: transparent;
+          color: #010654;
+          border: none;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 8px 16px;
+          font-family: 'Inter', 'Open Sans', Arial, sans-serif;
+          transition: color 0.2s;
+        }
+
+        .btn-resend:hover {
+          color: #060B5A;
+        }
+
+        .resend-form {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin: 20px 0;
+          padding: 20px;
+          background: rgba(1, 6, 84, 0.03);
+          border-radius: 16px;
+        }
+
+        .resend-input {
+          padding: 12px 16px;
+          border: 1px solid rgba(1, 6, 84, 0.2);
+          border-radius: 12px;
+          font-size: 1rem;
+          font-family: 'Inter', 'Open Sans', Arial, sans-serif;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+
+        .resend-input:focus {
+          border-color: #010654;
+        }
+
+        .resend-success {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 16px;
+          background: rgba(34, 197, 94, 0.1);
+          border-radius: 12px;
+          margin: 20px 0;
+          color: #16a34a;
+          font-size: 0.875rem;
+        }
+
+        .resend-success p {
+          margin: 0;
         }
 
         /* Responsive */

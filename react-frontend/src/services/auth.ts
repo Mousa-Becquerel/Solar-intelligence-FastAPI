@@ -18,11 +18,23 @@ class AuthService {
   }
 
   /**
-   * Resend verification email
+   * Resend verification email (authenticated - requires login)
    */
   async resendVerification(): Promise<{ message: string }> {
     const response = await apiClient.request<{ message: string }>('auth/send-verification', {
       method: 'POST',
+    });
+    return response;
+  }
+
+  /**
+   * Resend verification email (public - no login required)
+   * Use this when the user hasn't verified their email yet and can't login
+   */
+  async resendVerificationPublic(email: string): Promise<{ message: string }> {
+    const response = await apiClient.request<{ message: string }>('auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
     });
     return response;
   }
