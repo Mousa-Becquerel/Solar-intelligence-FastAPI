@@ -68,6 +68,7 @@ COPY nzia_policy_agent.py ./
 COPY seamless_agent.py ./
 COPY recomend_agent.py ./
 COPY quality_agent.py ./
+COPY storage_optimization_agent.py ./
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app
