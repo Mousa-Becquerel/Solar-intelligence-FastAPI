@@ -29,6 +29,7 @@ class AgentService:
         'component_prices': 'Component Prices Agent',
         'seamless': 'SEAMLESS-PV & BIPV Agent',
         'quality': 'PV Risk & Reliability Expert',
+        'storage_optimization': 'Storage Optimization Expert',
         'weaviate': 'Database Query Agent'
     }
 

@@ -320,6 +320,41 @@ class DataProcessingLog(Base):
     performed_by_user_id = Column(Integer, nullable=True)  # If admin accessed user data
 
 
+class ConversationLoadProfile(Base):
+    """
+    Stores user-uploaded load profiles for storage optimization conversations.
+
+    Supports multiple profiles per conversation with unique names.
+    Profile data is stored as JSON for efficient storage and retrieval.
+    The 'active' flag indicates which profile should be used for the next optimization.
+    """
+    __tablename__ = "fastapi_conversation_load_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(Integer, nullable=False, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+
+    # Profile identification
+    name = Column(String(100), nullable=False)  # User-friendly name (e.g., "Factory A", "Office Building")
+    file_name = Column(String(255), nullable=True)  # Original uploaded file name
+
+    # Profile data - stored as JSON array of 8760 hourly values
+    # Using Text to store JSON since some DBs don't have native JSON support
+    profile_data = Column(Text, nullable=False)  # JSON: List of 8760 floats
+
+    # Metadata
+    annual_demand_kwh = Column(Float, nullable=False)  # Total annual consumption
+    hours_count = Column(Integer, default=8760)  # Number of hours (8760 for full year, 24 for daily)
+    is_daily_profile = Column(Boolean, default=False)  # True if was 24-hour profile expanded to 8760
+
+    # Status
+    is_active = Column(Boolean, default=True, index=True)  # Whether this is the active profile for optimization
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class DataBreachLog(Base):
     """
     Log data breaches for GDPR Article 33-34 compliance

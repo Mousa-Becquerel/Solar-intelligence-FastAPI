@@ -5,7 +5,7 @@ Handles chat messages with SSE (Server-Sent Events) streaming
 import json
 import logging
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, File, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -402,6 +402,21 @@ async def send_chat_message(
                     }
                 )
 
+            elif agent_type == "storage_optimization":
+                return StreamingResponse(
+                    ChatProcessingService.process_storage_optimization_agent_stream(
+                        db, user_message, conv_id, agent_type
+                    ),
+                    media_type="text/event-stream",
+                    headers={
+                        'Cache-Control': 'no-cache, no-transform',
+                        'X-Accel-Buffering': 'no',
+                        'Connection': 'keep-alive',
+                        'Content-Type': 'text/event-stream; charset=utf-8',
+                        'X-Content-Type-Options': 'nosniff'
+                    }
+                )
+
             else:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -421,6 +436,186 @@ async def send_chat_message(
         raise
     except Exception as e:
         logger.error(f"Chat processing error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chat processing failed: {str(e)}"
+        )
+
+
+@router.post(
+    "/send-with-file",
+    summary="Send chat message with file upload",
+    description="Send a message with an optional file attachment for storage optimization agent"
+)
+@rate_limit("60/minute")
+async def send_chat_message_with_file(
+    request: Request,
+    conversation_id: int = Form(...),
+    message: str = Form(...),
+    agent_type: str = Form(default="storage_optimization"),
+    file: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Send a chat message with optional file attachment.
+
+    This endpoint is specifically for the storage optimization agent
+    which can process uploaded load profile data files.
+
+    Supported file types: CSV, Excel (.xlsx, .xls), JSON
+    Max file size: 10MB
+    """
+    try:
+        user_message = message.strip()
+        conv_id = conversation_id
+
+        # Input validation
+        if not user_message and not file:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Message or file is required"
+            )
+
+        # Validate file if provided
+        file_content = None
+        file_name = None
+        if file:
+            # Check file size (10MB limit)
+            file_size = 0
+            content = await file.read()
+            file_size = len(content)
+            await file.seek(0)  # Reset file pointer
+
+            if file_size > 10 * 1024 * 1024:  # 10MB
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="File size must be less than 10MB"
+                )
+
+            # Check file type
+            file_name = file.filename or "unknown"
+            file_ext = file_name.split('.')[-1].lower() if '.' in file_name else ''
+            allowed_extensions = ['csv', 'xlsx', 'xls', 'json']
+
+            if file_ext not in allowed_extensions:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
+                )
+
+            file_content = content
+            logger.info(f"File uploaded: {file_name} ({file_size} bytes)")
+
+        # GDPR Article 18 - Check if processing is restricted
+        if current_user.processing_restricted:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "Data processing is currently restricted",
+                    "message": f"Your data processing has been restricted due to: {current_user.restriction_grounds}",
+                    "note": "To resume using the chat service, please cancel the restriction in your profile settings.",
+                    "restricted_at": current_user.restriction_requested_at.isoformat() if current_user.restriction_requested_at else None
+                }
+            )
+
+        # Get conversation and validate user access
+        result = await db.execute(
+            select(Conversation).where(Conversation.id == conv_id)
+        )
+        conversation = result.scalar_one_or_none()
+
+        if not conversation or conversation.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found or access denied"
+            )
+
+        # Check if user has access to the requested agent
+        can_access, reason = await AgentAccessService.can_user_access_agent(
+            db, current_user, agent_type
+        )
+        if not can_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=reason or "You do not have access to this agent"
+            )
+
+        # Update conversation agent type if changed
+        if conversation.agent_type != agent_type:
+            conversation.agent_type = agent_type
+            await db.commit()
+
+        # Check query limits (simplified - reuse logic from main endpoint)
+        base_limit = current_user.get_query_limit()
+        total_limit = base_limit
+
+        if current_user.plan_type == 'free':
+            stage1_result = await db.execute(
+                select(UserSurvey).where(UserSurvey.user_id == current_user.id)
+            )
+            stage1_survey = stage1_result.scalar_one_or_none()
+            if stage1_survey:
+                total_limit += stage1_survey.bonus_queries_granted
+
+            stage2_result = await db.execute(
+                select(UserSurveyStage2).where(UserSurveyStage2.user_id == current_user.id)
+            )
+            stage2_survey = stage2_result.scalar_one_or_none()
+            if stage2_survey:
+                total_limit += stage2_survey.bonus_queries_granted
+
+        if current_user.role != 'admin' and current_user.monthly_query_count >= total_limit:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    'error': f'Query limit reached. You have used {current_user.monthly_query_count}/{total_limit} queries this month.',
+                    'plan_type': current_user.plan_type,
+                    'queries_used': current_user.monthly_query_count,
+                    'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
+                    'upgrade_required': True
+                }
+            )
+
+        # Increment query count
+        current_user.increment_query_count()
+
+        # Store user message (include file info if present)
+        # Don't modify message_content - just store the original message
+        # File info is stored in metadata for frontend display
+        user_msg = Message(
+            conversation_id=conv_id,
+            sender='user',
+            content=json.dumps({
+                "type": "string",
+                "value": user_message,  # Store original message without attachment text
+                "comment": None,
+                "file_name": file_name if file_name else None,
+                "file_size": file_size if file_name else None
+            })
+        )
+        db.add(user_msg)
+        await db.commit()
+
+        # Process with storage optimization agent (pass file content and user_id)
+        return StreamingResponse(
+            ChatProcessingService.process_storage_optimization_agent_stream(
+                db, user_message, conv_id, agent_type, file_content, file_name, current_user.id
+            ),
+            media_type="text/event-stream",
+            headers={
+                'Cache-Control': 'no-cache, no-transform',
+                'X-Accel-Buffering': 'no',
+                'Connection': 'keep-alive',
+                'Content-Type': 'text/event-stream; charset=utf-8',
+                'X-Content-Type-Options': 'nosniff'
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Chat processing error with file: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Chat processing failed: {str(e)}"
@@ -648,4 +843,133 @@ async def submit_expert_contact(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred. Please try again."
+        )
+
+
+# ============================================
+# Dashboard Data Endpoint
+# ============================================
+
+@router.get(
+    "/dashboard/{conversation_id}",
+    summary="Get dashboard data for a conversation",
+    description="Fetch dashboard visualization data for storage optimization results"
+)
+async def get_dashboard_data(
+    conversation_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get dashboard data for a conversation.
+
+    This endpoint retrieves ALL dashboard_data from ALL bot messages
+    in the conversation that contain dashboard visualization data.
+    This allows users to view optimization results from earlier messages.
+
+    Returns:
+        - all_dashboard_results: Array of all optimization results across the conversation
+        - dashboard_data: The most recent result (backward compatibility)
+        - 404 if no dashboard data exists for this conversation
+    """
+    try:
+        # Verify user owns this conversation
+        result = await db.execute(
+            select(Conversation).where(
+                Conversation.id == conversation_id,
+                Conversation.user_id == current_user.id
+            )
+        )
+        conversation = result.scalar_one_or_none()
+
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found"
+            )
+
+        # Get ALL bot messages with storage_optimization agent type (oldest first)
+        result = await db.execute(
+            select(Message)
+            .where(
+                Message.conversation_id == conversation_id,
+                Message.sender == 'bot',
+                Message.agent_type == 'storage_optimization'
+            )
+            .order_by(Message.timestamp.asc())  # Oldest first to maintain order
+        )
+        messages = result.scalars().all()
+
+        if not messages:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No storage optimization message found"
+            )
+
+        # Collect ALL dashboard results from ALL messages in the conversation
+        all_conversation_results = []
+        latest_dashboard_data = None
+        latest_message_id = None
+        latest_timestamp = None
+
+        for message in messages:
+            try:
+                content = json.loads(message.content)
+
+                # Check for multi-result format first
+                msg_results = content.get('all_dashboard_results')
+                msg_dashboard = content.get('dashboard_data')
+
+                if msg_results:
+                    # Add all results from this message
+                    for result_item in msg_results:
+                        all_conversation_results.append(result_item)
+                    # Track latest for backward compatibility
+                    if msg_dashboard:
+                        latest_dashboard_data = msg_dashboard
+                        latest_message_id = message.id
+                        latest_timestamp = message.timestamp
+                elif msg_dashboard:
+                    # Single result in old format - convert to array format
+                    strategy = msg_dashboard.get('strategy', 'Optimization')
+                    pv_size = msg_dashboard.get('optimized_design', {}).get('pv_size', 0)
+                    battery_size = msg_dashboard.get('optimized_design', {}).get('battery_size', 0)
+                    label = f"{strategy.replace('_', ' ').title()} - {pv_size:.1f} kWp / {battery_size:.1f} kWh"
+
+                    all_conversation_results.append({
+                        "label": label,
+                        "data": msg_dashboard
+                    })
+                    latest_dashboard_data = msg_dashboard
+                    latest_message_id = message.id
+                    latest_timestamp = message.timestamp
+
+            except json.JSONDecodeError:
+                # Skip messages with invalid JSON
+                logger.warning(f"Failed to parse message {message.id} content")
+                continue
+
+        if not all_conversation_results:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No dashboard data found in conversation"
+            )
+
+        # Return all results from the entire conversation
+        return {
+            "success": True,
+            "dashboard_data": latest_dashboard_data,  # backward compatibility (most recent)
+            "all_dashboard_results": all_conversation_results,  # ALL results from conversation
+            "result_count": len(all_conversation_results),
+            "message_id": latest_message_id,
+            "timestamp": latest_timestamp.isoformat() if latest_timestamp else None
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching dashboard data: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch dashboard data: {str(e)}"
         )

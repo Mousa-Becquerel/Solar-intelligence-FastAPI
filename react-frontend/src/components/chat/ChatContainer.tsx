@@ -18,6 +18,9 @@ import LoadingSkeleton from './LoadingSkeleton';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import { ArtifactContext } from '../../pages/ChatPage';
+import StorageOptimizationDashboard from '../artifact/StorageOptimizationDashboard';
+import OptimizationResultsPanel from '../artifact/OptimizationResultsPanel';
+import type { DashboardData } from '../artifact/StorageOptimizationDashboard';
 
 // Agent-specific placeholders
 const AGENT_PLACEHOLDERS: Record<AgentType, string> = {
@@ -30,6 +33,7 @@ const AGENT_PLACEHOLDERS: Record<AgentType, string> = {
   component_prices: 'Ask about component prices...',
   seamless: 'Ask about IPV...',
   quality: 'Ask about PV risks, reliability, and degradation...',
+  storage_optimization: 'Ask about solar & battery system optimization...',
 };
 
 // Helper to generate unique message IDs
@@ -42,7 +46,7 @@ export default function ChatContainer() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const agentFromUrl = searchParams.get('agent') as AgentType | null;
-  const { saveArtifact, restoreArtifact, activeConversationId, setActiveConversationId } = useUIStore();
+  const { saveArtifact, restoreArtifact, activeConversationId, setActiveConversationId, openArtifact } = useUIStore();
   const { user } = useAuthStore();
   const artifactContext = useContext(ArtifactContext);
 
@@ -112,13 +116,51 @@ export default function ChatContainer() {
       // Users can talk to multiple agents in the same conversation
       const data = await apiClient.getMessages(convId);
       setMessages(data);
+
+      // Check if any messages are from storage_optimization agent
+      // If so, restore the dashboard artifact from the database
+      const hasStorageOptimizationMessages = data.some(
+        (msg: Message) => msg.agent_type === 'storage_optimization'
+      );
+
+      if (hasStorageOptimizationMessages) {
+        try {
+          const dashboardResponse = await apiClient.getDashboardData(convId);
+          if (dashboardResponse.success) {
+            const allResults = dashboardResponse.all_dashboard_results;
+            if (allResults && allResults.length > 0) {
+              // Use OptimizationResultsPanel for multiple results
+              openArtifact(
+                <OptimizationResultsPanel
+                  results={allResults.map((r: { label: string; data: DashboardData }) => ({
+                    label: r.label,
+                    data: r.data as DashboardData
+                  }))}
+                />,
+                'storage_dashboard',
+                convId
+              );
+            } else if (dashboardResponse.dashboard_data) {
+              // Fallback to single dashboard (backward compatibility)
+              openArtifact(
+                <StorageOptimizationDashboard data={dashboardResponse.dashboard_data as DashboardData} />,
+                'storage_dashboard',
+                convId
+              );
+            }
+          }
+        } catch (dashboardError) {
+          // Silently fail - dashboard may not exist for this conversation yet
+          console.log('No dashboard data to restore for this conversation');
+        }
+      }
     } catch (error) {
       console.error('❌ [loadMessages] Failed to load messages:', error);
       toast.error('Failed to load messages');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [openArtifact]);
 
   // Load messages and handle artifact persistence when conversation changes
   useEffect(() => {
@@ -168,7 +210,7 @@ export default function ChatContainer() {
     setPrevConversationId(conversationId);
   }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages, selectedAgent, setActiveConversationId, agentInitialized]);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, file?: File) => {
     try {
       // Check query limits for free tier users
       // Note: Sam (seamless) is allowed in fallback mode - backend handles daily quota
@@ -276,12 +318,18 @@ export default function ChatContainer() {
       }
 
       // Add user message to UI immediately
+      // Store file info in metadata for Claude-style card display
       const userMessage: Message = {
         id: generateMessageId(), // Unique ID
         conversation_id: convId,
         sender: 'user',
-        content,
+        content: content,
         timestamp: new Date().toISOString(),
+        metadata: file ? {
+          file_name: file.name,
+          file_size: file.size,
+          file_type: file.type,
+        } : undefined,
       };
       setMessages((prev) => [...prev, userMessage]);
 
@@ -292,7 +340,7 @@ export default function ChatContainer() {
       }
 
       // Start streaming response
-      await streamResponse(convId, content);
+      await streamResponse(convId, content, file);
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
@@ -301,7 +349,7 @@ export default function ChatContainer() {
     }
   };
 
-  const streamResponse = async (convId: number, userMessage: string) => {
+  const streamResponse = async (convId: number, userMessage: string, file?: File) => {
     // Create new AbortController for this request
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
@@ -318,7 +366,8 @@ export default function ChatContainer() {
         convId,
         userMessage,
         selectedAgent,
-        abortController.signal
+        abortController.signal,
+        file
       );
 
       if (!response.ok) {
@@ -434,7 +483,39 @@ export default function ChatContainer() {
                   break;
 
                 case 'done':
-                  // Streaming complete
+                  // Streaming complete - check if dashboard data is available
+                  if (parsed.has_dashboard && convId) {
+                    // Fetch dashboard data from API and open in artifact panel
+                    try {
+                      const dashboardResponse = await apiClient.getDashboardData(convId);
+                      if (dashboardResponse.success) {
+                        // Check if we have multiple results (new format)
+                        const allResults = dashboardResponse.all_dashboard_results;
+                        if (allResults && allResults.length > 0) {
+                          // Use OptimizationResultsPanel for multiple results
+                          openArtifact(
+                            <OptimizationResultsPanel
+                              results={allResults.map((r: { label: string; data: DashboardData }) => ({
+                                label: r.label,
+                                data: r.data as DashboardData
+                              }))}
+                            />,
+                            'storage_dashboard',
+                            convId
+                          );
+                        } else if (dashboardResponse.dashboard_data) {
+                          // Fallback to single dashboard (backward compatibility)
+                          openArtifact(
+                            <StorageOptimizationDashboard data={dashboardResponse.dashboard_data as DashboardData} />,
+                            'storage_dashboard',
+                            convId
+                          );
+                        }
+                      }
+                    } catch (dashboardError) {
+                      console.error('Failed to fetch dashboard data:', dashboardError);
+                    }
+                  }
                   break;
 
                 case 'error':
@@ -514,6 +595,12 @@ export default function ChatContainer() {
   // Only hide welcome after first message is added (not just when sending starts)
   const hasMessages = messages.length > 0 || streamingMessage;
 
+  // Check if this is the storage optimization agent
+  const isOptimizationAgent = selectedAgent === 'storage_optimization';
+
+  // Show integrated input in welcome screen for ALL agents (input below welcome message)
+  const showIntegratedInput = !hasMessages && agentInitialized;
+
   return (
     <div
       style={{
@@ -574,6 +661,18 @@ export default function ChatContainer() {
               <WelcomeScreen
                 agentType={selectedAgent}
                 onPromptClick={handlePromptClick}
+                integratedInput={showIntegratedInput ? (
+                  <ChatInput
+                    agentType={selectedAgent}
+                    onSend={handleSendMessage}
+                    onStop={cancelRequest}
+                    disabled={sending || streaming}
+                    isStreaming={streaming}
+                    showSuggestions={false}
+                    placeholder={AGENT_PLACEHOLDERS[selectedAgent]}
+                    isFirstMessage={true}
+                  />
+                ) : undefined}
               />
             </div>
           )}
@@ -641,19 +740,25 @@ export default function ChatContainer() {
         </div>
       </div>
 
-      <ChatInput
-        agentType={selectedAgent}
-        onSend={handleSendMessage}
-        onStop={cancelRequest}
-        disabled={sending || streaming}
-        isStreaming={streaming}
-        showSuggestions={!hasMessages && agentInitialized}
-        placeholder={
-          hasMessages
-            ? 'Continue the conversation...'
-            : AGENT_PLACEHOLDERS[selectedAgent]
-        }
-      />
+      {/* Hide bottom ChatInput when:
+          1. Integrated input is shown in WelcomeScreen (for all agents on welcome)
+          2. Agent is not initialized yet (loading skeleton includes input skeleton) */}
+      {!showIntegratedInput && agentInitialized && (
+        <ChatInput
+          agentType={selectedAgent}
+          onSend={handleSendMessage}
+          onStop={cancelRequest}
+          disabled={sending || streaming}
+          isStreaming={streaming}
+          showSuggestions={!hasMessages && agentInitialized}
+          placeholder={
+            hasMessages
+              ? 'Continue the conversation...'
+              : AGENT_PLACEHOLDERS[selectedAgent]
+          }
+          isFirstMessage={false}
+        />
+      )}
 
       {/* Animation styles */}
       <style>{`

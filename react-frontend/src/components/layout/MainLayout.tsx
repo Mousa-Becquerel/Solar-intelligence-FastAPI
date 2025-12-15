@@ -198,7 +198,7 @@ export default function MainLayout() {
 
         /* State: Artifact open - expand third column */
         .main-layout[data-artifact-open="true"] {
-          --artifact-width: 40%;
+          --artifact-width: 50%;
           grid-template-columns: var(--sidebar-width) 1fr var(--artifact-width);
         }
 

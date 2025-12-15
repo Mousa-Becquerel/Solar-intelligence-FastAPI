@@ -13,7 +13,8 @@ export type AgentType =
   | 'nzia_market_impact'
   | 'component_prices'
   | 'seamless'
-  | 'quality';
+  | 'quality'
+  | 'storage_optimization';
 
 export const AGENT_TITLES: Record<AgentType, string> = {
   market: 'PV Capacity Analysis',
@@ -25,6 +26,7 @@ export const AGENT_TITLES: Record<AgentType, string> = {
   component_prices: 'Component Prices Analysis',
   seamless: 'IPV Expert',
   quality: 'PV Risk & Reliability Expert',
+  storage_optimization: 'Storage Optimization Expert',
 };
 
 // Agent dropdown display names (shown in chat header)
@@ -38,6 +40,7 @@ export const AGENT_DROPDOWN_NAMES: Record<AgentType, string> = {
   component_prices: 'Priya - Component Prices Analyst',
   seamless: 'Sam - IPV Expert',
   quality: 'Quinn - PV Risk & Reliability Expert',
+  storage_optimization: 'Eco - Storage Optimization Expert',
 };
 
 export interface SuggestedPrompt {
@@ -333,6 +336,28 @@ export const AGENT_PROMPTS: Record<AgentType, SuggestedPrompt[]> = {
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>',
       title: 'O&M Optimization',
       prompt: 'What are best practices for preventive vs predictive maintenance in PV systems?',
+    },
+  ],
+  storage_optimization: [
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>',
+      title: 'Simulations',
+      prompt: 'What types of simulations can you run for PV and storage systems?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>',
+      title: 'Optimization Strategies',
+      prompt: 'What are the available optimization strategies and objective functions?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>',
+      title: 'Run Optimization',
+      prompt: 'Run an optimization for a residential system with 10,000 kWh annual consumption',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><line x1="6" y1="11" x2="6" y2="11.01"></line><line x1="18" y1="11" x2="18" y2="11.01"></line></svg>',
+      title: 'Battery Optimization',
+      prompt: 'Optimize battery storage size for a 8 kWp PV system with economic strategy',
     },
   ],
 };

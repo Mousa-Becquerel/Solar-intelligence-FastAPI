@@ -339,6 +339,7 @@ function RecentQueriesList({ agents }: { agents: AgentUsageItem[] }) {
   const [queries, setQueries] = useState<RecentQuery[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
   const [selectedDays, setSelectedDays] = useState<number | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
@@ -424,6 +425,19 @@ function RecentQueriesList({ agents }: { agents: AgentUsageItem[] }) {
     }, 300);
   };
 
+  // Export CSV handler
+  const handleExportCSV = async () => {
+    try {
+      setIsExporting(true);
+      await apiClient.exportQueriesCSV(selectedDays ?? 30, selectedAgent !== 'all' ? selectedAgent : undefined);
+      toast.success('CSV exported successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to export CSV');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="queries-section">
       {/* Header with title and filters */}
@@ -477,6 +491,30 @@ function RecentQueriesList({ agents }: { agents: AgentUsageItem[] }) {
               className="queries-search-input"
             />
           </div>
+
+          {/* Export CSV Button */}
+          <button
+            className="export-csv-btn"
+            onClick={handleExportCSV}
+            disabled={isExporting}
+            title="Export queries to CSV"
+          >
+            {isExporting ? (
+              <>
+                <div className="loading-spinner small" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export CSV
+              </>
+            )}
+          </button>
         </div>
       </div>
 

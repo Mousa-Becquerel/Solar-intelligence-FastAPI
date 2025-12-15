@@ -20,7 +20,11 @@ interface MessageListProps {
   };
 }
 
-export default function MessageList({ messages, isStreaming = false, queryLimitProps }: MessageListProps) {
+export default function MessageList({
+  messages,
+  isStreaming = false,
+  queryLimitProps,
+}: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);

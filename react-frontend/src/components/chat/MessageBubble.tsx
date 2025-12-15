@@ -28,7 +28,30 @@ interface MessageBubbleProps {
   };
 }
 
-export default function MessageBubble({ message, agentType, queryLimitProps }: MessageBubbleProps) {
+// Helper functions for file attachment display
+const getFileExtension = (fileName: string) => {
+  return fileName.split('.').pop()?.toUpperCase() || 'FILE';
+};
+
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getFileTypeColor = (fileName: string) => {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  if (ext === 'csv') return { bg: '#dcfce7', text: '#166534', border: '#86efac' }; // Green
+  if (ext === 'xlsx' || ext === 'xls') return { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' }; // Blue
+  if (ext === 'json') return { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' }; // Yellow
+  return { bg: '#f3f4f6', text: '#374151', border: '#d1d5db' }; // Gray
+};
+
+export default function MessageBubble({
+  message,
+  agentType,
+  queryLimitProps,
+}: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const isUser = message.sender === 'user';
   const artifactContext = useContext(ArtifactContext);
@@ -189,10 +212,109 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
               style={{
                 fontSize: '14px',
                 lineHeight: '1.5',
-                whiteSpace: 'pre-wrap',
               }}
             >
-              {message.content}
+              {/* File attachment card - shown if message has file metadata */}
+              {message.metadata?.file_name && (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 14px',
+                    background: '#fffbeb',
+                    borderRadius: '10px',
+                    border: '1px solid #fde68a',
+                    marginBottom: message.content ? '10px' : '0',
+                  }}
+                >
+                  {/* File icon with type badge */}
+                  <div style={{ position: 'relative' }}>
+                    <div
+                      style={{
+                        width: '36px',
+                        height: '44px',
+                        background: '#fef3c7',
+                        borderRadius: '5px',
+                        border: '1px solid #fde68a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                      }}
+                    >
+                      {/* Document icon */}
+                      <svg width="18" height="22" viewBox="0 0 20 24" fill="none">
+                        <path
+                          d="M2 4C2 2.89543 2.89543 2 4 2H12L18 8V20C18 21.1046 17.1046 22 16 22H4C2.89543 22 2 21.1046 2 20V4Z"
+                          fill="#fde68a"
+                          stroke="#f59e0b"
+                          strokeWidth="1"
+                        />
+                        <path d="M12 2V8H18" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1"/>
+                        <rect x="5" y="12" width="10" height="1.5" rx="0.75" fill="#d97706"/>
+                        <rect x="5" y="15" width="7" height="1.5" rx="0.75" fill="#d97706"/>
+                      </svg>
+                    </div>
+                    {/* File type badge */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '-4px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: getFileTypeColor(message.metadata.file_name).bg,
+                        color: getFileTypeColor(message.metadata.file_name).text,
+                        fontSize: '8px',
+                        fontWeight: 700,
+                        padding: '2px 5px',
+                        borderRadius: '3px',
+                        border: `1px solid ${getFileTypeColor(message.metadata.file_name).border}`,
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      {getFileExtension(message.metadata.file_name)}
+                    </div>
+                  </div>
+
+                  {/* File info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: '0.8125rem',
+                        fontWeight: 500,
+                        color: '#1f2937',
+                        maxWidth: '180px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontFamily: "'Inter', sans-serif",
+                      }}
+                    >
+                      {message.metadata.file_name}
+                    </div>
+                    {message.metadata.file_size && (
+                      <div
+                        style={{
+                          fontSize: '0.6875rem',
+                          color: '#92400e',
+                          marginTop: '2px',
+                          fontFamily: "'Inter', sans-serif",
+                        }}
+                      >
+                        {formatFileSize(message.metadata.file_size)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Text content */}
+              {message.content && (
+                <div style={{ whiteSpace: 'pre-wrap' }}>
+                  {message.content}
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -499,6 +621,7 @@ export default function MessageBubble({ message, agentType, queryLimitProps }: M
                   />
                 </div>
               )}
+
             </>
           )}
 

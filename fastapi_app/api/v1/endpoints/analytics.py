@@ -3,7 +3,11 @@ Analytics API Endpoints - Admin analytics with anonymized user data
 GDPR-compliant analytics for platform monitoring
 """
 from typing import Optional
+from datetime import datetime
+import csv
+import io
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
@@ -198,4 +202,88 @@ async def get_survey_analytics(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch survey analytics"
+        )
+
+
+@router.get("/export-queries-csv")
+async def export_queries_csv(
+    days: int = Query(default=30, ge=1, le=365, description="Number of days to include"),
+    agent: Optional[str] = Query(default=None, description="Filter by agent type"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Export user queries as CSV file
+
+    Returns a downloadable CSV file with:
+    - timestamp: When the query was made
+    - agent_type: Which agent handled the query
+    - query: The user's query text
+    - anonymized_user_id: Anonymized user identifier
+
+    Supports filtering by time period and agent type.
+    User identities are protected through one-way hashing.
+    """
+    try:
+        # Fetch all queries (no pagination limit for export)
+        result = await AnalyticsService.get_recent_queries(
+            db,
+            limit=10000,  # High limit for export
+            offset=0,
+            agent_filter=agent,
+            search=None,
+            days=days
+        )
+
+        queries = result.get('queries', [])
+
+        # Create CSV in memory
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Write header
+        writer.writerow(['timestamp', 'agent_type', 'query', 'anonymized_user_id'])
+
+        # Write data rows
+        for query in queries:
+            # Clean query text for CSV (remove newlines, limit length)
+            query_text = query.get('query', '')
+            if query_text:
+                query_text = query_text.replace('\n', ' ').replace('\r', ' ')
+                # Limit to reasonable length for CSV
+                if len(query_text) > 1000:
+                    query_text = query_text[:1000] + '...'
+
+            writer.writerow([
+                query.get('timestamp', ''),
+                query.get('agent', ''),
+                query_text,
+                query.get('user_hash', '')
+            ])
+
+        # Prepare response
+        output.seek(0)
+        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        filename = f"user_queries_export_{timestamp}.csv"
+
+        # Add agent to filename if filtered
+        if agent and agent != 'all':
+            filename = f"user_queries_{agent}_{timestamp}.csv"
+
+        logger.info(f"Admin {current_user.username} exported {len(queries)} queries to CSV")
+
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Content-Type": "text/csv; charset=utf-8"
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error exporting queries to CSV: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to export queries"
         )

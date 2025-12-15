@@ -4,8 +4,9 @@ Provides insights for admin dashboard while protecting user privacy
 """
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
-from sqlalchemy import select, func, case, text
+from sqlalchemy import select, func, case, text, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 import logging
 import hashlib
 
@@ -453,7 +454,7 @@ class AnalyticsService:
             db: Database session
             limit: Maximum number of queries to return
             offset: Offset for pagination
-            agent_filter: Filter by agent type
+            agent_filter: Filter by agent type (filters by which agent RESPONDED, not conversation type)
             search: Search string for query content
             days: Filter to last N days (None = all time)
 
@@ -463,48 +464,107 @@ class AnalyticsService:
         try:
             excluded = await AnalyticsService.get_excluded_user_ids(db)
 
-            # Base query conditions
+            # Create alias for bot messages to join with user messages
+            BotMessage = aliased(Message)
+
+            # Base query conditions - we need to join user messages with their bot responses
+            # to filter by the actual responding agent, not the conversation's initial agent
             base_conditions = [
                 Message.sender == 'user',
                 Conversation.user_id.notin_(excluded)
             ]
-
-            # Add agent filter if specified
-            if agent_filter and agent_filter != 'all':
-                base_conditions.append(Conversation.agent_type == agent_filter)
 
             # Add time filter if specified
             if days is not None and days > 0:
                 cutoff_date = datetime.utcnow() - timedelta(days=days)
                 base_conditions.append(Message.timestamp >= cutoff_date)
 
-            # Get total count first
-            count_query = select(func.count(Message.id)).join(
-                Conversation,
-                Message.conversation_id == Conversation.id
-            ).where(*base_conditions)
+            # For agent filtering, we need a subquery approach to filter by the responding bot's agent_type
+            # First, create a subquery that gets the first bot response for each user message
+            if agent_filter and agent_filter != 'all':
+                # Subquery to find the bot message ID for each user message
+                # We'll filter by bot's agent_type in the main query
+                bot_response_subq = (
+                    select(
+                        Message.id.label('user_msg_id'),
+                        func.min(BotMessage.id).label('bot_msg_id')
+                    )
+                    .join(
+                        BotMessage,
+                        and_(
+                            BotMessage.conversation_id == Message.conversation_id,
+                            BotMessage.sender == 'bot',
+                            BotMessage.timestamp > Message.timestamp
+                        )
+                    )
+                    .where(
+                        Message.sender == 'user',
+                        BotMessage.agent_type == agent_filter
+                    )
+                    .group_by(Message.id)
+                    .subquery()
+                )
+
+                # Main query with agent filter - only include user messages that have a bot response from the specified agent
+                result = await db.execute(
+                    select(
+                        Message.id,
+                        Message.content,
+                        Message.timestamp,
+                        Message.conversation_id,
+                        Conversation.agent_type,
+                        Conversation.user_id
+                    ).join(
+                        Conversation,
+                        Message.conversation_id == Conversation.id
+                    ).join(
+                        bot_response_subq,
+                        Message.id == bot_response_subq.c.user_msg_id
+                    ).where(
+                        *base_conditions
+                    ).order_by(
+                        Message.timestamp.desc()
+                    ).offset(offset).limit(limit)
+                )
+
+                # Count query with agent filter
+                count_query = (
+                    select(func.count(Message.id))
+                    .join(
+                        Conversation,
+                        Message.conversation_id == Conversation.id
+                    ).join(
+                        bot_response_subq,
+                        Message.id == bot_response_subq.c.user_msg_id
+                    ).where(*base_conditions)
+                )
+            else:
+                # No agent filter - get all user messages
+                result = await db.execute(
+                    select(
+                        Message.id,
+                        Message.content,
+                        Message.timestamp,
+                        Message.conversation_id,
+                        Conversation.agent_type,
+                        Conversation.user_id
+                    ).join(
+                        Conversation,
+                        Message.conversation_id == Conversation.id
+                    ).where(
+                        *base_conditions
+                    ).order_by(
+                        Message.timestamp.desc()
+                    ).offset(offset).limit(limit)
+                )
+
+                count_query = select(func.count(Message.id)).join(
+                    Conversation,
+                    Message.conversation_id == Conversation.id
+                ).where(*base_conditions)
 
             total_result = await db.execute(count_query)
             total_count = total_result.scalar() or 0
-
-            # Get paginated results with conversation_id for fetching responses
-            result = await db.execute(
-                select(
-                    Message.id,
-                    Message.content,
-                    Message.timestamp,
-                    Message.conversation_id,
-                    Conversation.agent_type,
-                    Conversation.user_id
-                ).join(
-                    Conversation,
-                    Message.conversation_id == Conversation.id
-                ).where(
-                    *base_conditions
-                ).order_by(
-                    Message.timestamp.desc()
-                ).offset(offset).limit(limit)
-            )
 
             query_rows = result.all()
 
@@ -513,12 +573,14 @@ class AnalyticsService:
 
             # For each user message, find the next bot message in the same conversation
             # We need to get bot responses that come after user messages
+            # Also get the bot's agent_type to know which agent actually responded
             responses_map = {}
+            agent_type_map = {}  # Map user message ID to the agent that responded
             if message_ids:
                 for row in query_rows:
                     # Get the next bot message after this user message in the same conversation
                     response_result = await db.execute(
-                        select(Message.content).where(
+                        select(Message.content, Message.agent_type).where(
                             Message.conversation_id == row.conversation_id,
                             Message.sender == 'bot',
                             Message.timestamp > row.timestamp
@@ -527,6 +589,8 @@ class AnalyticsService:
                     response_row = response_result.first()
                     if response_row:
                         responses_map[row.id] = AnalyticsService.clean_response_content(response_row.content)
+                        # Use the bot message's agent_type (which agent actually responded)
+                        agent_type_map[row.id] = response_row.agent_type
 
             queries = []
             for row in query_rows:
@@ -537,11 +601,14 @@ class AnalyticsService:
                 if search and search.lower() not in query_text.lower():
                     continue
 
+                # Use the agent from the bot response if available, otherwise fall back to conversation agent_type
+                actual_agent = agent_type_map.get(row.id) or row.agent_type or 'unknown'
+
                 queries.append({
                     'id': row.id,
                     'query': query_text,
                     'response': responses_map.get(row.id, ''),
-                    'agent': row.agent_type or 'unknown',
+                    'agent': actual_agent,
                     'timestamp': row.timestamp.isoformat() if row.timestamp else None,
                     'user_hash': AnalyticsService.anonymize_user_id(row.user_id)
                 })

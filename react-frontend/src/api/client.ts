@@ -253,12 +253,13 @@ class APIClient {
         agent_type: msg.agent_type as string | undefined,  // Include agent_type for multi-agent conversations
         timestamp: msg.timestamp as string,
         plotData: parsedMessage.plotData,  // Include plot data if present
+        metadata: parsedMessage.metadata,  // Include file metadata if present
       } as Message;
     });
   }
 
-  // Helper to parse message with plot data support
-  private parseMessageWithPlotData(content: string): { content: string; plotData?: any } {
+  // Helper to parse message with plot data and file metadata support
+  private parseMessageWithPlotData(content: string): { content: string; plotData?: any; metadata?: Record<string, any> } {
     // If content is empty or null, return placeholder
     if (!content) {
       console.warn('⚠️ Empty message content received');
@@ -272,32 +273,42 @@ class APIClient {
 
       // If it's an object with a 'type' field
       if (typeof parsed === 'object' && parsed !== null) {
+        // Extract file metadata if present (for file upload messages)
+        let metadata: Record<string, any> | undefined;
+        if (parsed.file_name) {
+          metadata = {
+            file_name: parsed.file_name,
+            file_size: parsed.file_size || 0,
+          };
+        }
+
         // Handle plot messages: { type: "plot", value: { ...plot data... } }
         if (parsed.type === 'plot' && parsed.value) {
           return {
             content: parsed.value.title || 'Plot', // Use plot title as content
             plotData: parsed.value, // Store the full plot data
+            metadata,
           };
         }
 
         // Handle regular messages: { type: "string", value: "...", comment: null }
         if (parsed.type === 'string' && parsed.value !== undefined && parsed.value !== null) {
-          return { content: String(parsed.value) };
+          return { content: String(parsed.value), metadata };
         }
 
         // Legacy: If it has a 'value' field without type
         if (parsed.value !== undefined && parsed.value !== null) {
-          return { content: String(parsed.value) };
+          return { content: String(parsed.value), metadata };
         }
 
         // If it has a 'content' field instead
         if (parsed.content !== undefined && parsed.content !== null) {
-          return { content: String(parsed.content) };
+          return { content: String(parsed.content), metadata };
         }
 
         // If it's an object without recognized fields, show it as formatted JSON for debugging
         console.warn('⚠️ Message object without recognized fields:', parsed);
-        return { content: '```json\n' + JSON.stringify(parsed, null, 2) + '\n```' };
+        return { content: '```json\n' + JSON.stringify(parsed, null, 2) + '\n```', metadata };
       }
 
       // If it's already a string, return it
@@ -328,24 +339,46 @@ class APIClient {
     conversationId: number,
     message: string,
     agentType: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    file?: File
   ): Promise<Response> {
-    const url = `${this.baseUrl}/chat/send`;
+    // Use different endpoint for file uploads
+    const url = file
+      ? `${this.baseUrl}/chat/send-with-file`
+      : `${this.baseUrl}/chat/send`;
 
-    const payload = {
-      conversation_id: conversationId,
-      message,
-      agent_type: agentType,
-    };
+    let body: FormData | string;
+    let headers: Record<string, string>;
 
+    if (file) {
+      // Use FormData for file uploads
+      const formData = new FormData();
+      formData.append('conversation_id', conversationId.toString());
+      formData.append('message', message || ' '); // Ensure message is not empty
+      formData.append('agent_type', agentType);
+      formData.append('file', file);
+
+      body = formData;
+      // Don't set Content-Type for FormData - browser will set it with boundary
+      headers = this.getAuthHeader();
+    } else {
+      // Use JSON for text-only messages
+      const payload = {
+        conversation_id: conversationId,
+        message,
+        agent_type: agentType,
+      };
+      body = JSON.stringify(payload);
+      headers = {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
+      };
+    }
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getAuthHeader(),
-      },
-      body: JSON.stringify(payload),
+      headers,
+      body,
       signal, // Add abort signal support
     });
 
@@ -580,6 +613,101 @@ class APIClient {
 
   async getAnalyticsSurveys(): Promise<{ status: string; data: SurveyAnalytics }> {
     return this.request('admin/analytics/surveys', {
+      method: 'GET',
+    });
+  }
+
+  async exportQueriesCSV(days: number = 30, agent?: string): Promise<void> {
+    const params = new URLSearchParams();
+    params.append('days', days.toString());
+    if (agent && agent !== 'all') params.append('agent', agent);
+
+    const url = `${this.baseUrl}/admin/analytics/export-queries-csv?${params.toString()}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: this.getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to export CSV');
+    }
+
+    // Get the filename from Content-Disposition header or use default
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = 'user_queries_export.csv';
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+      if (match) filename = match[1];
+    }
+
+    // Download the file
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  }
+
+  // ========================================
+  // Dashboard Endpoints
+  // ========================================
+
+  async getDashboardData(conversationId: number): Promise<{
+    success: boolean;
+    dashboard_data: {
+      optimized_design: {
+        pv_size: number;
+        wind_size: number;
+        battery_size: number;
+        self_consumption_ratio: number;
+        self_sufficiency_ratio: number;
+        npv: number;
+        pv_self_consumption: number;
+        wind_self_consumption: number;
+        pv_export: number;
+        wind_export: number;
+      };
+      cash_flows: Array<{
+        year: number;
+        grid_savings: number;
+        feed_in_revenue: number;
+        operational_costs: number;
+        battery_replacement: number;
+        cash_flow: number;
+        cumulative_npv: number;
+      }>;
+      daily_profile_june: Array<{
+        hour: number;
+        pvGeneration: number;
+        windGeneration: number;
+        demand: number;
+        batteryCharge: number;
+        gridTariff: number;
+      }>;
+      daily_profile_december: Array<{
+        hour: number;
+        pvGeneration: number;
+        windGeneration: number;
+        demand: number;
+        batteryCharge: number;
+        gridTariff: number;
+      }>;
+      export_tariff_sample: Array<{
+        hour: number;
+        tariff: number;
+      }>;
+      strategy: string;
+    };
+    message_id: number;
+    timestamp: string | null;
+  }> {
+    return this.request(`chat/dashboard/${conversationId}`, {
       method: 'GET',
     });
   }

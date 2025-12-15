@@ -60,6 +60,8 @@ services:
       - ./manufacturer_financial_agent.py:/app/manufacturer_financial_agent.py:ro
       - ./seamless_agent.py:/app/seamless_agent.py:ro
       - ./quality_agent.py:/app/quality_agent.py:ro
+      - ./storage_optimization_agent.py:/app/storage_optimization_agent.py:ro
+      - ./pv-optimizer/backend/app:/app/pv_optimizer:ro
     restart: unless-stopped
     depends_on:
       postgres-db:

@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 import csv
 import io
+import random
 
 from .models import (
     OptimizationRequest,
@@ -120,6 +121,9 @@ async def optimize_system(request: OptimizationRequest) -> OptimizationResponse:
         'discount_rate': request.cost_params.discount_rate
     }
 
+    # Set fixed random seed for reproducible results
+    random.seed(42)
+
     # Generate or use custom load profile
     if request.custom_profiles.demand_profile:
         if len(request.custom_profiles.demand_profile) != HOURS_IN_YEAR:
@@ -233,6 +237,9 @@ async def simulate_system(request: SimulationRequest) -> OptimizationResponse:
         'wind_om_cost': request.cost_params.wind_om_cost,
         'discount_rate': request.cost_params.discount_rate
     }
+
+    # Set fixed random seed for reproducible results
+    random.seed(42)
 
     # Generate or use custom load profile
     if request.custom_profiles.demand_profile:

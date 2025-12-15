@@ -2,8 +2,8 @@
  * Welcome Screen
  *
  * Displays when starting a new conversation
- * Shows agent-specific title and suggested prompts
- * Matches Flask design exactly
+ * Shows agent-specific title, suggested prompts, and integrated input
+ * Input and suggestions are shown directly below the welcome message for all agents
  */
 
 import { AGENT_TITLES, AGENT_PROMPTS, type AgentType } from '../../constants/agents';
@@ -11,6 +11,8 @@ import { AGENT_TITLES, AGENT_PROMPTS, type AgentType } from '../../constants/age
 interface WelcomeScreenProps {
   agentType?: AgentType;
   onPromptClick?: (prompt: string) => void;
+  // Props for integrated input (all agents)
+  integratedInput?: React.ReactNode;
 }
 
 // Agent-specific subtitles
@@ -24,15 +26,20 @@ const AGENT_SUBTITLES: Record<AgentType, string> = {
   component_prices: 'Your AI-powered assistant for PV component pricing across modules, polysilicon, wafers, cells, and raw materials',
   seamless: 'Your AI-powered assistant for integrated PV market analysis across BIPV, IIPV, AgriPV, and VIPV segments',
   quality: 'Your AI-powered assistant for PV system risks, reliability, degradation analysis, and bankability assessment',
+  storage_optimization: 'Your AI-powered assistant for optimal battery storage system design with solar PV and financial analysis',
 };
 
 export default function WelcomeScreen({
   agentType = 'market',
   onPromptClick,
+  integratedInput,
 }: WelcomeScreenProps) {
   // Get agent-specific title and subtitle
   const title = AGENT_TITLES[agentType] || 'Solar Intelligence';
   const subtitle = AGENT_SUBTITLES[agentType] || 'Your AI-powered assistant for photovoltaic market insights, price analysis, and industry intelligence';
+
+  // Check if agent has prompts defined
+  const hasPrompts = AGENT_PROMPTS[agentType] && AGENT_PROMPTS[agentType].length > 0;
 
   return (
     <div
@@ -90,10 +97,96 @@ export default function WelcomeScreen({
             margin: '0',
             letterSpacing: '-0.01em',
             fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+            marginBottom: '2rem',
           }}
         >
           {subtitle}
         </p>
+
+        {/* Suggested queries for all agents */}
+        {hasPrompts && onPromptClick && (
+          <div
+            style={{
+              marginTop: '1.5rem',
+              marginBottom: '1.5rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '0.75rem',
+                width: '100%',
+                maxWidth: '900px',
+                margin: '0 auto',
+              }}
+            >
+              {AGENT_PROMPTS[agentType]?.map((query, index) => (
+                <button
+                  key={index}
+                  onClick={() => onPromptClick(query.prompt)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.625rem',
+                    padding: '0.75rem 1.125rem',
+                    background: '#F3F4F9',
+                    border: 'none',
+                    borderRadius: '9999px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    fontFamily: "'Inter', 'Open Sans', Arial, sans-serif",
+                    fontSize: '0.8125rem',
+                    fontWeight: '400',
+                    color: '#1e293b',
+                    letterSpacing: '-0.01em',
+                    boxShadow: 'none',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    textAlign: 'left',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#E8EAF6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#F3F4F9';
+                  }}
+                >
+                  {/* Icon */}
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      width: '20px',
+                      height: '20px',
+                    }}
+                    dangerouslySetInnerHTML={{ __html: query.icon }}
+                  />
+                  {/* Text */}
+                  <span
+                    style={{
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '500px',
+                    }}
+                  >
+                    {query.prompt}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Integrated input for all agents */}
+        {integratedInput && (
+          <div style={{ marginTop: '1rem' }}>
+            {integratedInput}
+          </div>
+        )}
       </div>
     </div>
   );

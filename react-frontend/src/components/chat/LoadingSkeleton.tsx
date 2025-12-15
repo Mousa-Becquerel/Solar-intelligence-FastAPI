@@ -132,6 +132,58 @@ export default function LoadingSkeleton() {
             />
           ))}
         </div>
+
+        {/* Input Bar Skeleton */}
+        <div
+          style={{
+            width: '100%',
+            maxWidth: '800px',
+            margin: '0 auto',
+            marginTop: '1rem',
+          }}
+        >
+          <div
+            style={{
+              background: '#F5F5F5',
+              borderRadius: '16px',
+              padding: '0.8rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            {/* Plus button skeleton */}
+            <div
+              className="skeleton"
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                flexShrink: 0,
+              }}
+            />
+            {/* Input field skeleton */}
+            <div
+              className="skeleton"
+              style={{
+                flex: 1,
+                height: '48px',
+                borderRadius: '12px',
+              }}
+            />
+            {/* Send button skeleton */}
+            <div
+              className="skeleton"
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                flexShrink: 0,
+                marginLeft: '0.75rem',
+              }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

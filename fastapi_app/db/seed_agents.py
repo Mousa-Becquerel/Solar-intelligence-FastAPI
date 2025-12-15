@@ -93,6 +93,13 @@ AGENT_CONFIGURATIONS = [
         "description": "PV Risk & Reliability Expert (Quinn) - Technical analysis for PV system risks, reliability, and bankability (Analyst)",
         "is_enabled": True,
         "available_in_fallback": False
+    },
+    {
+        "agent_type": "storage_optimization",
+        "required_plan": "free",
+        "description": "Storage Optimization Expert (Eco) - Battery storage system sizing with solar PV and financial analysis",
+        "is_enabled": True,
+        "available_in_fallback": False
     }
 ]
 
@@ -151,7 +158,7 @@ async def seed_agent_access():
             logger.info(f"   - Total: {len(AGENT_CONFIGURATIONS)} agents configured")
             logger.info(f"   - Strategist agents: digitalization (Nova), nzia_market_impact (Nina)")
             logger.info(f"   - Analyst agents: quality (Quinn)")
-            logger.info(f"   - Free agents: market, news, nzia_policy, manufacturer_financial, component_prices, seamless")
+            logger.info(f"   - Free agents: market, news, nzia_policy, manufacturer_financial, component_prices, seamless, storage_optimization")
             logger.info(f"   - Fallback agents: seamless (Sam)")
 
         except Exception as e:
