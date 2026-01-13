@@ -94,6 +94,11 @@ class EmailVerificationRequest(BaseModel):
     token: str
 
 
+class ResendVerificationRequest(BaseModel):
+    """Resend verification email request schema"""
+    email: str
+
+
 class AccountDeletionRequest(BaseModel):
     """Account deletion request schema"""
     reason: str | None = None
@@ -415,6 +420,58 @@ async def verify_email(
         )
 
     return {"message": "Email successfully verified!"}
+
+
+@router.post("/resend-verification", response_model=MessageResponse, tags=["Email Verification"])
+async def resend_verification_email(
+    request_data: ResendVerificationRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Resend verification email (public endpoint)
+
+    **Public endpoint** - no authentication required
+
+    **Flow**:
+    1. User provides email address
+    2. If account exists and is not verified, generates new token
+    3. Sends new verification email
+
+    **Note**: Always returns success (doesn't reveal if email exists)
+    """
+    # Find user by email
+    result = await db.execute(
+        select(User).where(User.username == request_data.email)
+    )
+    user = result.scalar_one_or_none()
+
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "If the email exists and is not verified, a new verification link has been sent."}
+
+    # Check if already verified
+    if user.email_verified:
+        return {"message": "If the email exists and is not verified, a new verification link has been sent."}
+
+    # Generate new verification token
+    verification_token = secrets.token_urlsafe(32)
+    token_expiry = datetime.utcnow() + timedelta(hours=24)
+
+    user.verification_token = verification_token
+    user.verification_token_expiry = token_expiry
+    await db.commit()
+
+    # Send verification email
+    success, error = await email_service.send_verification_email(
+        email=user.username,
+        token=verification_token,
+        full_name=user.full_name
+    )
+
+    if not success:
+        logger.error(f"Failed to resend verification email to {request_data.email}: {error}")
+
+    return {"message": "If the email exists and is not verified, a new verification link has been sent."}
 
 
 # ============================================================================

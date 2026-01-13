@@ -32,6 +32,7 @@ export default function AgentsPage() {
   const { sidebarExpanded, setSidebarExpanded } = useUIStore();
   const [hiredAgents, setHiredAgents] = useState<AgentType[]>([]);
   const [userPlan, setUserPlan] = useState<string>('free');
+  const [userRole, setUserRole] = useState<string>('demo');
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -45,10 +46,11 @@ export default function AgentsPage() {
 
   const loadData = useCallback(async () => {
     try {
-      // Load user plan and name
+      // Load user plan, role, and name
       const user = await apiClient.getCurrentUser();
       const planType = user.plan_type || 'free';
       setUserPlan(planType);
+      setUserRole(user.role || 'demo');
 
       // Extract first name from full_name (e.g., "John Doe" -> "John")
       let firstName = 'there';
@@ -119,6 +121,12 @@ export default function AgentsPage() {
         setHiredAgents((prev) => prev.filter((a) => a !== agentType));
         showToast(`${agentName} has been removed from your team`, 'success');
       } else {
+        // Eco (storage_optimization) is coming soon (admin-only for now)
+        if (agentType === 'storage_optimization' && userRole !== 'admin') {
+          showToast('Eco is coming soon! Stay tuned for updates.', 'error');
+          return;
+        }
+
         // Free users in fallback mode can ONLY hire Sam (seamless)
         if (userPlan === 'free' && isInFallbackMode && agentType !== 'seamless') {
           showToast('Your trial has ended. Only Sam is available in the free tier. Upgrade to hire more agents!', 'error');
@@ -562,6 +570,12 @@ export default function AgentsPage() {
                               const hirePromises = agentsToHire.map(async (agentType) => {
                                 const agentMetadata = AGENT_METADATA[agentType];
 
+                                // Admin-only agents (Eco) can only be hired by admins
+                                if (agentType === 'storage_optimization' && userRole !== 'admin') {
+                                  console.warn(`Skipping auto-hire for ${agentType} - admin-only agent`);
+                                  return null;
+                                }
+
                                 // Free users in fallback mode can ONLY hire Sam
                                 if (userPlan === 'free' && isInFallbackMode && agentType !== 'seamless') {
                                   console.warn(`Skipping auto-hire for ${agentType} - free user in fallback mode can only hire Sam`);
@@ -765,6 +779,7 @@ export default function AgentsPage() {
                 metadata={AGENT_METADATA[agentType]}
                 isHired={hiredAgents.includes(agentType)}
                 userPlan={userPlan}
+                userRole={userRole}
                 onToggleHire={handleToggleHire}
                 onCardClick={setSelectedAgentForModal}
                 isRecommended={recommendedAgents.includes(agentType)}
@@ -785,14 +800,17 @@ export default function AgentsPage() {
           isHired={hiredAgents.includes(selectedAgentForModal)}
           onToggleHire={handleToggleHire}
           canHire={
-            // Free users in fallback mode can only hire Sam
-            (userPlan === 'free' && isInFallbackMode)
-              ? selectedAgentForModal === 'seamless'
-              : (
-                  !AGENT_METADATA[selectedAgentForModal].premium ||
-                  (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
-                  ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
-                )
+            // Admin-only agents (Eco) require admin role
+            selectedAgentForModal === 'storage_optimization'
+              ? userRole === 'admin'
+              : // Free users in fallback mode can only hire Sam
+                (userPlan === 'free' && isInFallbackMode)
+                  ? selectedAgentForModal === 'seamless'
+                  : (
+                      !AGENT_METADATA[selectedAgentForModal].premium ||
+                      (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
+                      ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
+                    )
           }
         />
       )}

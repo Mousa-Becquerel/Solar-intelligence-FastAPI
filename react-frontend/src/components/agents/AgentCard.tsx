@@ -16,6 +16,7 @@ interface AgentCardProps {
   metadata: AgentMetadata;
   isHired: boolean;
   userPlan: string;
+  userRole?: string;  // User's role for admin-only agents
   onToggleHire: (agentType: AgentType) => Promise<void> | void;
   onCardClick?: (agentType: AgentType) => void;
   isRecommended?: boolean;
@@ -27,6 +28,7 @@ export default function AgentCard({
   metadata,
   isHired,
   userPlan,
+  userRole = 'demo',
   onToggleHire,
   onCardClick,
   isRecommended = false,
@@ -35,19 +37,26 @@ export default function AgentCard({
   const navigate = useNavigate();
   const { name, role, color, initial, premium } = metadata;
 
+  // Check if this is an admin-only agent (Eco/storage_optimization)
+  const isAdminOnly = agentType === 'storage_optimization';
+  const isAdmin = userRole === 'admin';
+
   // Free users in fallback mode can ONLY hire Sam (seamless agent)
   // Free users in trial can hire ALL agents
   // Analyst users cannot hire strategist agents (Nova/Nina)
   // Strategist/Enterprise/Admin users can hire all agents
+  // Admin-only agents (Eco) require admin role
   const isSamAgent = agentType === 'seamless';
-  const canHire = (userPlan === 'free' && isInFallbackMode)
-    ? isSamAgent  // In fallback mode, only Sam is available
-    : (
-        !premium ||
-        (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
-        ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
-      );
-  // Show upgrade prompt for agents that can't be hired
+  const canHire = isAdminOnly
+    ? isAdmin  // Admin-only agents require admin role
+    : (userPlan === 'free' && isInFallbackMode)
+      ? isSamAgent  // In fallback mode, only Sam is available
+      : (
+          !premium ||
+          (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
+          ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
+        );
+  // Show upgrade prompt for agents that can't be hired (or admin-only for non-admins)
   const requiresUpgrade = !canHire;
 
   // Unified color scheme: Yellow background with blue icon
@@ -388,7 +397,7 @@ export default function AgentCard({
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              <span>Upgrade</span>
+              <span>{isAdminOnly ? 'Soon' : 'Upgrade'}</span>
             </>
           ) : isHired ? (
             <>
