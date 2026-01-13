@@ -200,6 +200,25 @@ export const AGENT_METADATA: Record<AgentType, AgentMetadata> = {
     ],
     icon: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   },
+  bipv_design: {
+    name: 'Aria',
+    role: 'BIPV Design Visualizer',
+    provider: 'Becquerel Institute',
+    color: 'gold',
+    initial: 'A',
+    badges: ['ai report'],
+    description: 'AI-powered BIPV visualization expert using Google Gemini. Upload building photos and describe your vision to generate photorealistic renderings of Building-Integrated Photovoltaic solutions including facades, roofs, and glass elements.',
+    capabilities: [
+      'Photorealistic BIPV visualization',
+      'Facade integration design',
+      'Roof-integrated solar solutions',
+      'Colored PV module visualization',
+      'Semi-transparent BIPV glass design',
+      'Multi-turn iterative design editing',
+    ],
+    premium: true,
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+  },
 };
 
 // Agents to display on the agents page (excluding Maya and Leo per user request)
@@ -214,4 +233,5 @@ export const AVAILABLE_AGENTS: AgentType[] = [
   'seamless',
   'quality',
   'storage_optimization',
+  'bipv_design',
 ];

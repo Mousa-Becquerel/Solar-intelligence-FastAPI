@@ -29,6 +29,7 @@ interface UIState {
   setSidebarExpanded: (expanded: boolean) => void;
   setActiveConversationId: (id: number | null) => void;
   openArtifact: (content: any, type: string, conversationId?: number) => void;
+  updateArtifactContent: (content: any) => void;
   closeArtifact: () => void;
   clearArtifact: () => void;
   toggleArtifact: () => void;
@@ -70,6 +71,11 @@ export const useUIStore = create<UIState>()(
           artifactType: type,
         });
       },
+
+      // Update artifact content only (doesn't change open state)
+      // Use this to update content without triggering the open animation
+      updateArtifactContent: (content: any) =>
+        set({ artifactContent: content }),
 
       closeArtifact: () =>
         set({

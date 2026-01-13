@@ -30,7 +30,8 @@ class AgentService:
         'seamless': 'SEAMLESS-PV & BIPV Agent',
         'quality': 'PV Risk & Reliability Expert',
         'storage_optimization': 'Storage Optimization Expert',
-        'weaviate': 'Database Query Agent'
+        'weaviate': 'Database Query Agent',
+        'bipv_design': 'BIPV Design Visualization Agent'
     }
 
     @staticmethod

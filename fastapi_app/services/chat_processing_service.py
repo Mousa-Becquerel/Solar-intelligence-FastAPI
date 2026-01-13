@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any, AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from fastapi_app.db.models import User, Conversation, Message
+from fastapi_app.db.models import User, Conversation, Message, BIPVGeneratedImage
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,7 @@ _component_prices_agent = None
 _seamless_agent = None
 _quality_agent = None
 _storage_optimization_agent = None
+_bipv_design_agent = None
 
 
 def get_news_agent_instance():
@@ -117,6 +118,28 @@ def get_storage_optimization_agent_instance():
         from storage_optimization_agent import StorageOptimizationAgent
         _storage_optimization_agent = StorageOptimizationAgent()
     return _storage_optimization_agent
+
+
+def get_bipv_design_agent_instance():
+    """Get or create BIPV Design agent instance
+
+    Uses BIPV_AGENT_MODE config to determine which implementation to use:
+    - 'pydantic': Pydantic AI agent (new, with tool routing)
+    - 'direct': Direct Gemini API (legacy)
+    """
+    global _bipv_design_agent
+    if _bipv_design_agent is None:
+        from fastapi_app.core.config import settings
+
+        if settings.BIPV_AGENT_MODE == 'pydantic':
+            logger.info("Using Pydantic AI BIPV Design agent")
+            from fastapi_app.agents.bipv_design_agent_pydantic import BIPVDesignAgentPydantic
+            _bipv_design_agent = BIPVDesignAgentPydantic()
+        else:
+            logger.info("Using direct Gemini BIPV Design agent")
+            from fastapi_app.agents.bipv_design_agent import BIPVDesignAgent
+            _bipv_design_agent = BIPVDesignAgent()
+    return _bipv_design_agent
 
 
 # ============================================
@@ -879,5 +902,151 @@ class ChatProcessingService:
 
         except Exception as e:
             error_msg = f"Streaming error: {str(e)}"
+            logger.error(error_msg)
+            yield f"data: {json.dumps({'type': 'error', 'message': error_msg})}\n\n"
+
+    @staticmethod
+    async def process_bipv_design_agent_stream(
+        db: AsyncSession,
+        user_message: str,
+        conv_id: int,
+        agent_type: str = 'bipv_design',
+        images: list = None,
+        image_filenames: list = None
+    ) -> AsyncGenerator[str, None]:
+        """
+        Process message with BIPV Design agent (streaming via SSE)
+        Handles text responses and generated images
+
+        Args:
+            db: Database session
+            user_message: User's message/prompt
+            conv_id: Conversation ID
+            agent_type: Agent type identifier
+            images: Optional list of PIL Image objects for input
+            image_filenames: Optional list of original filenames (for module detection)
+
+        Yields:
+            SSE-formatted strings with text chunks, images, and done event
+        """
+        bipv_design_agent = get_bipv_design_agent_instance()
+        full_response = ""
+        image_data = None
+
+        try:
+            # Stream responses from the agent
+            async for chunk in bipv_design_agent.analyze_stream(
+                query=user_message,
+                conversation_id=str(conv_id),
+                images=images,
+                image_filenames=image_filenames
+            ):
+                # Parse the JSON chunk from the agent
+                try:
+                    event = json.loads(chunk)
+                    event_type = event.get('type')
+
+                    if event_type == 'processing':
+                        # Forward processing status
+                        yield f"data: {json.dumps({'type': 'processing', 'message': event.get('message', 'Processing...')})}\n\n"
+
+                    elif event_type == 'text_chunk':
+                        # Accumulate text and stream to client
+                        text_content = event.get('content', '')
+                        full_response += text_content
+                        yield f"data: {json.dumps({'type': 'chunk', 'content': text_content})}\n\n"
+
+                    elif event_type == 'image':
+                        # Store image in cache and send reference instead of full base64
+                        # This avoids streaming large base64 data through SSE
+                        image_content = event.get('content', {})
+                        image_data = image_content
+
+                        # Store in cache and get ID
+                        from fastapi_app.services.image_cache_service import get_image_cache
+                        cache = get_image_cache()
+                        image_id = cache.store_image(
+                            image_data=image_content.get('image_data', ''),
+                            mime_type=image_content.get('mime_type', 'image/png'),
+                            title=image_content.get('title')
+                        )
+
+                        # Send image reference instead of full data
+                        yield f"data: {json.dumps({'type': 'image', 'content': {'image_id': image_id, 'mime_type': image_content.get('mime_type', 'image/png'), 'title': image_content.get('title')}})}\n\n"
+
+                    elif event_type == 'error':
+                        # Forward error
+                        yield f"data: {json.dumps({'type': 'error', 'message': event.get('message', 'Unknown error')})}\n\n"
+
+                    elif event_type == 'done':
+                        # Agent signaled completion
+                        pass
+
+                except json.JSONDecodeError:
+                    # Not JSON - treat as text chunk
+                    full_response += chunk
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+
+            # Save the complete response to database
+            try:
+                # Get conversation to find user_id
+                conv_result = await db.execute(
+                    select(Conversation).where(Conversation.id == conv_id)
+                )
+                conversation = conv_result.scalar_one_or_none()
+                user_id = conversation.user_id if conversation else None
+
+                # Save message WITHOUT image data (just text response)
+                content_to_save = {
+                    'type': 'bipv_design',
+                    'value': full_response,
+                    'comment': None
+                }
+
+                # Don't include image_data in message content anymore
+                # Instead, save a reference to the separate image record
+                if image_data:
+                    content_to_save['has_generated_image'] = True
+
+                content_json = json.dumps(content_to_save)
+                logger.info(f"[BIPV Save] Saving message (text only):")
+                logger.info(f"[BIPV Save] - full_response length: {len(full_response)}")
+                logger.info(f"[BIPV Save] - has_image: {bool(image_data)}")
+
+                bot_msg = Message(
+                    conversation_id=conv_id,
+                    sender='bot',
+                    agent_type=agent_type,
+                    content=content_json
+                )
+                db.add(bot_msg)
+                await db.flush()  # Get the message ID without committing
+
+                # Save image separately if generated
+                if image_data and user_id:
+                    logger.info(f"[BIPV Save] Saving image separately for message {bot_msg.id}")
+                    bipv_image = BIPVGeneratedImage(
+                        message_id=bot_msg.id,
+                        conversation_id=conv_id,
+                        user_id=user_id,
+                        image_data=image_data.get('image_data', ''),
+                        mime_type=image_data.get('mime_type', 'image/png'),
+                        title=image_data.get('title'),
+                        prompt=user_message
+                    )
+                    db.add(bipv_image)
+                    logger.info(f"[BIPV Save] Image record created for message {bot_msg.id}")
+
+                await db.commit()
+                logger.info(f"[BIPV Save] Message {bot_msg.id} saved successfully with separate image")
+            except Exception as db_error:
+                logger.error(f"Error saving BIPV Design agent message: {db_error}")
+                await db.rollback()
+
+            # Send completion event
+            yield f"data: {json.dumps({'type': 'done', 'full_response': full_response, 'has_image': bool(image_data)})}\n\n"
+
+        except Exception as e:
+            error_msg = f"BIPV Design streaming error: {str(e)}"
             logger.error(error_msg)
             yield f"data: {json.dumps({'type': 'error', 'message': error_msg})}\n\n"

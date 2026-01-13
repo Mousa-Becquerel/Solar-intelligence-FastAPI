@@ -10,7 +10,7 @@ import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { type AgentType } from '../../constants/agents';
 import SuggestedQueries from './SuggestedQueries';
 
-// Allowed file types for upload
+// Allowed file types for upload (storage optimization)
 const ALLOWED_FILE_TYPES = [
   '.csv',
   '.xlsx',
@@ -22,7 +22,15 @@ const ALLOWED_FILE_TYPES = [
   'application/json',
 ];
 
+// Allowed image types for upload (BIPV design)
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
+
 const MAX_FILE_SIZE_MB = 10;
+const MAX_IMAGES = 5;
 
 // Menu item configuration for the plus button popup
 interface MenuItem {
@@ -35,7 +43,7 @@ interface MenuItem {
 
 interface ChatInputProps {
   agentType?: AgentType;
-  onSend: (message: string, file?: File) => void;
+  onSend: (message: string, file?: File, images?: File[]) => void;
   onStop?: () => void;
   disabled?: boolean;
   isStreaming?: boolean;
@@ -57,15 +65,19 @@ export default function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const plusButtonRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Check if this is the storage optimization agent
   const isOptimizationAgent = agentType === 'storage_optimization';
+  // Check if this is the BIPV design agent
+  const isBIPVDesignAgent = agentType === 'bipv_design';
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -91,14 +103,18 @@ export default function ChatInput({
 
   const handleSubmit = () => {
     const trimmed = message.trim();
-    if ((trimmed || uploadedFile) && !disabled) {
-      onSend(trimmed, uploadedFile || undefined);
+    if ((trimmed || uploadedFile || uploadedImages.length > 0) && !disabled) {
+      onSend(trimmed, uploadedFile || undefined, uploadedImages.length > 0 ? uploadedImages : undefined);
       setMessage('');
       setUploadedFile(null);
+      setUploadedImages([]);
       setFileError(null);
       // Reset file input so the same file can be uploaded again
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
       }
     }
   };
@@ -170,6 +186,55 @@ export default function ChatInput({
     }
   };
 
+  // Image upload handling for BIPV Design agent
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    setFileError(null);
+
+    if (!files) return;
+
+    const newImages: File[] = [];
+    const currentCount = uploadedImages.length;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      // Check max count
+      if (currentCount + newImages.length >= MAX_IMAGES) {
+        setFileError(`Maximum ${MAX_IMAGES} images allowed`);
+        break;
+      }
+
+      // Check size
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        setFileError(`Image "${file.name}" exceeds ${MAX_FILE_SIZE_MB}MB limit`);
+        continue;
+      }
+
+      // Check type
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        setFileError('Only JPEG, PNG, and WebP images are allowed');
+        continue;
+      }
+
+      newImages.push(file);
+    }
+
+    if (newImages.length > 0) {
+      setUploadedImages([...uploadedImages, ...newImages]);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+    setFileError(null);
+  };
+
+  const triggerImageInput = () => {
+    setMenuOpen(false);
+    imageInputRef.current?.click();
+  };
+
   const triggerFileInput = () => {
     setMenuOpen(false);
     fileInputRef.current?.click();
@@ -200,22 +265,40 @@ export default function ChatInput({
     return { bg: '#f3f4f6', text: '#374151', border: '#d1d5db' }; // Gray
   };
 
-  // Menu items for the plus button popup (optimization agent only)
-  const menuItems: MenuItem[] = [
-    {
-      id: 'upload',
-      label: 'Upload data',
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
-      ),
-      onClick: triggerFileInput,
-      disabled: disabled,
-    },
-  ];
+  // Menu items for the plus button popup (optimization agent)
+  const menuItems: MenuItem[] = isOptimizationAgent
+    ? [
+        {
+          id: 'upload',
+          label: 'Upload data',
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+          ),
+          onClick: triggerFileInput,
+          disabled: disabled,
+        },
+      ]
+    : isBIPVDesignAgent
+    ? [
+        {
+          id: 'upload-images',
+          label: 'Upload images',
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+          ),
+          onClick: triggerImageInput,
+          disabled: disabled || uploadedImages.length >= MAX_IMAGES,
+        },
+      ]
+    : [];
 
   return (
     <div
@@ -238,6 +321,18 @@ export default function ChatInput({
         />
       )}
 
+      {/* Hidden image input for BIPV Design agent */}
+      {isBIPVDesignAgent && (
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={handleImageSelect}
+          style={{ display: 'none' }}
+        />
+      )}
+
       <div
         style={{
           width: '100%',
@@ -245,13 +340,142 @@ export default function ChatInput({
           margin: '0 auto',
         }}
       >
-        {/* Suggested Queries - hidden for optimization agent */}
-        {!isOptimizationAgent && (
+        {/* Suggested Queries - hidden for optimization agent and BIPV design agent */}
+        {!isOptimizationAgent && !isBIPVDesignAgent && (
           <SuggestedQueries
             agentType={agentType}
             onQueryClick={handleQueryClick}
             visible={showSuggestions}
           />
+        )}
+
+        {/* Image preview for BIPV Design agent */}
+        {isBIPVDesignAgent && (uploadedImages.length > 0 || fileError) && (
+          <div style={{ marginBottom: '0.75rem' }}>
+            {fileError && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  background: '#fef2f2',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  border: '1px solid #fecaca',
+                  marginBottom: uploadedImages.length > 0 ? '0.75rem' : 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span style={{ color: '#dc2626', fontSize: '0.875rem', fontWeight: 500 }}>
+                    {fileError}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setFileError(null)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    color: '#dc2626',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '4px',
+                  }}
+                  aria-label="Dismiss error"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            )}
+            {uploadedImages.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {uploadedImages.map((img, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      position: 'relative',
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      border: '1px solid #e5e7eb',
+                    }}
+                  >
+                    <img
+                      src={URL.createObjectURL(img)}
+                      alt={img.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <button
+                      onClick={() => handleRemoveImage(index)}
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        width: '20px',
+                        height: '20px',
+                        background: 'rgba(0, 0, 0, 0.6)',
+                        border: 'none',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                      }}
+                      aria-label={`Remove ${img.name}`}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                {uploadedImages.length < MAX_IMAGES && (
+                  <button
+                    onClick={triggerImageInput}
+                    style={{
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '8px',
+                      border: '2px dashed #d1d5db',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      color: '#9ca3af',
+                      transition: 'all 0.2s',
+                    }}
+                    title="Add more images"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <span style={{ fontSize: '10px' }}>Add</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* File preview - Claude-style card when file is uploaded */}
@@ -441,8 +665,8 @@ export default function ChatInput({
               position: 'relative',
             }}
           >
-            {/* Plus button for optimization agent - positioned at start */}
-            {isOptimizationAgent && (
+            {/* Plus button for optimization agent and BIPV design agent - positioned at start */}
+            {(isOptimizationAgent || isBIPVDesignAgent) && (
               <div style={{ position: 'relative' }}>
                 <button
                   ref={plusButtonRef}
@@ -593,7 +817,7 @@ export default function ChatInput({
             {/* Send/Stop button */}
             <button
               onClick={isStreaming ? onStop : handleSubmit}
-              disabled={!isStreaming && (disabled || (!message.trim() && !uploadedFile))}
+              disabled={!isStreaming && (disabled || (!message.trim() && !uploadedFile && uploadedImages.length === 0))}
               className="send-btn"
               style={{
                 width: '48px',
@@ -602,7 +826,7 @@ export default function ChatInput({
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '50%',
-                cursor: isStreaming ? 'pointer' : (disabled || (!message.trim() && !uploadedFile) ? 'not-allowed' : 'pointer'),
+                cursor: isStreaming ? 'pointer' : (disabled || (!message.trim() && !uploadedFile && uploadedImages.length === 0) ? 'not-allowed' : 'pointer'),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -613,7 +837,7 @@ export default function ChatInput({
                 overflow: 'hidden',
                 boxShadow: 'none',
                 marginLeft: '0.75rem',
-                opacity: isStreaming ? 1 : (disabled || (!message.trim() && !uploadedFile) ? 0.38 : 1),
+                opacity: isStreaming ? 1 : (disabled || (!message.trim() && !uploadedFile && uploadedImages.length === 0) ? 0.38 : 1),
               }}
               aria-label={isStreaming ? "Stop generating" : "Send message"}
             >

@@ -20,6 +20,9 @@ import ChatInput from './ChatInput';
 import { ArtifactContext } from '../../pages/ChatPage';
 import StorageOptimizationDashboard from '../artifact/StorageOptimizationDashboard';
 import OptimizationResultsPanel from '../artifact/OptimizationResultsPanel';
+import ImageArtifact from '../artifact/ImageArtifact';
+import BIPVDesignArtifactWrapper from '../artifact/BIPVDesignArtifactWrapper';
+import { useBIPV } from '../../contexts/BIPVContext';
 import type { DashboardData } from '../artifact/StorageOptimizationDashboard';
 
 // Agent-specific placeholders
@@ -34,6 +37,7 @@ const AGENT_PLACEHOLDERS: Record<AgentType, string> = {
   seamless: 'Ask about IPV...',
   quality: 'Ask about PV risks, reliability, and degradation...',
   storage_optimization: 'Ask about solar & battery system optimization...',
+  bipv_design: 'Describe your BIPV design vision...',
 };
 
 // Helper to generate unique message IDs
@@ -79,6 +83,13 @@ export default function ChatContainer() {
   const [prevConversationId, setPrevConversationId] = useState<number | null>(null);
   const [surveyStage, setSurveyStage] = useState<1 | 2>(1);
   const [bothSurveysCompleted, setBothSurveysCompleted] = useState(false);
+
+  // BIPV Design agent context
+  const bipvContext = useBIPV();
+
+  // Store BIPV context in ref to avoid dependency issues in useEffect
+  const bipvContextRef = useRef(bipvContext);
+  bipvContextRef.current = bipvContext;
 
   // AbortController for canceling ongoing requests
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -154,6 +165,44 @@ export default function ChatContainer() {
           console.log('No dashboard data to restore for this conversation');
         }
       }
+
+      // Check if any messages are from bipv_design agent
+      // If so, restore the generated images from the separate images table
+      const hasBIPVMessages = data.some(
+        (msg: Message) => msg.agent_type === 'bipv_design'
+      );
+
+      console.log('[BIPV] hasBIPVMessages:', hasBIPVMessages);
+
+      // Restore images from the dedicated BIPV images endpoint
+      if (hasBIPVMessages) {
+        try {
+          console.log('[BIPV] Fetching generated images from API');
+          const bipvImages = await apiClient.getBIPVImages(convId);
+          console.log('[BIPV] Found', bipvImages.length, 'BIPV images in database');
+
+          // Clear existing generated images first to avoid duplicates
+          // (images may have been added during real-time streaming)
+          bipvContextRef.current.clearGeneratedImages();
+
+          // Add each image to the BIPV context (with DB id and timestamp for deduplication)
+          // DB returns oldest first, addGeneratedImage prepends (newest first)
+          // So we iterate in DB order: oldest images get added first and end up at the end
+          for (const img of bipvImages) {
+            bipvContextRef.current.addGeneratedImage({
+              imageData: img.image_data,
+              mimeType: img.mime_type || 'image/png',
+              title: img.title || 'Generated BIPV Visualization',
+              prompt: img.prompt || '',
+              id: img.id, // Pass DB id for deduplication
+              timestamp: new Date(img.created_at).getTime(), // Use original timestamp from DB
+            });
+          }
+          console.log('[BIPV] Successfully restored', bipvImages.length, 'BIPV images');
+        } catch (bipvError) {
+          console.log('[BIPV] No BIPV images to restore or error occurred:', bipvError);
+        }
+      }
     } catch (error) {
       console.error('❌ [loadMessages] Failed to load messages:', error);
       toast.error('Failed to load messages');
@@ -168,13 +217,24 @@ export default function ChatContainer() {
     const prevConvId = prevConversationId;
 
     // Save artifact for previous conversation before switching
-    if (prevConvId && prevConvId !== convId) {
+    // But don't save bipv_design artifacts - they're managed by the agent
+    if (prevConvId && prevConvId !== convId && selectedAgent !== 'bipv_design') {
       saveArtifact(prevConvId);
     }
 
+    // Clear BIPV context when conversation changes (new chat started)
+    // This ensures the artifact panel is fresh for each new conversation
+    if (selectedAgent === 'bipv_design' && prevConvId && prevConvId !== convId) {
+      console.log('[BIPV] Clearing context for new conversation');
+      bipvContextRef.current.clearAll();
+    }
+
     // Restore artifact for new conversation
+    // Skip for bipv_design agent - it manages its own artifact panel
     if (convId) {
-      restoreArtifact(convId);
+      if (selectedAgent !== 'bipv_design') {
+        restoreArtifact(convId);
+      }
 
       // Skip loading if we just created a new conversation and already have messages
       if (skipLoadMessages) {
@@ -202,7 +262,10 @@ export default function ChatContainer() {
         createInitialConversation();
       } else if (prevConvId !== null) {
         // Clear artifacts and messages when switching away from a conversation
-        restoreArtifact(-1);
+        // Skip for bipv_design - it manages its own artifact
+        if (selectedAgent !== 'bipv_design') {
+          restoreArtifact(-1);
+        }
         setMessages([]);
       }
     }
@@ -210,8 +273,18 @@ export default function ChatContainer() {
     setPrevConversationId(conversationId);
   }, [conversationId, prevConversationId, skipLoadMessages, saveArtifact, restoreArtifact, loadMessages, selectedAgent, setActiveConversationId, agentInitialized]);
 
-  const handleSendMessage = async (content: string, file?: File) => {
+  const handleSendMessage = async (content: string, file?: File, images?: File[]) => {
     try {
+      // For BIPV design agent, combine images from artifact with any images from input
+      let allImages = images || [];
+      if (selectedAgent === 'bipv_design') {
+        // Combine building and PV module images from BIPV context
+        const artifactImages = [...bipvContext.buildingImages, ...bipvContext.pvModuleImages];
+        if (artifactImages.length > 0) {
+          allImages = [...artifactImages, ...allImages];
+        }
+      }
+
       // Check query limits for free tier users
       // Note: Sam (seamless) is allowed in fallback mode - backend handles daily quota
       if (user && user.plan_type === 'free' && artifactContext) {
@@ -339,8 +412,8 @@ export default function ChatContainer() {
         setActiveConversationId(convId);
       }
 
-      // Start streaming response
-      await streamResponse(convId, content, file);
+      // Start streaming response (use allImages for BIPV agent)
+      await streamResponse(convId, content, file, allImages.length > 0 ? allImages : images);
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
@@ -349,7 +422,7 @@ export default function ChatContainer() {
     }
   };
 
-  const streamResponse = async (convId: number, userMessage: string, file?: File) => {
+  const streamResponse = async (convId: number, userMessage: string, file?: File, images?: File[]) => {
     // Create new AbortController for this request
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
@@ -361,14 +434,25 @@ export default function ChatContainer() {
       const msgId = Date.now();
       setStreamingMessageId(msgId);
 
-      // Use the API client's sendChatMessage method with abort signal
-      const response = await apiClient.sendChatMessage(
-        convId,
-        userMessage,
-        selectedAgent,
-        abortController.signal,
-        file
-      );
+      // Use images API for BIPV design agent with images, otherwise use regular API
+      let response: Response;
+      if (images && images.length > 0 && selectedAgent === 'bipv_design') {
+        response = await apiClient.sendChatMessageWithImages(
+          convId,
+          userMessage,
+          selectedAgent,
+          abortController.signal,
+          images
+        );
+      } else {
+        response = await apiClient.sendChatMessage(
+          convId,
+          userMessage,
+          selectedAgent,
+          abortController.signal,
+          file
+        );
+      }
 
       if (!response.ok) {
         // Handle 403 - user hasn't hired this agent
@@ -458,6 +542,52 @@ export default function ChatContainer() {
                   // Handle plot data - store it for rendering
                   plotData = parsed.content;
                   // Don't add to accumulated text - plot will be rendered separately
+                  break;
+
+                case 'image':
+                  // Handle generated image from BIPV Design agent
+                  // Backend now sends image_id instead of full base64 to avoid SSE issues
+                  if (parsed.content) {
+                    const imageContent = parsed.content;
+                    const imageId = imageContent.image_id;
+
+                    if (imageId) {
+                      // Fetch image from cache endpoint
+                      const token = localStorage.getItem('fastapi_access_token');
+                      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+
+                      fetch(`${apiBase}/api/v1/chat/images/${imageId}`, {
+                        headers: {
+                          'Authorization': `Bearer ${token}`
+                        }
+                      })
+                        .then(response => {
+                          if (!response.ok) throw new Error('Failed to fetch image');
+                          return response.blob();
+                        })
+                        .then(blob => {
+                          // Convert blob to base64
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const base64data = reader.result as string;
+                            // Remove the data URL prefix to get just base64
+                            const base64Only = base64data.split(',')[1];
+
+                            // Add to BIPV generated images array
+                            bipvContext.addGeneratedImage({
+                              imageData: base64Only,
+                              mimeType: imageContent.mime_type || 'image/png',
+                              title: imageContent.title || 'Generated BIPV Visualization',
+                              prompt: userMessage,
+                            });
+                          };
+                          reader.readAsDataURL(blob);
+                        })
+                        .catch(err => {
+                          console.error('Error fetching generated image:', err);
+                        });
+                    }
+                  }
                   break;
 
                 case 'approval_request':
@@ -573,6 +703,78 @@ export default function ChatContainer() {
   const handlePromptClick = (prompt: string) => {
     handleSendMessage(prompt);
   };
+
+  // Store refs for callbacks to avoid dependency issues in useEffect
+  const handleSendMessageRef = useRef(handleSendMessage);
+  handleSendMessageRef.current = handleSendMessage;
+
+  // Set up BIPV context generate handler - stable reference using ref
+  useEffect(() => {
+    if (selectedAgent === 'bipv_design') {
+      bipvContextRef.current.setOnGenerate((prompt: string) => {
+        handleSendMessageRef.current(prompt);
+      });
+    }
+    return () => {
+      if (selectedAgent === 'bipv_design') {
+        bipvContextRef.current.setOnGenerate(null);
+      }
+    };
+  }, [selectedAgent]);
+
+  // Update isGenerating state in BIPV context
+  useEffect(() => {
+    if (selectedAgent === 'bipv_design') {
+      bipvContextRef.current.setIsGenerating(streaming || sending);
+    }
+  }, [selectedAgent, streaming, sending]);
+
+  // Open BIPV Design artifact when agent is selected
+  // Track whether we've opened the artifact for the current bipv_design session
+  const bipvArtifactOpenedForAgentRef = useRef<boolean>(false);
+
+  // Reset the ref on component mount to handle navigation back to BIPV Design
+  useEffect(() => {
+    console.log('[BIPV Mount] Component mounted, resetting artifact opened flag');
+    bipvArtifactOpenedForAgentRef.current = false;
+    // Cleanup on unmount
+    return () => {
+      console.log('[BIPV Mount] Component unmounting');
+      bipvArtifactOpenedForAgentRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('[BIPV Effect] Running:', {
+      selectedAgent,
+      agentInitialized,
+      alreadyOpened: bipvArtifactOpenedForAgentRef.current
+    });
+
+    if (selectedAgent === 'bipv_design') {
+      // Open artifact when agent is bipv_design and initialized, but only once per session
+      if (agentInitialized && !bipvArtifactOpenedForAgentRef.current) {
+        console.log('[BIPV Effect] Opening artifact panel');
+        bipvArtifactOpenedForAgentRef.current = true;
+        // Use setTimeout to ensure this runs AFTER ChatPage's clearArtifact effect
+        // This is needed because both effects run on mount but we need this one to win
+        setTimeout(() => {
+          openArtifact(
+            <BIPVDesignArtifactWrapper />,
+            'bipv_design',
+            conversationId || undefined
+          );
+        }, 0);
+      }
+    } else {
+      // Reset flag when switching away from bipv_design
+      if (bipvArtifactOpenedForAgentRef.current) {
+        console.log('[BIPV Effect] Resetting - switched away from bipv_design');
+        bipvArtifactOpenedForAgentRef.current = false;
+        bipvContextRef.current.clearAll();
+      }
+    }
+  }, [selectedAgent, agentInitialized, openArtifact, conversationId]);
 
   // Show loading state
   if (loading) {

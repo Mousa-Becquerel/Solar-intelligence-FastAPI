@@ -417,6 +417,22 @@ async def send_chat_message(
                     }
                 )
 
+            elif agent_type == "bipv_design":
+                # BIPV Design agent - for text-only messages, use /send-with-images for image uploads
+                return StreamingResponse(
+                    ChatProcessingService.process_bipv_design_agent_stream(
+                        db, user_message, conv_id, agent_type
+                    ),
+                    media_type="text/event-stream",
+                    headers={
+                        'Cache-Control': 'no-cache, no-transform',
+                        'X-Accel-Buffering': 'no',
+                        'Connection': 'keep-alive',
+                        'Content-Type': 'text/event-stream; charset=utf-8',
+                        'X-Content-Type-Options': 'nosniff'
+                    }
+                )
+
             else:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -616,6 +632,212 @@ async def send_chat_message_with_file(
         raise
     except Exception as e:
         logger.error(f"Chat processing error with file: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chat processing failed: {str(e)}"
+        )
+
+
+@router.post(
+    "/send-with-images",
+    summary="Send chat message with image uploads",
+    description="Send a message with image attachments for BIPV Design agent"
+)
+@rate_limit("30/minute")
+async def send_chat_message_with_images(
+    request: Request,
+    conversation_id: int = Form(...),
+    message: str = Form(...),
+    agent_type: str = Form(default="bipv_design"),
+    images: list[UploadFile] = File(default=[]),
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Send a chat message with image attachments.
+
+    This endpoint is specifically for the BIPV Design agent
+    which processes building and PV module images to generate
+    BIPV visualizations.
+
+    Supported image types: JPEG, PNG, WebP
+    Max image size: 10MB each
+    Max images: 5 per request
+    """
+    from PIL import Image
+    import io
+
+    try:
+        user_message = message.strip()
+        conv_id = conversation_id
+
+        # Input validation
+        if not user_message and not images:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Message or images are required"
+            )
+
+        # Validate images if provided
+        pil_images = []
+        image_info = []
+        if images:
+            # Check max images
+            if len(images) > 5:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Maximum 5 images allowed per request"
+                )
+
+            allowed_types = ['image/jpeg', 'image/png', 'image/webp']
+
+            for img_file in images:
+                # Skip empty files
+                if not img_file.filename:
+                    continue
+
+                # Check content type
+                if img_file.content_type not in allowed_types:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Invalid image type: {img_file.content_type}. Allowed: JPEG, PNG, WebP"
+                    )
+
+                # Read and check size
+                content = await img_file.read()
+                if len(content) > 10 * 1024 * 1024:  # 10MB
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Image '{img_file.filename}' exceeds 10MB limit"
+                    )
+
+                # Convert to PIL Image
+                try:
+                    pil_img = Image.open(io.BytesIO(content))
+                    pil_images.append(pil_img)
+                    image_info.append({
+                        "filename": img_file.filename,
+                        "size": len(content),
+                        "dimensions": f"{pil_img.width}x{pil_img.height}"
+                    })
+                    logger.info(f"Image processed: {img_file.filename} ({len(content)} bytes, {pil_img.width}x{pil_img.height})")
+                except Exception as img_error:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Failed to process image '{img_file.filename}': {str(img_error)}"
+                    )
+
+        # GDPR Article 18 - Check if processing is restricted
+        if current_user.processing_restricted:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "Data processing is currently restricted",
+                    "message": f"Your data processing has been restricted due to: {current_user.restriction_grounds}",
+                    "note": "To resume using the chat service, please cancel the restriction in your profile settings.",
+                    "restricted_at": current_user.restriction_requested_at.isoformat() if current_user.restriction_requested_at else None
+                }
+            )
+
+        # Get conversation and validate user access
+        result = await db.execute(
+            select(Conversation).where(Conversation.id == conv_id)
+        )
+        conversation = result.scalar_one_or_none()
+
+        if not conversation or conversation.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found or access denied"
+            )
+
+        # Check if user has access to the requested agent
+        can_access, reason = await AgentAccessService.can_user_access_agent(
+            db, current_user, agent_type
+        )
+        if not can_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=reason or "You do not have access to this agent"
+            )
+
+        # Update conversation agent type if changed
+        if conversation.agent_type != agent_type:
+            conversation.agent_type = agent_type
+            await db.commit()
+
+        # Check query limits
+        base_limit = current_user.get_query_limit()
+        total_limit = base_limit
+
+        if current_user.plan_type == 'free':
+            stage1_result = await db.execute(
+                select(UserSurvey).where(UserSurvey.user_id == current_user.id)
+            )
+            stage1_survey = stage1_result.scalar_one_or_none()
+            if stage1_survey:
+                total_limit += stage1_survey.bonus_queries_granted
+
+            stage2_result = await db.execute(
+                select(UserSurveyStage2).where(UserSurveyStage2.user_id == current_user.id)
+            )
+            stage2_survey = stage2_result.scalar_one_or_none()
+            if stage2_survey:
+                total_limit += stage2_survey.bonus_queries_granted
+
+        if current_user.role != 'admin' and current_user.monthly_query_count >= total_limit:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    'error': f'Query limit reached. You have used {current_user.monthly_query_count}/{total_limit} queries this month.',
+                    'plan_type': current_user.plan_type,
+                    'queries_used': current_user.monthly_query_count,
+                    'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
+                    'upgrade_required': True
+                }
+            )
+
+        # Increment query count
+        current_user.increment_query_count()
+
+        # Store user message with image metadata
+        user_msg = Message(
+            conversation_id=conv_id,
+            sender='user',
+            content=json.dumps({
+                "type": "string",
+                "value": user_message,
+                "comment": None,
+                "images": image_info if image_info else None
+            })
+        )
+        db.add(user_msg)
+        await db.commit()
+
+        # Extract filenames for module detection
+        image_filenames = [info.get('filename') for info in image_info] if image_info else None
+
+        # Process with BIPV design agent
+        return StreamingResponse(
+            ChatProcessingService.process_bipv_design_agent_stream(
+                db, user_message, conv_id, agent_type,
+                pil_images if pil_images else None,
+                image_filenames
+            ),
+            media_type="text/event-stream",
+            headers={
+                'Cache-Control': 'no-cache, no-transform',
+                'X-Accel-Buffering': 'no',
+                'Connection': 'keep-alive',
+                'Content-Type': 'text/event-stream; charset=utf-8',
+                'X-Content-Type-Options': 'nosniff'
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Chat processing error with images: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Chat processing failed: {str(e)}"
@@ -973,3 +1195,79 @@ async def get_dashboard_data(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch dashboard data: {str(e)}"
         )
+
+
+# ============================================
+# Image Cache Endpoints (for BIPV Design Agent)
+# ============================================
+
+@router.get(
+    "/images/{image_id}",
+    summary="Get cached image",
+    description="Retrieve a generated image by its ID"
+)
+async def get_cached_image(
+    image_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Retrieve a generated image from the cache.
+    Used by BIPV Design agent to avoid streaming large base64 data through SSE.
+
+    Returns:
+        Image bytes with appropriate content type
+    """
+    from fastapi.responses import Response
+    from fastapi_app.services.image_cache_service import get_image_cache
+
+    cache = get_image_cache()
+    result = cache.get_image_bytes(image_id)
+
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found or expired"
+        )
+
+    image_bytes, mime_type = result
+
+    return Response(
+        content=image_bytes,
+        media_type=mime_type,
+        headers={
+            "Cache-Control": "private, max-age=900",  # Cache for 15 minutes
+            "Content-Disposition": f"inline; filename=bipv_design_{image_id[:8]}.jpg"
+        }
+    )
+
+
+@router.get(
+    "/images/{image_id}/metadata",
+    summary="Get cached image metadata",
+    description="Retrieve metadata for a generated image (without the image data)"
+)
+async def get_cached_image_metadata(
+    image_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Retrieve metadata for a generated image without the full image data.
+    Useful for checking if an image exists and getting its info.
+    """
+    from fastapi_app.services.image_cache_service import get_image_cache
+
+    cache = get_image_cache()
+    image = cache.get_image(image_id)
+
+    if image is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found or expired"
+        )
+
+    return {
+        "image_id": image_id,
+        "mime_type": image['mime_type'],
+        "title": image.get('title'),
+        "data_size": len(image['image_data'])
+    }

@@ -258,6 +258,20 @@ class APIClient {
     });
   }
 
+  // Get BIPV generated images for a conversation
+  async getBIPVImages(conversationId: number): Promise<Array<{
+    id: number;
+    message_id: number;
+    conversation_id: number;
+    image_data: string;
+    mime_type: string;
+    title: string | null;
+    prompt: string | null;
+    created_at: string;
+  }>> {
+    return this.request(`conversations/${conversationId}/bipv-images`);
+  }
+
   // Helper to parse message with plot data and file metadata support
   private parseMessageWithPlotData(content: string): { content: string; plotData?: any; metadata?: Record<string, any> } {
     // If content is empty or null, return placeholder
@@ -384,6 +398,41 @@ class APIClient {
 
     // Don't try to parse JSON for streaming responses
     // Just return the Response and let caller handle it
+    return response;
+  }
+
+  /**
+   * Send chat message with image attachments
+   * Specifically for BIPV Design agent
+   */
+  async sendChatMessageWithImages(
+    conversationId: number,
+    message: string,
+    agentType: string,
+    signal?: AbortSignal,
+    images?: File[]
+  ): Promise<Response> {
+    const url = `${this.baseUrl}/chat/send-with-images`;
+
+    const formData = new FormData();
+    formData.append('conversation_id', conversationId.toString());
+    formData.append('message', message || ' '); // Ensure message is not empty
+    formData.append('agent_type', agentType);
+
+    // Append images if provided
+    if (images && images.length > 0) {
+      images.forEach((image) => {
+        formData.append('images', image);
+      });
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: this.getAuthHeader(),
+      body: formData,
+      signal,
+    });
+
     return response;
   }
 

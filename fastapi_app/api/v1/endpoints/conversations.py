@@ -16,7 +16,8 @@ from pydantic import BaseModel, Field
 
 from fastapi_app.core.deps import get_current_active_user
 from fastapi_app.db.session import get_db
-from fastapi_app.db.models import User, Conversation, Message
+from fastapi_app.db.models import User, Conversation, Message, BIPVGeneratedImage
+from sqlalchemy import select
 from fastapi_app.services.conversation_service import ConversationService
 
 router = APIRouter()
@@ -447,6 +448,67 @@ async def clear_messages(
         )
 
     return {"message": "All messages cleared successfully"}
+
+
+# ============================================================================
+# BIPV Generated Images Endpoints
+# ============================================================================
+
+class BIPVImageResponse(BaseModel):
+    """Schema for BIPV generated image response"""
+    id: int
+    message_id: int
+    conversation_id: int
+    image_data: str  # Base64 encoded image
+    mime_type: str
+    title: Optional[str] = None
+    prompt: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/{conversation_id}/bipv-images", response_model=List[BIPVImageResponse], tags=["BIPV Images"])
+async def get_bipv_images(
+    conversation_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get all BIPV generated images for a conversation
+
+    **Requires**: Authentication (Bearer token)
+
+    **Authorization**: User can only access images from their own conversations
+
+    **Returns**: List of BIPV generated images in chronological order
+    """
+    # Verify conversation belongs to user
+    conv_result = await db.execute(
+        select(Conversation).where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id
+        )
+    )
+    conversation = conv_result.scalar_one_or_none()
+
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found"
+        )
+
+    # Get all BIPV images for this conversation
+    images_result = await db.execute(
+        select(BIPVGeneratedImage).where(
+            BIPVGeneratedImage.conversation_id == conversation_id,
+            BIPVGeneratedImage.user_id == current_user.id
+        ).order_by(BIPVGeneratedImage.created_at.asc())
+    )
+    images = images_result.scalars().all()
+
+    return images
 
 
 # ============================================================================

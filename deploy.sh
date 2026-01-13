@@ -51,7 +51,7 @@ echo ""
 # Build and push backend
 if [ "$DEPLOY_BACKEND" = true ] || [ "$DEPLOY_BOTH" = true ]; then
     echo -e "${YELLOW}[2/5] Building backend Docker image...${NC}"
-    docker build -f fastapi_app/Dockerfile.prod -t solar-intelligence-backend:latest .
+    docker build --no-cache -f fastapi_app/Dockerfile.prod -t solar-intelligence-backend:latest .
     echo -e "${GREEN}✓ Backend image built${NC}"
     echo ""
 

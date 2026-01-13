@@ -10,14 +10,17 @@ import { router } from './router';
 import { ErrorBoundary } from './components/error/ErrorBoundary';
 import { ErrorTester } from './components/error/ErrorTester';
 import { CookieConsent } from './components/common/CookieConsent';
+import { BIPVProvider } from './contexts/BIPVContext';
 
 function App() {
   return (
     <ErrorBoundary>
-      <RouterProvider router={router} />
-      <Toaster position="top-right" richColors />
-      <CookieConsent />
-      {import.meta.env.DEV && <ErrorTester />}
+      <BIPVProvider>
+        <RouterProvider router={router} />
+        <Toaster position="top-right" richColors />
+        <CookieConsent />
+        {import.meta.env.DEV && <ErrorTester />}
+      </BIPVProvider>
     </ErrorBoundary>
   );
 }

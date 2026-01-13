@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     # Logfire
     LOGFIRE_TOKEN: str = ''
 
+    # Google Gemini API (for BIPV Design agent)
+    GEMINI_API_KEY: str = ''
+
+    # BIPV Agent Mode: 'pydantic' for Pydantic AI, 'direct' for direct Gemini API
+    BIPV_AGENT_MODE: str = 'pydantic'
+
     # AWS Configuration
     AWS_REGION: str = "us-east-1"
     AWS_ACCESS_KEY_ID: str = ""

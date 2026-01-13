@@ -191,6 +191,21 @@ class Message(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, server_default=func.now())
 
 
+class BIPVGeneratedImage(Base):
+    """BIPV Generated Image - Stores generated visualization images separately from messages"""
+    __tablename__ = "fastapi_bipv_generated_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, nullable=False, index=True)  # Reference to the message that generated this
+    conversation_id = Column(Integer, nullable=False, index=True)  # For easy querying
+    user_id = Column(Integer, nullable=False, index=True)  # Owner of the image
+    image_data = Column(Text, nullable=False)  # Base64 encoded image
+    mime_type = Column(String(50), default='image/png')
+    title = Column(String(255), nullable=True)
+    prompt = Column(Text, nullable=True)  # The prompt that generated this image
+    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now(), index=True)
+
+
 class Waitlist(Base):
     """Waitlist model for email subscriptions"""
     __tablename__ = "fastapi_waitlist"

@@ -73,7 +73,20 @@ export default function MessageList({
         }}
       >
       {/* Messages */}
-      {messages.map((message) => (
+      {messages
+        // Filter out empty BIPV bot messages (image-only responses)
+        .filter((message) => {
+          // Skip empty bot messages from bipv_design agent
+          if (message.sender === 'bot' && message.agent_type === 'bipv_design') {
+            const content = message.content?.trim();
+            // Skip if content is empty or just placeholder text
+            if (!content || content === '' || content === '[Empty message - no content]') {
+              return false;
+            }
+          }
+          return true;
+        })
+        .map((message) => (
         <MessageBubble
           key={message.id}
           message={message}

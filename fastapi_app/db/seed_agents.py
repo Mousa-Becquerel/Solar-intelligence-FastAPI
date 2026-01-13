@@ -5,14 +5,15 @@ Initializes the AgentAccess table with correct plan requirements
 matching the frontend agent metadata.
 
 Plan hierarchy:
-- free: All users can access (Alex, Emma, Finn, Priya, Aniza, Sam)
-- analyst: Paid plan, same agents as free but unlimited queries
-- strategist: Paid plan, includes Nova and Nina
+- free: All users can access (Alex, Emma, Finn, Priya, Aniza, Sam, Eco)
+- analyst: Paid plan, same agents as free but unlimited queries + Quinn
+- strategist: Paid plan, includes Nova, Nina, and Aria
 - enterprise: Full access + custom integrations
 
 Premium agents requiring 'strategist' plan:
 - digitalization (Nova)
 - nzia_market_impact (Nina)
+- bipv_design (Aria)
 
 Analyst plan agents:
 - quality (Quinn)
@@ -98,6 +99,13 @@ AGENT_CONFIGURATIONS = [
         "agent_type": "storage_optimization",
         "required_plan": "free",
         "description": "Storage Optimization Expert (Eco) - Battery storage system sizing with solar PV and financial analysis",
+        "is_enabled": True,
+        "available_in_fallback": False
+    },
+    {
+        "agent_type": "bipv_design",
+        "required_plan": "strategist",
+        "description": "BIPV Design Visualizer (Aria) - AI-powered BIPV visualization using Google Gemini (Strategist)",
         "is_enabled": True,
         "available_in_fallback": False
     }

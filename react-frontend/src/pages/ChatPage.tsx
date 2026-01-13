@@ -4,7 +4,8 @@
  * Main chat interface with artifact panel integration via Zustand store
  */
 
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ChatContainer from '../components/chat/ChatContainer';
 import { useUIStore } from '../stores';
 import ContactForm from '../components/artifact/ContactForm';
@@ -20,18 +21,37 @@ export const ArtifactContext = createContext<{
 } | null>(null);
 
 export default function ChatPage() {
-  const { openArtifact, closeArtifact, clearArtifact, activeConversationId } = useUIStore();
+  const { openArtifact, closeArtifact, clearArtifact, activeConversationId, artifactType } = useUIStore();
+  const [searchParams] = useSearchParams();
+  const agentFromUrl = searchParams.get('agent');
 
   // Survey state
   const [showSurvey1, setShowSurvey1] = useState(false);
   const [showSurvey2, setShowSurvey2] = useState(false);
   const [surveyStatus, setSurveyStatus] = useState<{ stage1_completed: boolean; stage2_completed: boolean } | null>(null);
 
+  // Track if we've done initial clear to avoid interfering with agent-specific artifacts
+  const initialClearDoneRef = useRef(false);
 
   // Clear artifact panel when component mounts (e.g., navigating to chat page)
+  // BUT don't clear if:
+  // 1. Navigating to bipv_design agent (it has its own artifact)
+  // 2. Artifact is already a bipv_design artifact (don't clear it)
+  // NOTE: We DO NOT clear artifact here for bipv_design because ChatContainer handles it
   useEffect(() => {
-    clearArtifact();
-  }, [clearArtifact]);
+    if (!initialClearDoneRef.current) {
+      initialClearDoneRef.current = true;
+      console.log('[ChatPage] Mount effect - checking artifact clear:', {
+        agentFromUrl,
+        artifactType,
+        shouldClear: agentFromUrl !== 'bipv_design' && artifactType !== 'bipv_design'
+      });
+      // Don't clear if we're navigating to bipv_design or already have a bipv_design artifact
+      if (agentFromUrl !== 'bipv_design' && artifactType !== 'bipv_design') {
+        clearArtifact();
+      }
+    }
+  }, []);
 
   // Check survey status on mount
   useEffect(() => {

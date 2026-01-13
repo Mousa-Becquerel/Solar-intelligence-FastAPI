@@ -27,6 +27,7 @@ const AGENT_SUBTITLES: Record<AgentType, string> = {
   seamless: 'Your AI-powered assistant for integrated PV market analysis across BIPV, IIPV, AgriPV, and VIPV segments',
   quality: 'Your AI-powered assistant for PV system risks, reliability, degradation analysis, and bankability assessment',
   storage_optimization: 'Your AI-powered assistant for optimal battery storage system design with solar PV and financial analysis',
+  bipv_design: 'Upload building images and describe your vision to generate photorealistic BIPV visualizations',
 };
 
 export default function WelcomeScreen({
@@ -113,11 +114,14 @@ export default function WelcomeScreen({
           >
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                display: 'flex',
+                flexDirection: agentType === 'bipv_design' ? 'column' : 'row',
+                flexWrap: agentType === 'bipv_design' ? 'nowrap' : 'wrap',
+                justifyContent: 'center',
+                alignItems: 'center',
                 gap: '0.75rem',
                 width: '100%',
-                maxWidth: '900px',
+                maxWidth: agentType === 'bipv_design' ? '400px' : '900px',
                 margin: '0 auto',
               }}
             >
@@ -128,6 +132,7 @@ export default function WelcomeScreen({
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
+                    justifyContent: agentType === 'bipv_design' ? 'center' : 'flex-start',
                     gap: '0.625rem',
                     padding: '0.75rem 1.125rem',
                     background: '#F3F4F9',
@@ -144,6 +149,7 @@ export default function WelcomeScreen({
                     position: 'relative',
                     overflow: 'hidden',
                     textAlign: 'left',
+                    width: agentType === 'bipv_design' ? '100%' : 'auto',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = '#E8EAF6';
@@ -183,7 +189,7 @@ export default function WelcomeScreen({
 
         {/* Integrated input for all agents */}
         {integratedInput && (
-          <div style={{ marginTop: '1rem' }}>
+          <div style={{ marginTop: agentType === 'bipv_design' ? '2.5rem' : '1rem' }}>
             {integratedInput}
           </div>
         )}

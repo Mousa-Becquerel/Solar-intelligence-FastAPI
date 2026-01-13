@@ -14,7 +14,8 @@ export type AgentType =
   | 'component_prices'
   | 'seamless'
   | 'quality'
-  | 'storage_optimization';
+  | 'storage_optimization'
+  | 'bipv_design';
 
 export const AGENT_TITLES: Record<AgentType, string> = {
   market: 'PV Capacity Analysis',
@@ -27,6 +28,7 @@ export const AGENT_TITLES: Record<AgentType, string> = {
   seamless: 'IPV Expert',
   quality: 'PV Risk & Reliability Expert',
   storage_optimization: 'Storage Optimization Expert',
+  bipv_design: 'BIPV Designer',
 };
 
 // Agent dropdown display names (shown in chat header)
@@ -41,6 +43,7 @@ export const AGENT_DROPDOWN_NAMES: Record<AgentType, string> = {
   seamless: 'Sam - IPV Expert',
   quality: 'Quinn - PV Risk & Reliability Expert',
   storage_optimization: 'Eco - Storage Optimization Expert',
+  bipv_design: 'Aria - BIPV Design Visualizer',
 };
 
 export interface SuggestedPrompt {
@@ -358,6 +361,23 @@ export const AGENT_PROMPTS: Record<AgentType, SuggestedPrompt[]> = {
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><line x1="6" y1="11" x2="6" y2="11.01"></line><line x1="18" y1="11" x2="18" y2="11.01"></line></svg>',
       title: 'Battery Optimization',
       prompt: 'Optimize battery storage size for a 8 kWp PV system with economic strategy',
+    },
+  ],
+  bipv_design: [
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="3" x2="8" y2="17"></line><line x1="16" y1="3" x2="16" y2="17"></line><line x1="2" y1="10" x2="22" y2="10"></line></svg>',
+      title: 'Silk Nova All Black',
+      prompt: 'What are the specifications of the FuturaSun Silk Nova All Black module?',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="3" x2="8" y2="17"></line><line x1="16" y1="3" x2="16" y2="17"></line><line x1="2" y1="10" x2="22" y2="10"></line></svg>',
+      title: 'Silk Nova Red',
+      prompt: 'Tell me about the FuturaSun Silk Nova Red module for heritage buildings',
+    },
+    {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="3" x2="8" y2="17"></line><line x1="16" y1="3" x2="16" y2="17"></line><line x1="2" y1="10" x2="22" y2="10"></line></svg>',
+      title: 'Silk Nova Green',
+      prompt: 'What makes the FuturaSun Silk Nova Green Duetto ideal for greenfield installations?',
     },
   ],
 };
