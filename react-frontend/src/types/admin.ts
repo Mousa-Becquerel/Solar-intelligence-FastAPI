@@ -28,3 +28,13 @@ export interface UpdateUserRequest {
   role?: string;
   password?: string;
 }
+
+export interface AgentWhitelistEntry {
+  id: number;
+  agent_type: string;
+  is_active: boolean;
+  unlimited_queries: boolean;
+  granted_at: string | null;
+  expires_at: string | null;
+  reason: string | null;
+}

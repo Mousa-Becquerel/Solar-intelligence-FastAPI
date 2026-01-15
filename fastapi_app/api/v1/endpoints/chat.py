@@ -101,6 +101,9 @@ async def send_chat_message(
         conv_id = chat_request.conversation_id
         agent_type = chat_request.agent_type
 
+        # Debug logging for unlimited queries investigation
+        logger.info(f"[CHAT DEBUG] User {current_user.id} requesting agent '{agent_type}', plan_type={current_user.plan_type}, monthly_query_count={current_user.monthly_query_count}")
+
         # Input validation
         if not user_message:
             raise HTTPException(
@@ -136,6 +139,7 @@ async def send_chat_message(
         can_access, reason = await AgentAccessService.can_user_access_agent(
             db, current_user, agent_type
         )
+        logger.info(f"[CHAT DEBUG] can_user_access_agent result for user {current_user.id}, agent '{agent_type}': can_access={can_access}, reason={reason}")
         if not can_access:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -147,31 +151,43 @@ async def send_chat_message(
             conversation.agent_type = agent_type
             await db.commit()
 
-        # Check query limits (including survey bonuses for free tier)
-        base_limit = current_user.get_query_limit()
-        total_limit = base_limit
+        # Check if user has unlimited queries for this specific agent (whitelist with unlimited_queries=True)
+        has_unlimited = await AgentAccessService.has_unlimited_queries(
+            db, current_user.id, agent_type
+        )
+        logger.info(f"[CHAT DEBUG] has_unlimited_queries result for user {current_user.id}, agent '{agent_type}': {has_unlimited}")
 
-        # Add survey bonuses for free tier users
-        if current_user.plan_type == 'free':
-            # Check Stage 1 survey completion
-            stage1_result = await db.execute(
-                select(UserSurvey).where(UserSurvey.user_id == current_user.id)
-            )
-            stage1_survey = stage1_result.scalar_one_or_none()
-            if stage1_survey:
-                total_limit += stage1_survey.bonus_queries_granted
+        # Skip query limit checks if user has unlimited access to this agent
+        if has_unlimited:
+            logger.info(f"User {current_user.id} has unlimited queries for agent '{agent_type}', skipping query limits")
+            total_limit = float('inf')
+            is_in_fallback_mode = False
+        else:
+            # Check query limits (including survey bonuses for free tier)
+            base_limit = current_user.get_query_limit()
+            total_limit = base_limit
 
-            # Check Stage 2 survey completion
-            stage2_result = await db.execute(
-                select(UserSurveyStage2).where(UserSurveyStage2.user_id == current_user.id)
-            )
-            stage2_survey = stage2_result.scalar_one_or_none()
-            if stage2_survey:
-                total_limit += stage2_survey.bonus_queries_granted
+            # Add survey bonuses for free tier users
+            if current_user.plan_type == 'free':
+                # Check Stage 1 survey completion
+                stage1_result = await db.execute(
+                    select(UserSurvey).where(UserSurvey.user_id == current_user.id)
+                )
+                stage1_survey = stage1_result.scalar_one_or_none()
+                if stage1_survey:
+                    total_limit += stage1_survey.bonus_queries_granted
+
+                # Check Stage 2 survey completion
+                stage2_result = await db.execute(
+                    select(UserSurveyStage2).where(UserSurveyStage2.user_id == current_user.id)
+                )
+                stage2_survey = stage2_result.scalar_one_or_none()
+                if stage2_survey:
+                    total_limit += stage2_survey.bonus_queries_granted
 
         # Check if user exceeded their limit
         is_in_fallback_mode = False
-        if current_user.role != 'admin' and current_user.monthly_query_count >= total_limit:
+        if not has_unlimited and current_user.role != 'admin' and current_user.monthly_query_count >= total_limit:
             # Check if user can use fallback mode (free users with fallback agents)
             if current_user.plan_type == 'free':
                 # Check if the requested agent is available in fallback mode
@@ -226,8 +242,12 @@ async def send_chat_message(
                 )
 
         # Increment query count (or use daily free query for fallback mode)
+        # Skip counting for users with unlimited queries for this agent
         try:
-            if is_in_fallback_mode:
+            if has_unlimited:
+                # Don't count queries for users with unlimited access to this agent
+                logger.info(f"Skipping query count for user {current_user.id} (unlimited access to '{agent_type}')")
+            elif is_in_fallback_mode:
                 # Use daily free query counter for fallback mode
                 current_user.use_daily_free_query()
                 logger.info(f"Daily free query used for user {current_user.id}, remaining: {current_user.daily_free_queries}")
@@ -562,39 +582,47 @@ async def send_chat_message_with_file(
             conversation.agent_type = agent_type
             await db.commit()
 
-        # Check query limits (simplified - reuse logic from main endpoint)
-        base_limit = current_user.get_query_limit()
-        total_limit = base_limit
+        # Check if user has unlimited queries for this specific agent
+        has_unlimited = await AgentAccessService.has_unlimited_queries(
+            db, current_user.id, agent_type
+        )
 
-        if current_user.plan_type == 'free':
-            stage1_result = await db.execute(
-                select(UserSurvey).where(UserSurvey.user_id == current_user.id)
-            )
-            stage1_survey = stage1_result.scalar_one_or_none()
-            if stage1_survey:
-                total_limit += stage1_survey.bonus_queries_granted
+        if not has_unlimited:
+            # Check query limits (simplified - reuse logic from main endpoint)
+            base_limit = current_user.get_query_limit()
+            total_limit = base_limit
 
-            stage2_result = await db.execute(
-                select(UserSurveyStage2).where(UserSurveyStage2.user_id == current_user.id)
-            )
-            stage2_survey = stage2_result.scalar_one_or_none()
-            if stage2_survey:
-                total_limit += stage2_survey.bonus_queries_granted
+            if current_user.plan_type == 'free':
+                stage1_result = await db.execute(
+                    select(UserSurvey).where(UserSurvey.user_id == current_user.id)
+                )
+                stage1_survey = stage1_result.scalar_one_or_none()
+                if stage1_survey:
+                    total_limit += stage1_survey.bonus_queries_granted
 
-        if current_user.role != 'admin' and current_user.monthly_query_count >= total_limit:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail={
-                    'error': f'Query limit reached. You have used {current_user.monthly_query_count}/{total_limit} queries this month.',
-                    'plan_type': current_user.plan_type,
-                    'queries_used': current_user.monthly_query_count,
-                    'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
-                    'upgrade_required': True
-                }
-            )
+                stage2_result = await db.execute(
+                    select(UserSurveyStage2).where(UserSurveyStage2.user_id == current_user.id)
+                )
+                stage2_survey = stage2_result.scalar_one_or_none()
+                if stage2_survey:
+                    total_limit += stage2_survey.bonus_queries_granted
 
-        # Increment query count
-        current_user.increment_query_count()
+            if current_user.role != 'admin' and current_user.monthly_query_count >= total_limit:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail={
+                        'error': f'Query limit reached. You have used {current_user.monthly_query_count}/{total_limit} queries this month.',
+                        'plan_type': current_user.plan_type,
+                        'queries_used': current_user.monthly_query_count,
+                        'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
+                        'upgrade_required': True
+                    }
+                )
+
+            # Increment query count (only if not unlimited)
+            current_user.increment_query_count()
+        else:
+            logger.info(f"User {current_user.id} has unlimited queries for agent '{agent_type}', skipping query limits")
 
         # Store user message (include file info if present)
         # Don't modify message_content - just store the original message
@@ -766,39 +794,47 @@ async def send_chat_message_with_images(
             conversation.agent_type = agent_type
             await db.commit()
 
-        # Check query limits
-        base_limit = current_user.get_query_limit()
-        total_limit = base_limit
+        # Check if user has unlimited queries for this specific agent
+        has_unlimited = await AgentAccessService.has_unlimited_queries(
+            db, current_user.id, agent_type
+        )
 
-        if current_user.plan_type == 'free':
-            stage1_result = await db.execute(
-                select(UserSurvey).where(UserSurvey.user_id == current_user.id)
-            )
-            stage1_survey = stage1_result.scalar_one_or_none()
-            if stage1_survey:
-                total_limit += stage1_survey.bonus_queries_granted
+        if not has_unlimited:
+            # Check query limits
+            base_limit = current_user.get_query_limit()
+            total_limit = base_limit
 
-            stage2_result = await db.execute(
-                select(UserSurveyStage2).where(UserSurveyStage2.user_id == current_user.id)
-            )
-            stage2_survey = stage2_result.scalar_one_or_none()
-            if stage2_survey:
-                total_limit += stage2_survey.bonus_queries_granted
+            if current_user.plan_type == 'free':
+                stage1_result = await db.execute(
+                    select(UserSurvey).where(UserSurvey.user_id == current_user.id)
+                )
+                stage1_survey = stage1_result.scalar_one_or_none()
+                if stage1_survey:
+                    total_limit += stage1_survey.bonus_queries_granted
 
-        if current_user.role != 'admin' and current_user.monthly_query_count >= total_limit:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail={
-                    'error': f'Query limit reached. You have used {current_user.monthly_query_count}/{total_limit} queries this month.',
-                    'plan_type': current_user.plan_type,
-                    'queries_used': current_user.monthly_query_count,
-                    'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
-                    'upgrade_required': True
-                }
-            )
+                stage2_result = await db.execute(
+                    select(UserSurveyStage2).where(UserSurveyStage2.user_id == current_user.id)
+                )
+                stage2_survey = stage2_result.scalar_one_or_none()
+                if stage2_survey:
+                    total_limit += stage2_survey.bonus_queries_granted
 
-        # Increment query count
-        current_user.increment_query_count()
+            if current_user.role != 'admin' and current_user.monthly_query_count >= total_limit:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail={
+                        'error': f'Query limit reached. You have used {current_user.monthly_query_count}/{total_limit} queries this month.',
+                        'plan_type': current_user.plan_type,
+                        'queries_used': current_user.monthly_query_count,
+                        'query_limit': total_limit if total_limit != float('inf') else 'unlimited',
+                        'upgrade_required': True
+                    }
+                )
+
+            # Increment query count (only if not unlimited)
+            current_user.increment_query_count()
+        else:
+            logger.info(f"User {current_user.id} has unlimited queries for agent '{agent_type}', skipping query limits")
 
         # Store user message with image metadata
         user_msg = Message(
@@ -1270,4 +1306,61 @@ async def get_cached_image_metadata(
         "mime_type": image['mime_type'],
         "title": image.get('title'),
         "data_size": len(image['image_data'])
+    }
+
+
+@router.get(
+    "/check-unlimited-access/{agent_type}",
+    summary="Check unlimited access for agent",
+    description="Check if the current user has unlimited queries access to a specific agent"
+)
+async def check_unlimited_access(
+    agent_type: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Check if the current user has unlimited queries access to a specific agent.
+    This is used by the frontend to bypass local query limit checks for whitelisted users.
+
+    Returns:
+        - has_unlimited: True if user has unlimited queries for this agent
+        - agent_type: The agent type checked
+    """
+    has_unlimited = await AgentAccessService.has_unlimited_queries(
+        db, current_user.id, agent_type
+    )
+
+    return {
+        "has_unlimited": has_unlimited,
+        "agent_type": agent_type,
+        "user_id": current_user.id
+    }
+
+
+@router.get(
+    "/unlimited-access-agents",
+    summary="Get all agents with unlimited access",
+    description="Get list of all agent types that the current user has unlimited queries access to"
+)
+async def get_unlimited_access_agents(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get all agent types that the current user has unlimited queries access to via whitelist.
+    This is used by the Agents page to show which agents should be available
+    even when the user is in fallback mode (trial exhausted).
+
+    Returns:
+        - agents: List of agent types with unlimited access
+        - user_id: The user's ID
+    """
+    agents = await AgentAccessService.get_unlimited_access_agents(
+        db, current_user.id
+    )
+
+    return {
+        "agents": agents,
+        "user_id": current_user.id
     }

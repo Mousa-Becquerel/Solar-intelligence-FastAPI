@@ -259,6 +259,8 @@ class AgentWhitelist(Base):
     expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True, index=True)
     reason = Column(Text, nullable=True)
+    # When True, user has unlimited queries for this agent (bypasses all query limits)
+    unlimited_queries = Column(Boolean, default=False)
 
 
 class ContactRequest(Base):

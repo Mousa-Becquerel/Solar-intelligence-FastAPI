@@ -308,8 +308,23 @@ export default function ChatContainer() {
         // Sam (seamless) agent is allowed in fallback mode - backend will handle daily quota
         const isSamAgent = selectedAgent === 'seamless';
 
-        // If at or over limit AND not using Sam agent, show the limit message
+        // Check if user has unlimited access to this specific agent via whitelist
+        let hasUnlimitedAccess = false;
         if (isInFallbackMode && !isSamAgent) {
+          try {
+            const unlimitedCheck = await apiClient.checkUnlimitedAccess(selectedAgent);
+            hasUnlimitedAccess = unlimitedCheck.has_unlimited;
+            if (hasUnlimitedAccess) {
+              console.log(`User has unlimited access to agent '${selectedAgent}', bypassing query limit check`);
+            }
+          } catch (err) {
+            console.error('Failed to check unlimited access:', err);
+            // On error, proceed with normal limit check (fail-safe)
+          }
+        }
+
+        // If at or over limit AND not using Sam agent AND no unlimited access, show the limit message
+        if (isInFallbackMode && !isSamAgent && !hasUnlimitedAccess) {
 
           // Check if both surveys are completed
           const bothCompleted = surveyStatus?.stage1_completed && surveyStatus?.stage2_completed;

@@ -21,6 +21,7 @@ interface AgentCardProps {
   onCardClick?: (agentType: AgentType) => void;
   isRecommended?: boolean;
   isInFallbackMode?: boolean;  // True if free user has exhausted trial queries
+  hasUnlimitedAccess?: boolean;  // True if user has unlimited access via whitelist
 }
 
 export default function AgentCard({
@@ -33,6 +34,7 @@ export default function AgentCard({
   onCardClick,
   isRecommended = false,
   isInFallbackMode = false,
+  hasUnlimitedAccess = false,
 }: AgentCardProps) {
   const navigate = useNavigate();
   const { name, role, color, initial, premium } = metadata;
@@ -41,21 +43,24 @@ export default function AgentCard({
   const isAdminOnly = agentType === 'storage_optimization';
   const isAdmin = userRole === 'admin';
 
-  // Free users in fallback mode can ONLY hire Sam (seamless agent)
+  // Free users in fallback mode can ONLY hire Sam (seamless agent) OR whitelisted agents
   // Free users in trial can hire ALL agents
   // Analyst users cannot hire strategist agents (Nova/Nina)
   // Strategist/Enterprise/Admin users can hire all agents
   // Admin-only agents (Eco) require admin role
+  // Whitelisted agents with unlimited access are always available
   const isSamAgent = agentType === 'seamless';
   const canHire = isAdminOnly
     ? isAdmin  // Admin-only agents require admin role
-    : (userPlan === 'free' && isInFallbackMode)
-      ? isSamAgent  // In fallback mode, only Sam is available
-      : (
-          !premium ||
-          (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
-          ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
-        );
+    : hasUnlimitedAccess  // Whitelisted agents with unlimited access are always available
+      ? true
+      : (userPlan === 'free' && isInFallbackMode)
+        ? isSamAgent  // In fallback mode, only Sam is available (unless whitelisted)
+        : (
+            !premium ||
+            (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
+            ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
+          );
   // Show upgrade prompt for agents that can't be hired (or admin-only for non-admins)
   const requiresUpgrade = !canHire;
 

@@ -7,7 +7,8 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '../../api/client';
-import type { User, UpdateUserRequest } from '../../types/admin';
+import type { User, UpdateUserRequest, AgentWhitelistEntry } from '../../types/admin';
+import { AVAILABLE_AGENTS, AGENT_METADATA } from '../../constants/agentMetadata';
 import styles from './Admin.module.css';
 
 export default function AdminUsersPage() {
@@ -20,6 +21,14 @@ export default function AdminUsersPage() {
     role: '',
     password: '',
   });
+
+  // Agent Access Modal State
+  const [agentAccessUser, setAgentAccessUser] = useState<User | null>(null);
+  const [userWhitelist, setUserWhitelist] = useState<AgentWhitelistEntry[]>([]);
+  const [isLoadingWhitelist, setIsLoadingWhitelist] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState('');
+  const [unlimitedQueries, setUnlimitedQueries] = useState(true);
+  const [accessReason, setAccessReason] = useState('');
 
   useEffect(() => {
     loadData();
@@ -103,6 +112,76 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Agent Access Modal Functions
+  const handleOpenAgentAccess = async (user: User) => {
+    setAgentAccessUser(user);
+    setIsLoadingWhitelist(true);
+    setSelectedAgent('');
+    setUnlimitedQueries(true);
+    setAccessReason('');
+
+    try {
+      const whitelist = await apiClient.getUserAgentWhitelist(user.id);
+      setUserWhitelist(whitelist);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to load agent whitelist');
+      setUserWhitelist([]);
+    } finally {
+      setIsLoadingWhitelist(false);
+    }
+  };
+
+  const handleCloseAgentAccess = () => {
+    setAgentAccessUser(null);
+    setUserWhitelist([]);
+    setSelectedAgent('');
+    setUnlimitedQueries(true);
+    setAccessReason('');
+  };
+
+  const handleGrantAccess = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!agentAccessUser || !selectedAgent) return;
+
+    try {
+      await apiClient.grantAgentAccess(
+        agentAccessUser.id,
+        selectedAgent,
+        unlimitedQueries,
+        accessReason || undefined
+      );
+      toast.success(`Granted ${unlimitedQueries ? 'unlimited ' : ''}access to ${AGENT_METADATA[selectedAgent as keyof typeof AGENT_METADATA]?.name || selectedAgent}`);
+
+      // Reload whitelist
+      const whitelist = await apiClient.getUserAgentWhitelist(agentAccessUser.id);
+      setUserWhitelist(whitelist);
+      setSelectedAgent('');
+      setAccessReason('');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to grant access');
+    }
+  };
+
+  const handleRevokeAccess = async (agentType: string) => {
+    if (!agentAccessUser) return;
+
+    const agentName = AGENT_METADATA[agentType as keyof typeof AGENT_METADATA]?.name || agentType;
+    if (!confirm(`Revoke access to ${agentName} for ${agentAccessUser.full_name}?`)) {
+      return;
+    }
+
+    try {
+      await apiClient.revokeAgentAccess(agentAccessUser.id, agentType);
+      toast.success(`Revoked access to ${agentName}`);
+
+      // Reload whitelist
+      const whitelist = await apiClient.getUserAgentWhitelist(agentAccessUser.id);
+      setUserWhitelist(whitelist);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to revoke access');
+    }
+  };
+
   const getRoleBadgeClass = (role: string) => {
     const roleMap: Record<string, string> = {
       admin: styles.roleAdmin,
@@ -111,6 +190,14 @@ export default function AdminUsersPage() {
       demo: styles.roleDemo,
     };
     return `${styles.roleBadge} ${roleMap[role] || styles.roleDemo}`;
+  };
+
+  // Get agents not yet whitelisted for this user
+  const getAvailableAgentsForWhitelist = () => {
+    const whitelistedAgents = new Set(
+      userWhitelist.filter(w => w.is_active).map(w => w.agent_type)
+    );
+    return AVAILABLE_AGENTS.filter(agent => !whitelistedAgents.has(agent));
   };
 
   if (isLoading) {
@@ -209,6 +296,16 @@ export default function AdminUsersPage() {
                 </svg>
               </button>
               <button
+                className={`${styles.btn} ${styles.btnSm}`}
+                onClick={() => handleOpenAgentAccess(user)}
+                title="Agent Access"
+                style={{ backgroundColor: '#8b5cf6', color: 'white' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                </svg>
+              </button>
+              <button
                 className={`${styles.btn} ${styles.btnSm} ${user.is_active ? styles.btnWarning : styles.btnSuccess}`}
                 onClick={() => handleToggleStatus(user.id)}
                 title={user.is_active ? 'Deactivate' : 'Activate'}
@@ -295,6 +392,163 @@ export default function AdminUsersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Agent Access Modal */}
+      {agentAccessUser && (
+        <div className={styles.modal} onClick={handleCloseAgentAccess}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                </svg>
+                Agent Access - {agentAccessUser.full_name}
+              </h2>
+              <button className={styles.closeBtn} onClick={handleCloseAgentAccess}>
+                ×
+              </button>
+            </div>
+
+            {/* Current Whitelist */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: '#374151' }}>
+                Current Whitelist Entries
+              </h3>
+              {isLoadingWhitelist ? (
+                <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Loading...</p>
+              ) : userWhitelist.filter(w => w.is_active).length === 0 ? (
+                <p style={{ color: '#6b7280', fontSize: '0.875rem', fontStyle: 'italic' }}>No active whitelist entries</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {userWhitelist.filter(w => w.is_active).map((entry) => {
+                    const agentMeta = AGENT_METADATA[entry.agent_type as keyof typeof AGENT_METADATA];
+                    return (
+                      <div
+                        key={entry.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '0.75rem 1rem',
+                          backgroundColor: entry.unlimited_queries ? '#fef3c7' : '#f3f4f6',
+                          borderRadius: '8px',
+                          border: entry.unlimited_queries ? '1px solid #f59e0b' : '1px solid #e5e7eb',
+                        }}
+                      >
+                        <div>
+                          <span style={{ fontWeight: 500 }}>
+                            {agentMeta?.name || entry.agent_type}
+                          </span>
+                          <span style={{ color: '#6b7280', marginLeft: '8px', fontSize: '0.875rem' }}>
+                            ({entry.agent_type})
+                          </span>
+                          {entry.unlimited_queries && (
+                            <span
+                              style={{
+                                marginLeft: '8px',
+                                padding: '2px 8px',
+                                backgroundColor: '#f59e0b',
+                                color: 'white',
+                                borderRadius: '9999px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                              }}
+                            >
+                              UNLIMITED
+                            </span>
+                          )}
+                          {entry.reason && (
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+                              Reason: {entry.reason}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          className={`${styles.btn} ${styles.btnSm} ${styles.btnDanger}`}
+                          onClick={() => handleRevokeAccess(entry.agent_type)}
+                          title="Revoke Access"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Grant New Access Form */}
+            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: '#374151' }}>
+                Grant New Access
+              </h3>
+              <form onSubmit={handleGrantAccess}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Select Agent</label>
+                  <select
+                    className={styles.formSelect}
+                    value={selectedAgent}
+                    onChange={(e) => setSelectedAgent(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Select an agent --</option>
+                    {getAvailableAgentsForWhitelist().map((agentType) => {
+                      const agentMeta = AGENT_METADATA[agentType as keyof typeof AGENT_METADATA];
+                      return (
+                        <option key={agentType} value={agentType}>
+                          {agentMeta?.name || agentType} ({agentType})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={unlimitedQueries}
+                      onChange={(e) => setUnlimitedQueries(e.target.checked)}
+                      style={{ width: '18px', height: '18px', accentColor: '#f59e0b' }}
+                    />
+                    <span style={{ fontWeight: 500 }}>Grant Unlimited Queries</span>
+                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                      (Bypasses all query limits for this agent)
+                    </span>
+                  </label>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Reason (Optional)</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={accessReason}
+                    onChange={(e) => setAccessReason(e.target.value)}
+                    placeholder="e.g., VIP user, beta tester, partner..."
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={handleCloseAgentAccess}>
+                    Close
+                  </button>
+                  <button
+                    type="submit"
+                    className={`${styles.btn}`}
+                    style={{ backgroundColor: '#8b5cf6', color: 'white' }}
+                    disabled={!selectedAgent}
+                  >
+                    Grant Access
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

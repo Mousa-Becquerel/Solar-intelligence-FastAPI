@@ -43,6 +43,8 @@ export default function AgentsPage() {
   const [isRecommending, setIsRecommending] = useState(false);
   // Track if free user has exhausted their trial queries (in fallback mode)
   const [isInFallbackMode, setIsInFallbackMode] = useState(false);
+  // Track which agents the user has unlimited access to (via whitelist)
+  const [unlimitedAccessAgents, setUnlimitedAccessAgents] = useState<string[]>([]);
 
   const loadData = useCallback(async () => {
     try {
@@ -82,6 +84,16 @@ export default function AgentsPage() {
           console.error('Failed to load profile for fallback check:', profileError);
           // If we can't load profile, assume not in fallback (safer for user experience)
         }
+      }
+
+      // Load unlimited access agents (whitelisted with unlimited_queries=True)
+      try {
+        const unlimitedResponse = await apiClient.getUnlimitedAccessAgents();
+        console.log('[AgentsPage] Unlimited access agents:', unlimitedResponse.agents);
+        setUnlimitedAccessAgents(unlimitedResponse.agents);
+      } catch (unlimitedError) {
+        console.error('Failed to load unlimited access agents:', unlimitedError);
+        // If we can't load, just use empty array
       }
 
       // Load hired agents
@@ -127,8 +139,8 @@ export default function AgentsPage() {
           return;
         }
 
-        // Free users in fallback mode can ONLY hire Sam (seamless)
-        if (userPlan === 'free' && isInFallbackMode && agentType !== 'seamless') {
+        // Free users in fallback mode can ONLY hire Sam (seamless) OR whitelisted agents
+        if (userPlan === 'free' && isInFallbackMode && agentType !== 'seamless' && !unlimitedAccessAgents.includes(agentType)) {
           showToast('Your trial has ended. Only Sam is available in the free tier. Upgrade to hire more agents!', 'error');
           return;
         }
@@ -136,7 +148,8 @@ export default function AgentsPage() {
         // Free users can hire ALL agents during trial period (first 15 queries)
         // Analyst users cannot hire strategist agents (Nova/Nina)
         // Strategist/Enterprise/Admin users can hire all agents
-        const canHirePremium = (userPlan === 'free' && !isInFallbackMode) || ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan);
+        // Whitelisted agents with unlimited access can always be hired
+        const canHirePremium = unlimitedAccessAgents.includes(agentType) || (userPlan === 'free' && !isInFallbackMode) || ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan);
         if (agentMetadata.premium && !canHirePremium) {
           showToast('This agent requires a Strategist or Enterprise plan. Please upgrade to hire this agent.', 'error');
           return;
@@ -576,9 +589,9 @@ export default function AgentsPage() {
                                   return null;
                                 }
 
-                                // Free users in fallback mode can ONLY hire Sam
-                                if (userPlan === 'free' && isInFallbackMode && agentType !== 'seamless') {
-                                  console.warn(`Skipping auto-hire for ${agentType} - free user in fallback mode can only hire Sam`);
+                                // Free users in fallback mode can ONLY hire Sam OR whitelisted agents
+                                if (userPlan === 'free' && isInFallbackMode && agentType !== 'seamless' && !unlimitedAccessAgents.includes(agentType)) {
+                                  console.warn(`Skipping auto-hire for ${agentType} - free user in fallback mode can only hire Sam or whitelisted agents`);
                                   return null;
                                 }
 
@@ -784,6 +797,7 @@ export default function AgentsPage() {
                 onCardClick={setSelectedAgentForModal}
                 isRecommended={recommendedAgents.includes(agentType)}
                 isInFallbackMode={isInFallbackMode}
+                hasUnlimitedAccess={unlimitedAccessAgents.includes(agentType)}
               />
             ))}
           </div>
@@ -803,14 +817,17 @@ export default function AgentsPage() {
             // Admin-only agents (Eco) require admin role
             selectedAgentForModal === 'storage_optimization'
               ? userRole === 'admin'
-              : // Free users in fallback mode can only hire Sam
-                (userPlan === 'free' && isInFallbackMode)
-                  ? selectedAgentForModal === 'seamless'
-                  : (
-                      !AGENT_METADATA[selectedAgentForModal].premium ||
-                      (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
-                      ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
-                    )
+              : // Whitelisted agents with unlimited access are always available
+                unlimitedAccessAgents.includes(selectedAgentForModal)
+                  ? true
+                  : // Free users in fallback mode can only hire Sam (or whitelisted agents)
+                    (userPlan === 'free' && isInFallbackMode)
+                      ? selectedAgentForModal === 'seamless'
+                      : (
+                          !AGENT_METADATA[selectedAgentForModal].premium ||
+                          (userPlan === 'free' && !isInFallbackMode) ||  // Free users can try all agents during trial
+                          ['strategist', 'enterprise', 'admin', 'premium', 'max'].includes(userPlan)
+                        )
           }
         />
       )}

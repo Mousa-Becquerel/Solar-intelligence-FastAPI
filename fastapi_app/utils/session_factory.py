@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 # Session backend configuration
 # Set SESSION_BACKEND to 'redis' to migrate to Redis
 SESSION_BACKEND = os.getenv("SESSION_BACKEND", "postgresql")  # postgresql | redis
-DATABASE_URL = os.getenv("FASTAPI_DATABASE_URL", "postgresql+asyncpg://solar_admin:datahub1@postgres-db:5432/solar_intelligence_fastapi")
+# Use DATABASE_URL (same as main app) for agent sessions - check both env var names
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("FASTAPI_DATABASE_URL", "postgresql+asyncpg://solar_admin:datahub1@postgres-db:5432/solar_intelligence_fastapi")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 

@@ -12,6 +12,7 @@ from fastapi_app.db.session import get_db
 from fastapi_app.core.deps import get_current_admin_user
 from fastapi_app.db.models import User
 from fastapi_app.services.admin_service import AdminService
+from fastapi_app.services.agent_access_service import AgentAccessService
 
 router = APIRouter()
 
@@ -435,4 +436,112 @@ async def cleanup_conversations(
     return {
         "deleted_count": count,
         "message": f"Deleted {count} empty conversations older than {days_old} days"
+    }
+
+
+# ============================================
+# Agent Whitelist Management Endpoints
+# ============================================
+
+class AgentWhitelistEntry(BaseModel):
+    """Agent whitelist entry response"""
+    id: int
+    agent_type: str
+    is_active: bool
+    unlimited_queries: bool
+    granted_at: Optional[datetime]
+    expires_at: Optional[datetime]
+    reason: Optional[str]
+
+
+class AgentWhitelistRequest(BaseModel):
+    """Request to grant/update agent whitelist access"""
+    agent_type: str = Field(..., description="Agent type to grant access to")
+    unlimited_queries: bool = Field(default=False, description="Grant unlimited queries")
+    reason: Optional[str] = Field(None, description="Reason for granting access")
+    expires_at: Optional[datetime] = Field(None, description="Optional expiration date")
+
+
+class AgentWhitelistResponse(BaseModel):
+    """Response for agent whitelist operations"""
+    success: bool
+    message: str
+
+
+@router.get(
+    "/users/{user_id}/agent-whitelist",
+    response_model=List[AgentWhitelistEntry],
+    summary="Get user's agent whitelist",
+    description="Get all agent whitelist entries for a user (admin only)"
+)
+async def get_user_agent_whitelist(
+    user_id: int,
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all agent whitelist entries for a user"""
+    entries = await AgentAccessService.get_user_whitelist(db, user_id)
+    return entries
+
+
+@router.post(
+    "/users/{user_id}/agent-whitelist",
+    response_model=AgentWhitelistResponse,
+    summary="Grant agent access",
+    description="Grant a user access to an agent with optional unlimited queries (admin only)"
+)
+async def grant_agent_access(
+    user_id: int,
+    request: AgentWhitelistRequest,
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Grant a user access to an agent"""
+    success, error = await AgentAccessService.grant_user_access(
+        db=db,
+        agent_type=request.agent_type,
+        user_id=user_id,
+        granted_by=current_admin.id,
+        expires_at=request.expires_at,
+        reason=request.reason,
+        unlimited_queries=request.unlimited_queries
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error or "Failed to grant agent access"
+        )
+
+    action = "unlimited access to" if request.unlimited_queries else "access to"
+    return {
+        "success": True,
+        "message": f"Granted {action} {request.agent_type} for user {user_id}"
+    }
+
+
+@router.delete(
+    "/users/{user_id}/agent-whitelist/{agent_type}",
+    response_model=AgentWhitelistResponse,
+    summary="Revoke agent access",
+    description="Revoke a user's whitelisted access to an agent (admin only)"
+)
+async def revoke_agent_access(
+    user_id: int,
+    agent_type: str,
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Revoke a user's whitelisted access to an agent"""
+    success, error = await AgentAccessService.revoke_user_access(db, agent_type, user_id)
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error or "Failed to revoke agent access"
+        )
+
+    return {
+        "success": True,
+        "message": f"Revoked access to {agent_type} for user {user_id}"
     }

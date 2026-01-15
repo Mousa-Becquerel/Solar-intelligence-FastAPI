@@ -21,6 +21,7 @@ import type {
   PendingUser,
   CreateUserRequest,
   UpdateUserRequest,
+  AgentWhitelistEntry,
 } from '../types/admin';
 import type {
   UserSurveyData,
@@ -513,6 +514,57 @@ class APIClient {
     return this.request(`admin/users/${userId}/approve`, {
       method: 'POST',
     });
+  }
+
+  // ========================================
+  // Agent Whitelist Management Endpoints
+  // ========================================
+
+  async getUserAgentWhitelist(userId: number): Promise<AgentWhitelistEntry[]> {
+    return this.request<AgentWhitelistEntry[]>(`admin/users/${userId}/agent-whitelist`);
+  }
+
+  async grantAgentAccess(
+    userId: number,
+    agentType: string,
+    unlimitedQueries: boolean,
+    reason?: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request(`admin/users/${userId}/agent-whitelist`, {
+      method: 'POST',
+      body: JSON.stringify({
+        agent_type: agentType,
+        unlimited_queries: unlimitedQueries,
+        reason: reason || null,
+      }),
+    });
+  }
+
+  async revokeAgentAccess(userId: number, agentType: string): Promise<{ success: boolean; message: string }> {
+    return this.request(`admin/users/${userId}/agent-whitelist/${agentType}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ========================================
+  // Unlimited Access Check Endpoint
+  // ========================================
+
+  /**
+   * Check if the current user has unlimited queries access to a specific agent.
+   * Used by the frontend to bypass local query limit checks for whitelisted users.
+   */
+  async checkUnlimitedAccess(agentType: string): Promise<{ has_unlimited: boolean; agent_type: string; user_id: number }> {
+    return this.request(`chat/check-unlimited-access/${agentType}`);
+  }
+
+  /**
+   * Get all agent types that the current user has unlimited queries access to.
+   * Used by the Agents page to show which agents should be available
+   * even when the user is in fallback mode (trial exhausted).
+   */
+  async getUnlimitedAccessAgents(): Promise<{ agents: string[]; user_id: number }> {
+    return this.request('chat/unlimited-access-agents');
   }
 
   // ========================================

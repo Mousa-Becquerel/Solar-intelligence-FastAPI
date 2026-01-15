@@ -406,15 +406,17 @@ class AgentService:
                     HiredAgent.is_active == True
                 )
             )
-            hired = result.scalar_one_or_none()
+            hired_agents = result.scalars().all()
 
-            if not hired:
+            if not hired_agents:
                 return False, "Agent not hired"
 
-            hired.is_active = False
+            # Deactivate all matching entries (handles duplicates)
+            for hired in hired_agents:
+                hired.is_active = False
             await db.commit()
 
-            logger.info(f"User {user.id} released {agent_type} agent")
+            logger.info(f"User {user.id} released {agent_type} agent ({len(hired_agents)} entries)")
             return True, None
 
         except Exception as e:

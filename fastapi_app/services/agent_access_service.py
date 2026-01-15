@@ -168,6 +168,107 @@ class AgentAccessService:
             return False, "An error occurred while checking access permissions"
 
     @staticmethod
+    async def get_unlimited_access_agents(
+        db: AsyncSession,
+        user_id: int
+    ) -> List[str]:
+        """
+        Get all agent types that the user has unlimited queries access to via whitelist.
+
+        Args:
+            db: Database session
+            user_id: User ID
+
+        Returns:
+            List of agent types with unlimited access
+        """
+        try:
+            result = await db.execute(
+                select(AgentWhitelist.agent_type).where(
+                    and_(
+                        AgentWhitelist.user_id == user_id,
+                        AgentWhitelist.is_active == True,
+                        AgentWhitelist.unlimited_queries == True,
+                        or_(
+                            AgentWhitelist.expires_at.is_(None),
+                            AgentWhitelist.expires_at > datetime.utcnow()
+                        )
+                    )
+                )
+            )
+            agents = list(result.scalars().all())
+            logger.info(f"User {user_id} has unlimited access to agents: {agents}")
+            return agents
+        except Exception as e:
+            logger.error(f"Error getting unlimited access agents for user {user_id}: {str(e)}")
+            return []
+
+    @staticmethod
+    async def has_unlimited_queries(
+        db: AsyncSession,
+        user_id: int,
+        agent_type: str
+    ) -> bool:
+        """
+        Check if a user has unlimited queries for a specific agent via whitelist.
+
+        Args:
+            db: Database session
+            user_id: User ID
+            agent_type: Type of agent
+
+        Returns:
+            True if user has unlimited queries for this agent
+        """
+        try:
+            # First, get ALL whitelist entries for this user/agent combination for debugging
+            all_entries_result = await db.execute(
+                select(AgentWhitelist).where(
+                    and_(
+                        AgentWhitelist.agent_type == agent_type,
+                        AgentWhitelist.user_id == user_id
+                    )
+                )
+            )
+            all_entries = all_entries_result.scalars().all()
+
+            if all_entries:
+                for entry in all_entries:
+                    logger.info(
+                        f"Whitelist entry for user {user_id}, agent '{agent_type}': "
+                        f"id={entry.id}, is_active={entry.is_active}, "
+                        f"unlimited_queries={entry.unlimited_queries}, "
+                        f"expires_at={entry.expires_at}"
+                    )
+            else:
+                logger.info(f"No whitelist entries found for user {user_id}, agent '{agent_type}'")
+
+            # Now check for active unlimited queries entry
+            result = await db.execute(
+                select(AgentWhitelist).where(
+                    and_(
+                        AgentWhitelist.agent_type == agent_type,
+                        AgentWhitelist.user_id == user_id,
+                        AgentWhitelist.is_active == True,
+                        AgentWhitelist.unlimited_queries == True,
+                        or_(
+                            AgentWhitelist.expires_at.is_(None),
+                            AgentWhitelist.expires_at > datetime.utcnow()
+                        )
+                    )
+                )
+            )
+            whitelist_entry = result.scalar_one_or_none()
+            has_unlimited = whitelist_entry is not None
+            logger.info(f"has_unlimited_queries result for user {user_id}, agent '{agent_type}': {has_unlimited}")
+            return has_unlimited
+        except Exception as e:
+            logger.error(f"Error checking unlimited queries for user {user_id}, agent '{agent_type}': {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return False
+
+    @staticmethod
     async def is_fallback_agent(db: AsyncSession, agent_type: str) -> bool:
         """Check if an agent is available in fallback mode (for free users after queries exhausted)"""
         try:
@@ -310,13 +411,53 @@ class AgentAccessService:
             return []
 
     @staticmethod
+    async def get_user_whitelist(
+        db: AsyncSession,
+        user_id: int
+    ) -> List[dict]:
+        """
+        Get all whitelist entries for a user (admin function)
+
+        Args:
+            db: Database session
+            user_id: User ID
+
+        Returns:
+            List of whitelist entries
+        """
+        try:
+            result = await db.execute(
+                select(AgentWhitelist).where(
+                    AgentWhitelist.user_id == user_id
+                ).order_by(AgentWhitelist.agent_type)
+            )
+            entries = result.scalars().all()
+
+            return [
+                {
+                    "id": entry.id,
+                    "agent_type": entry.agent_type,
+                    "is_active": entry.is_active,
+                    "unlimited_queries": entry.unlimited_queries or False,
+                    "granted_at": entry.granted_at,
+                    "expires_at": entry.expires_at,
+                    "reason": entry.reason
+                }
+                for entry in entries
+            ]
+        except Exception as e:
+            logger.error(f"Error getting user whitelist for user {user_id}: {str(e)}")
+            return []
+
+    @staticmethod
     async def grant_user_access(
         db: AsyncSession,
         agent_type: str,
         user_id: int,
         granted_by: int,
         expires_at: Optional[datetime] = None,
-        reason: Optional[str] = None
+        reason: Optional[str] = None,
+        unlimited_queries: bool = False
     ) -> Tuple[bool, Optional[str]]:
         """
         Grant a user access to an agent via whitelist (admin function)
@@ -328,6 +469,7 @@ class AgentAccessService:
             granted_by: Admin user ID granting access
             expires_at: Optional expiration date
             reason: Optional reason for granting access
+            unlimited_queries: If True, user can make unlimited queries to this agent
 
         Returns:
             Tuple[bool, Optional[str]]: (success, error_message)
@@ -369,7 +511,8 @@ class AgentAccessService:
                 existing_entry.granted_at = datetime.utcnow()
                 existing_entry.expires_at = expires_at
                 existing_entry.reason = reason
-                logger.info(f"Updated whitelist entry for user {user_id}, agent '{agent_type}'")
+                existing_entry.unlimited_queries = unlimited_queries
+                logger.info(f"Updated whitelist entry for user {user_id}, agent '{agent_type}' (unlimited={unlimited_queries})")
             else:
                 # Create new whitelist entry
                 whitelist_entry = AgentWhitelist(
@@ -379,10 +522,11 @@ class AgentAccessService:
                     granted_at=datetime.utcnow(),
                     expires_at=expires_at,
                     is_active=True,
-                    reason=reason
+                    reason=reason,
+                    unlimited_queries=unlimited_queries
                 )
                 db.add(whitelist_entry)
-                logger.info(f"Created whitelist entry for user {user_id}, agent '{agent_type}'")
+                logger.info(f"Created whitelist entry for user {user_id}, agent '{agent_type}' (unlimited={unlimited_queries})")
 
             await db.commit()
             return True, None
